@@ -1,0 +1,32 @@
+<tr>
+    <td>{name}</td>
+    <td>{email}</td>
+    <td>
+        <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#dialog_admin_users_{userid}_perms" aria-expanded="false" aria-controls="dialog_admin_users_{userid}_perms">Show/Hide</button>
+        <div class="collapse" id="dialog_admin_users_{userid}_perms">
+            <div class="card">
+                <form class="form" onsubmit="dialog_admin_users_update('{userid}');return false;">
+                    <div class="form-group">
+                        <label class="col-form-label" for="dialog_admin_users_{userid}_perms_p">Permissions</label>
+                        <textarea id="dialog_admin_users_{userid}_perms_p" name="perm" class="form-control monospace" title="Permissions" placeholder="No Permissions" rows="4">{permissions}</textarea>
+                    </div>
+                    <div class="form-group"{viewblacklistvisible}>
+                        <label class="col-form-label" for="dialog_admin_users_{userid}_perms_v">View Blacklist</label>
+                        <textarea id="dialog_admin_users_{userid}_perms_v" name="view" class="form-control monospace" title="View Blacklist" placeholder="No Restrictions" rows="4">{viewblacklist}</textarea>
+                    </div>
+                    <div class="form-group"{editblacklistvisible}>
+                        <label class="col-form-label" for="dialog_admin_users_{userid}_perms_e">Edit Blacklist</label>
+                        <textarea id="dialog_admin_users_{userid}_perms_e" name="edit" class="form-control monospace" title="Edit Blacklist" placeholder="No Restrictions" rows="4">{editblacklist}</textarea>
+                    </div>
+                    <input type="submit" class="btn btn-outline-secondary" title="Update" value="Update">
+                </form>
+            </div>
+        </div>
+    </td>
+    <td>{registerdate}</td>
+    <td>
+        <button class="btn btn-outline-danger" title="Delete Account" onclick="dialog_admin_users_delete('{userid}');"><i class="fas fa-trash"></i></button>
+        <button class="btn btn-outline-secondary" title="Reset Password" onclick="dialog_admin_users_reset('{userid}');"><i class="fas fa-sync-alt"></i></button>
+        <a class="btn btn-outline-secondary" href="mailto:{email}" title="Send Email"><i class="fas fa-envelope"></i></a>
+    </td>
+</tr>

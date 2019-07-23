@@ -1,0 +1,90 @@
+<form id="module_user_loginform" class="form" onsubmit="return module_user_loginSubmission();">
+    <div class="form-group">
+        <label class="col-form-label" for="module_user_loginemail">Email Address</label>
+        <div class="input-group">
+            <input type="email" id="module_user_loginemail" autocomplete="email" class="form-control border-right-0 border-secondary" title="Email" placeholder="Email Address" oninput="module_user_loginCheckEmail();">
+            <div class="input-group-append">
+                <div class="input-group-text bg-transparent border-left-0 border-secondary">
+                    <i class="fas fa-times" style="display:none;"></i>
+                    <i class="fas fa-check" style="display:none;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-form-label" for="module_user_loginpass">Current Password</label>
+        <div class="input-group">
+            <input type="password" id="module_user_loginpass" autocomplete="current-password" class="form-control border-right-0 border-secondary" title="Password" placeholder="Password" oninput="module_user_loginCheckPass();">
+            <div class="input-group-append">
+                <div class="input-group-text bg-transparent border-left-0 border-secondary">
+                    <i class="fas fa-times" style="display:none;"></i>
+                    <i class="fas fa-check" style="display:none;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <input id="module_user_loginbutton" type="submit" class="btn btn-success" title="Log In" value="Log In">
+    </div>
+</form>
+<script>
+var isLoggingIn = false;
+
+function module_user_loginCheckEmail() {
+    module_ajax("checkuser", {email: $("#module_user_loginemail").val()}, function (data) {
+        if (data == "TRUE") {
+            $("#module_user_loginemail").parent().removeClass("has-error");
+            $("#module_user_loginemail").parent().addClass("has-success");
+            $("#module_user_loginemail").parent().find(".fa-times").hide();
+            $("#module_user_loginemail").parent().find(".fa-check").show();
+        } else {
+            $("#module_user_loginemail").parent().removeClass("has-success");
+            $("#module_user_loginemail").parent().addClass("has-error");
+            $("#module_user_loginemail").parent().find(".fa-check").hide();
+            $("#module_user_loginemail").parent().find(".fa-times").show();
+        }
+    });
+    module_user_loginCheckPass();
+}
+
+function module_user_loginCheckPass() {
+    module_ajax("checkpass", {email: $("#module_user_loginemail").val(), password: $("#module_user_loginpass").val()}, function(data) {
+        if (data == "TRUE") {
+            $("#module_user_loginpass").parent().removeClass("has-error");
+            $("#module_user_loginpass").parent().addClass("has-success");
+            $("#module_user_loginpass").parent().find(".fa-times").hide();
+            $("#module_user_loginpass").parent().find(".fa-check").show();
+            module_user_loginSubmission();
+        } else {
+            $("#module_user_loginpass").parent().removeClass("has-success");
+            $("#module_user_loginpass").parent().addClass("has-error");
+            $("#module_user_loginpass").parent().find(".fa-check").addClass("hidden");
+            $("#module_user_loginpass").parent().find(".fa-times").removeClass("hidden");
+        }
+    });
+}
+
+function module_user_loginSubmission() {
+    if (isLoggingIn) {
+        return false;
+    }
+    isLoggingIn = true;
+    $("#module_user_loginbutton")[0].disabled = true;
+    module_ajax("newtoken", {email: $("#module_user_loginemail").val(), password: $("#module_user_loginpass").val()}, function(data) {
+        if (data != "FALSE") {
+            var d = new Date(Date.now()+(3600000*24*30));
+            document.cookie = "token="+data+"; expires="+d.toUTCString()+"; path=/";
+            if (window.location.search.indexOf("?n") == -1) {
+                window.location.reload(true);
+            } else {
+                var url = BASE_URL + "/" + window.location.search.substr(window.location.search.indexOf("?n")+3);
+                window.location.assign(url);
+            }
+        } else {
+            $("#module_user_loginbutton")[0].disabled = false;
+            isLoggingIn = false;
+        }
+    });
+    return false;
+}
+</script>
