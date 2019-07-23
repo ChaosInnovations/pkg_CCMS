@@ -1,0 +1,6 @@
+# MAINTENANCE-PAGE REDIRECT
+<IfModule mod_rewrite.c>
+ RewriteEngine on
+ RewriteCond %{REQUEST_URI} !install_state\.json$ [NC]
+ RewriteRule ^ maintenance.html [QSA]
+</IfModule>

@@ -1,0 +1,21 @@
+{
+    "module_data": {
+        "name":"CCMS",
+        "description":"CCMS core library and framework",
+        "type":"Library",
+        "version":[1, 9, 1, 1],
+        "release_date":"2019-07-22",
+        "author": {
+            "name":"Thomas Boland",
+            "email":"hello@thomasboland.me",
+            "website":"http://ccms.thomasboland.me"
+        }
+    },
+
+    "dependencies": {
+        "libraries": [
+        ],
+        "modules": [
+        ]
+    }
+}
