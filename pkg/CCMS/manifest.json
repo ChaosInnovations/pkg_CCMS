@@ -3,8 +3,8 @@
         "name":"CCMS",
         "description":"CCMS core library and framework",
         "type":"Library",
-        "version":[1, 9, 1, 1],
-        "release_date":"2019-07-22",
+        "version":[1, 9, 2, 0],
+        "release_date":"2019-11-15",
         "author": {
             "name":"Thomas Boland",
             "email":"hello@thomasboland.me",
