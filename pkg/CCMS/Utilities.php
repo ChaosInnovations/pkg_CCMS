@@ -42,6 +42,8 @@ class Utilities
                 }
             }
 
+            // Prevent CCMSIndex from being uninstalled
+            self::$module_manifest["CCMSIndex"]["dependencies"]["has_dependent"] = true;
             // Check dependencies
             $missing_dependencies = false;
             do {
