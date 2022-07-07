@@ -27,7 +27,7 @@ class User
     public $notify = false;
     public $online = false;
     
-    public static $currentUser = null;
+    public static User $currentUser = null;
 
     public function __construct($uid)
     {
@@ -88,8 +88,8 @@ class User
         );
 
         // Blacklists
-        $this->permissions->page_viewblacklist = preg_split('@;@', $udata[0]["permviewbl"], NULL, PREG_SPLIT_NO_EMPTY);
-        $this->permissions->page_editblacklist = preg_split('@;@', $udata[0]["permeditbl"], NULL, PREG_SPLIT_NO_EMPTY);
+        $this->permissions->page_viewblacklist = preg_split('@;@', $udata[0]["permviewbl"], -1, PREG_SPLIT_NO_EMPTY);
+        $this->permissions->page_editblacklist = preg_split('@;@', $udata[0]["permeditbl"], -1, PREG_SPLIT_NO_EMPTY);
     }
     
     public function isValidUser()
