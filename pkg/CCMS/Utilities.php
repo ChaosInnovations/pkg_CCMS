@@ -2,7 +2,6 @@
 
 namespace Package\CCMS;
 
-use \Package\CCMS\Utilities;
 use \DirectoryIterator;
 use \PDO;
 
