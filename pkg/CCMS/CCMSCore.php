@@ -26,7 +26,7 @@ class CCMSCore
         $sapi_name = php_sapi_name();
         
         // Returns Request
-        return new Request($_SERVER, $_COOKIE, $sapi_name);
+        return new Request($_SERVER, $_COOKIE, $_POST, $_GET, $sapi_name);
     }
     
     public function processRequest(Request $request)
