@@ -2,21 +2,35 @@
 
 namespace Package\CCMS;
 
+use Package\CCMS\Models\HTTP\StatusCode;
+
 class Response
 {
     
-    protected $content = "";
-    protected $final = true;
+    protected string $content;
+    protected bool $final;
+    protected StatusCode $status;
+    /**
+     * @var string[]
+     */
+    protected array $headers;
     
-    public function __construct($content='', $final=true)
+    public function __construct(string $content='', bool $final=true, StatusCode $status=StatusCode::OK, array $headers=[])
     {
         $this->content = $content;
         $this->final = $final;
+        $this->status = $status;
+        $this->headers = $headers;
     }
     
-    public function send($buffer=true)
+    public function send(bool $buffer=true)
     {
         if (!$buffer) {
+            http_response_code($this->status->value);
+            foreach ($this->headers as $headerName => $headerContent) {
+                // TODO: should probably sanitize the header before sending it.
+                header($headerName . ": " . $headerContent);
+            }
             echo $this->content;
             return;
         }
@@ -28,7 +42,12 @@ class Response
         echo $this->content;
         
         $size = ob_get_length();
+        http_response_code($this->status->value);
         header("Content-Length: {$size}");
+        foreach ($this->headers as $headerName => $headerContent) {
+            // TODO: should probably sanitize the header before sending it.
+            header($headerName . ": " . $headerContent);
+        }
         ob_end_flush();
         flush();
     }
