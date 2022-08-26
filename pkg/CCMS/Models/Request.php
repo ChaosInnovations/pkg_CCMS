@@ -38,8 +38,8 @@ class Request
                 }
             }
         } else {
-            $this->isHttps = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off';
-            $this->hostname = $_SERVER["SERVER_NAME"];
+            $this->isHttps = isset($server['HTTPS']) && $server['HTTPS'] != 'off';
+            $this->hostname = $server["SERVER_NAME"];
         }
 
         $this->baseUrl = "http" . ($this->isHttps ? "s" : "") . "://" . $this->hostname;
@@ -50,7 +50,7 @@ class Request
         }
         $this->endpoint = $url;
 
-        $method = $_SERVER['REQUEST_METHOD'];
+        $method = $server['REQUEST_METHOD'];
         $this->method = Method::tryFrom($method) ?? Method::GET;
 
         $this->cookies = $cookies;

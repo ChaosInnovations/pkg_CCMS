@@ -9,6 +9,7 @@ use \Package\CCMS\Utilities;
 
 class Core
 {
+    private Router $router;
     public function __construct()
     {
         // Delete setup script and STATE if it still exists (first time launch)
@@ -19,6 +20,8 @@ class Core
         }
         
         date_default_timezone_set("UTC");
+
+        $this->router = new Router();
     }
     
     public function buildRequest()
@@ -31,41 +34,44 @@ class Core
     
     public function processRequest(Request $request)
     {
-        $response = new Response();
-        $response->setFinal(false);
+        // try loading pre-built routing table
+        $loading_start = microtime(true);
+        $could_load = $this->router->LoadRoutes();
+        $loading_end = microtime(true);
+        echo 'Took ' . ($loading_end - $loading_start) * 1000 . 'ms to load existing routing table.';
 
-        $hooks = [];
-
-        foreach (Utilities::getPackageManifest() as $module_name => $module_manifest) {
-            if (!isset($module_manifest["routes"])) {
-                continue;
-            }
-        
-            $routes = $module_manifest["routes"];
-        
-            foreach ($routes as $route) {
-                array_push($hooks, [$route["hook"], $route["target"], $route["rank"]]);
-            }
+        if (!$could_load) {
+            // routing table hasn't been built yet, so build it
+            $parsing_start = microtime(true);
+            $this->router->RegisterRoutesFromAttributes();
+            $parsing_end = microtime(true);
+            echo 'Took ' . ($parsing_end - $parsing_start) * 1000 . 'ms to build a new routing table.';
+            $this->router->SaveRoutes();
         }
 
-        usort($hooks, function($a, $b) { return ($a[2] <=> $b[2]); });
+        // search for match(es) in routing table
+        $matched_routes = $this->router->GetMatchingRoutes($request->method, $request->getEndpoint());
+        echo 'Matching routes: <pre>' . print_r($matched_routes, true) . '</pre>';
 
-        // Enumerate hooks
-        foreach ($hooks as $hook) {
-            $hookRegex = $hook[0];
-            $hookFunctionName = $hook[1];
-            if (!preg_match($hookRegex, $request->getTypedEndpoint())) {
-                continue;
-            }
-            
-            $result = null;
+        $response = new Response();
+        $response->setFinal(false);
+        // For each matched route, parse the incoming path, initialize the controller and call the indicated method.
+        // A method might return something to indicate that the next method should be used instead.
+        foreach ($matched_routes as $matched_route) {
+            $parameters = Router::ParsePathParameters($matched_route['path'], $request->getEndpoint());
+            echo 'Parameters: <pre>' . print_r($parameters, true) . '</pre>';
+
+            $request->Args = array_merge($request->Args, $parameters);
+
+            $controller = new $matched_route['controller_class']($request);
+            $method_name = $matched_route['controller_method'];
             
             try {
-                $result = $hookFunctionName($request, $response);
+                $result = $controller->$method_name();
             } catch (Exception $e) {
                 $response->append(new Response($e));
             }
-            
+
             if ($result instanceof Response) {
                 $response->append($result);
             }
@@ -74,6 +80,7 @@ class Core
                 break;
             }
         }
+
         // Returns Response
         return $response;
     }

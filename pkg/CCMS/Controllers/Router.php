@@ -71,7 +71,7 @@ class Router
     }
 
     public function LoadRoutes() : bool {
-        if (!file_exists('routes.json')) {
+        if (!file_exists($_SERVER["DOCUMENT_ROOT"] . '/pkg/CCMS/routes.json')) {
             return false;
         }
 
