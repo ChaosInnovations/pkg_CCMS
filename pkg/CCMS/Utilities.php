@@ -7,16 +7,16 @@ use \PDO;
 
 class Utilities
 {
-    public static $module_manifest = null;
-    public static function getPackageManifest() {
-        if (self::$module_manifest === null) {
-            self::$module_manifest = [];
+    public static $pkg_manifest = null;
+    public static function getPackageManifest() : array {
+        if (self::$pkg_manifest === null) {
+            self::$pkg_manifest = [];
 
-            $moduleDirs = [
+            $pkgDirs = [
                 $_SERVER["DOCUMENT_ROOT"] . "/pkg",
             ];
         
-            foreach ($moduleDirs as $searchDir) {
+            foreach ($pkgDirs as $searchDir) {
                 $dir = new DirectoryIterator($searchDir);
                 foreach ($dir as $fileinfo) {
                     if ($fileinfo->isDot()) {
@@ -36,17 +36,17 @@ class Utilities
                 
                     $manifest = json_decode(file_get_contents($searchDir . "/" . $fileinfo->getFilename() . "/manifest.json"), true);
 
-                    self::$module_manifest[$fileinfo->getFilename()] = $manifest;
-                    self::$module_manifest[$fileinfo->getFilename()]["dependencies"]["has_dependent"] = false;
+                    self::$pkg_manifest[$fileinfo->getFilename()] = $manifest;
+                    self::$pkg_manifest[$fileinfo->getFilename()]["dependencies"]["has_dependent"] = false;
                 }
             }
 
             // Prevent CCMSIndex from being uninstalled
-            self::$module_manifest["CCMSIndex"]["dependencies"]["has_dependent"] = true;
+            self::$pkg_manifest["CCMSIndex"]["dependencies"]["has_dependent"] = true;
             // Check dependencies
             $missing_dependencies = false;
             do {
-                foreach (self::$module_manifest as $module_name => $module_info) {
+                foreach (self::$pkg_manifest as $module_name => $module_info) {
                     $dependencies = array_merge($module_info["dependencies"]["libraries"], $module_info["dependencies"]["modules"]);
                     if (count($dependencies) === 0) {
                         $missing_dependencies = false;
@@ -54,16 +54,16 @@ class Utilities
                     }
 
                     foreach ($dependencies as $index => $dependency) {
-                        if (!isset(self::$module_manifest[$dependency["name"]])) {
+                        if (!isset(self::$pkg_manifest[$dependency["name"]])) {
                             echo "Module \"{$module_name}\" missing dependency \"{$dependency["name"]}\"<br />\n";
                             $missing_dependencies = true;
                             break;
                         }
 
-                        self::$module_manifest[$dependency["name"]]["dependencies"]["has_dependent"] = true;
+                        self::$pkg_manifest[$dependency["name"]]["dependencies"]["has_dependent"] = true;
 
                         $minVer = $dependency["min_version"];
-                        $depVer = self::$module_manifest[$dependency["name"]]["module_data"]["version"];
+                        $depVer = self::$pkg_manifest[$dependency["name"]]["module_data"]["version"];
 
                         $cmp = 8 * ($depVer[0] <=> $minVer[0]);
                         $cmp += 4 * ($depVer[1] <=> $minVer[1]);
@@ -84,7 +84,7 @@ class Utilities
                     }
 
                     if ($missing_dependencies) {
-                        unset(self::$module_manifest[$module_name]);
+                        unset(self::$pkg_manifest[$module_name]);
                         break;
                     }
                 }
@@ -92,7 +92,7 @@ class Utilities
 
         }
 
-        return self::$module_manifest;
+        return self::$pkg_manifest;
     }
 
     public static function fillTemplate(string $template, array $vars)

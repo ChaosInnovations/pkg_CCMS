@@ -4,6 +4,7 @@ namespace Package\CCMS\Controllers;
 
 use Exception;
 use Package\CCMS\Models\HTTP\Method;
+use Package\CCMS\Utilities;
 use ReflectionClass;
 
 class Router
@@ -16,40 +17,56 @@ class Router
 
     public function RegisterRoutesFromAttributes() : void {
         // Get list of controllers from Utilities\getPackageManifest()
-        $c = \Package\Controller::class;
+        $controllers = [];
+        $pkg_manifest = Utilities::getPackageManifest();
+        foreach ($pkg_manifest as $pkg_name => $pkg_info) {
+            if (!isset($pkg_info['controllers'])) {
+                continue;
+            }
 
-        $class = new ReflectionClass($c);
-
-        $route_prefix_segments = [];
-        $class_attributes = $class->getAttributes(RoutesPrefix::class);
-        foreach ($class_attributes as $class_attribute) {
-            $route_prefix = $class_attribute->newInstance();
-            $prefix = $route_prefix->pathPrefix;
-            $prefix = trim($prefix, "/");
-            $route_prefix_segments = explode("/", $prefix);
-        }
-
-        foreach ($class->getMethods() as $method) {
-            $attributes = $method->getAttributes(Route::class);
-
-            foreach ($attributes as $attribute) {
-                $route = $attribute->newInstance();
-                $use_prefix = !str_starts_with($route->path, '~');
-                if (!$use_prefix) {
-                    $route->path = substr($route->path, 1);
-                }
-                $path = trim($route->path, '/');
-                $route_segments = explode('/', $path);
-                $this->routes[] = [
-                    'method' => $route->method,
-                    'path' => ($use_prefix ? array_merge($route_prefix_segments, $route_segments) : $route_segments),
-                    'controller_class' => $c,
-                    'controller_method' => $method->getName(),
-                    'order' => $route->order,
-                ];
+            foreach ($pkg_info['controllers'] as $c) {
+                $controllers[] = $c::class;
             }
         }
 
+        // Build list of routes
+        $this->routes = [];
+        foreach ($controllers as $c) {
+
+            $class = new ReflectionClass($c);
+
+            $route_prefix_segments = [];
+            $class_attributes = $class->getAttributes(RoutesPrefix::class);
+            foreach ($class_attributes as $class_attribute) {
+                $route_prefix = $class_attribute->newInstance();
+                $prefix = $route_prefix->pathPrefix;
+                $prefix = trim($prefix, "/");
+                $route_prefix_segments = explode("/", $prefix);
+            }
+
+            foreach ($class->getMethods() as $method) {
+                $attributes = $method->getAttributes(Route::class);
+
+                foreach ($attributes as $attribute) {
+                    $route = $attribute->newInstance();
+                    $use_prefix = !str_starts_with($route->path, '~');
+                    if (!$use_prefix) {
+                        $route->path = substr($route->path, 1);
+                    }
+                    $path = trim($route->path, '/');
+                    $route_segments = explode('/', $path);
+                    $this->routes[] = [
+                        'method' => $route->method,
+                        'path' => ($use_prefix ? array_merge($route_prefix_segments, $route_segments) : $route_segments),
+                        'controller_class' => $c,
+                        'controller_method' => $method->getName(),
+                        'order' => $route->order,
+                    ];
+                }
+            }
+        }
+
+        // Sort routes
         $this->SortRoutes();
     }
 
