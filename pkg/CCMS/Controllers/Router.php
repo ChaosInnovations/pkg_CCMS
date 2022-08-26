@@ -2,6 +2,8 @@
 
 namespace Package\CCMS\Controllers;
 
+use Exception;
+use Package\CCMS\Models\HTTP\Method;
 use ReflectionClass;
 
 class Router
@@ -57,7 +59,7 @@ class Router
         }
 
         $loading_start = microtime(true);
-        $raw_routes = file_get_contents('routes.json');
+        $raw_routes = file_get_contents($_SERVER["DOCUMENT_ROOT"] . '/pkg/CCMS/routes.json');
         $loading_end = microtime(true);
         echo "Took " . ($loading_end - $loading_start) * 1000 . 'ms to load file contents.';
         $this->routes = json_decode($raw_routes, true);
@@ -73,8 +75,110 @@ class Router
         file_put_contents($_SERVER["DOCUMENT_ROOT"] . '/pkg/CCMS/routes.json', json_encode($this->routes));
     }
 
-    public function GetMatchingRoutes(string $method, string $path) : array {
+    public function GetMatchingRoutes(Method $method, string $path) : array {
+        $path_segments = explode('/', trim($path, '/'));
+        $matching_routes = array_values(array_filter($this->routes, function($route) use ($method, $path_segments) {
+            echo "Comparing " . join('/', $path_segments) . ' to template ' . join('/', $route['path']) . ':';
+            if ($method != $route['method']) {
+                echo "Method didn't match<br />";
+                return false;
+            }
 
+            $template_segment_idx = 0;
+            $wildcard_matched = false;
+            for ($i = 0; $i < count($path_segments); $i++) {
+                if (!isset($route['path'][$template_segment_idx])) {
+                    echo 'Not enough template segments<br />';
+                    return false;
+                }
+
+                $template_segment = $route['path'][$template_segment_idx];
+                $template_segment_type = self::GetPathSegmentType($template_segment);
+
+                if ($template_segment_type == self::SEG_LITERAL) {
+                    if ($path_segments[$i] != $template_segment) {
+                        echo 'Literal segment ' . $path_segments[$i] . ' didn\'t match template\'s ' . $template_segment . '<br />';
+                        return false;
+                    }
+
+                    $template_segment_idx++;
+                    continue;
+                }
+
+                if ($template_segment_type == self::SEG_PARAM_CONSTRAINED) {
+                    // check against constraint. if no match, return false
+                    // otherwise, increment $template_segment_idx and continue.
+                }
+
+                if ($template_segment_type == self::SEG_PARAM_UNCONSTRAINED) {
+                    // will always match.
+                    $template_segment_idx++;
+                    continue;
+                }
+
+                if ($template_segment_type == self::SEG_WILD_PARAM_CONSTRAINED) {
+                    // must match at least once.
+                    // somehow, check against constraint.
+                    // however, if next template segment is a literal that matches the current segment and
+                    // we've already matched this wildcard at least once, match that template segment.
+                    // increment template_segment_idx twice, and continue.
+                    if (!$wildcard_matched) {
+                        $wildcard_matched = true;
+                        continue;
+                    }
+
+                    if (!isset($route['path'][$template_segment_idx+1])) {
+                        continue;
+                    }
+
+                    $next_template_segment = $route['path'][$template_segment_idx+1];
+                    $next_template_segment_type = self::GetPathSegmentType($next_template_segment);
+                    if ($next_template_segment_type == self::SEG_LITERAL && $next_template_segment == $path_segments[$i]) {
+                        $template_segment_idx += 2;
+                        $wildcard_matched = false;
+                    }
+                }
+
+                if ($template_segment_type == self::SEG_WILD_PARAM_UNCONSTRAINED) {
+                    // must match at least once.
+                    // however, if next template segment is a literal that matches the current segment and
+                    // we've already matched this wildcard at least once, match that template segment.
+                    // increment template_segment_idx twice, and continue.
+                    if (!$wildcard_matched) {
+                        $wildcard_matched = true;
+                        continue;
+                    }
+
+                    if (!isset($route['path'][$template_segment_idx+1])) {
+                        continue;
+                    }
+
+                    $next_template_segment = $route['path'][$template_segment_idx+1];
+                    $next_template_segment_type = self::GetPathSegmentType($next_template_segment);
+                    if ($next_template_segment_type == self::SEG_LITERAL && $next_template_segment == $path_segments[$i]) {
+                        $template_segment_idx += 2;
+                        $wildcard_matched = false;
+                    }
+                }
+            }
+
+            // If we've made it through:
+            // If we are in a wildcard, continue to the next segment
+            if ($wildcard_matched) {
+                $template_segment_idx++;
+            }
+            // If there are segments left in the template, return false
+            if ($template_segment_idx < count($route['path'])) {
+                echo 'Still unmatched template segments left over<br />';
+                return false;
+            }
+
+            // Otherwise,
+            echo 'Matched!<br />';
+            return true;
+        }));
+
+        return $matching_routes;
     }
 
     /**
@@ -134,6 +238,76 @@ class Router
     }
 
     public static function ParsePathParameters(array $template, string $path) : array {
+        $parameters = [];
 
+        $path_segments = explode('/', $path);
+
+        $template_segment_idx = 0;
+        $wildcard_matched = false;
+        for ($i = 0; $i < count($path_segments); $i++) {
+            if (!isset($template[$template_segment_idx])) {
+                throw new Exception('Template doesn\'t match path.');
+            }
+
+            $template_segment = $template[$template_segment_idx];
+            $template_segment_type = self::GetPathSegmentType($template_segment);
+
+            if ($template_segment_type == self::SEG_LITERAL) {
+                $template_segment_idx++;
+                continue;
+            }
+
+            if ($template_segment_type == self::SEG_PARAM_CONSTRAINED) {
+                // check against constraint. if no match, return false.
+                // otherwise, increment $template_segment_idx and continue.
+            }
+
+            if ($template_segment_type == self::SEG_PARAM_UNCONSTRAINED) {
+                // will always match
+                $parameter_name = substr($template_segment, 1, -1);
+                $parameters[$parameter_name] = $path_segments[$i];
+                $template_segment_idx++;
+                continue;
+            }
+
+            if ($template_segment_type == self::SEG_WILD_PARAM_CONSTRAINED) {
+                // must match at least once.
+                // somehow, check against constraint.
+                // however, if next template segment is a literal that matches the current segment and
+                // we've already matched this wildcard at least once, match that template segment.
+                // increment template_segment_idx twice, and continue.
+            }
+
+            if ($template_segment_type == self::SEG_WILD_PARAM_UNCONSTRAINED) {
+                // must match at least once.
+                // however, if next template segment is a literal that matches the current segment and
+                // we've already matched this wildcard at least once, match that template segment.
+                // increment template_segment_idx twice, and continue.
+                $parameter_name = substr($template_segment, 2, -1);
+
+                if (!$wildcard_matched) {
+                    $wildcard_matched = true;
+                    $parameters[$parameter_name] = $path_segments[$i];
+                    continue;
+                }
+
+                if (!isset($route['path'][$template_segment_idx+1])) {
+                    $parameters[$parameter_name] .= '/' . $path_segments[$i];
+                    continue;
+                }
+
+                $next_template_segment = $route['path'][$template_segment_idx+1];
+                $next_template_segment_type = self::GetPathSegmentType($next_template_segment);
+                if ($next_template_segment_type == self::SEG_LITERAL && $next_template_segment == $path_segments[$i]) {
+                    $template_segment_idx += 2;
+                    $wildcard_matched = false;
+                    continue;
+                }
+
+                $parameters[$parameter_name] .= '/' . $path_segments[$i];
+            }
+        }
+
+        return $parameters;
     }
 }
