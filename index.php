@@ -1,7 +1,7 @@
 <?php
 
 use \Package\CCMS\Autoloader;
-use \Package\CCMS\CCMSCore;
+use \Package\CCMS\Controllers\Core;
 
 // Set DOCUMENT_ROOT to the correct root document
 $_SERVER["DOCUMENT_ROOT"] = dirname(__FILE__);
@@ -15,7 +15,7 @@ $loader->register();
 $loader->addNamespace("Package", $_SERVER["DOCUMENT_ROOT"]."/pkg");
 
 // Process incoming request
-$core = new CCMSCore();
+$core = new Core();
 $request = $core->buildRequest();
 $response = $core->processRequest($request);
 $response->send(false);

@@ -70,7 +70,7 @@ class Router
     }
 
     public function SaveRoutes() : void {
-        file_put_contents('routes.json', json_encode($this->routes));
+        file_put_contents($_SERVER["DOCUMENT_ROOT"] . '/pkg/CCMS/routes.json', json_encode($this->routes));
     }
 
     public function GetMatchingRoutes(string $method, string $path) : array {

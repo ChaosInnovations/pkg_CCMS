@@ -1,6 +1,6 @@
 <?php
 
-namespace Package\CCMS;
+namespace Package\CCMS\Models;
 
 use Package\CCMS\Models\HTTP\StatusCode;
 

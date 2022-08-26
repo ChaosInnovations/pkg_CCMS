@@ -1,13 +1,13 @@
 <?php
 
-namespace Package\CCMS;
+namespace Package\CCMS\Controllers;
 
 use \Exception;
-use \Package\CCMS\Request;
-use \Package\CCMS\Response;
+use \Package\CCMS\Models\Request;
+use \Package\CCMS\Models\Response;
 use \Package\CCMS\Utilities;
 
-class CCMSCore
+class Core
 {
     public function __construct()
     {

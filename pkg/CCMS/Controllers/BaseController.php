@@ -2,7 +2,7 @@
 
 namespace Package\CCMS\Controllers;
 
-use Package\CCMS\Request;
+use Package\CCMS\Models\Request;
 
 class BaseController
 {
