@@ -17,5 +17,9 @@
         ],
         "modules": [
         ]
-    }
+    },
+
+    "controllers": [
+        "\\Package\\CCMS\\Controllers\\FallbackController"
+    ]
 }
