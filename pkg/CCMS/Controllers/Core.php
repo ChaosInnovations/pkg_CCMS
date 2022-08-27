@@ -35,23 +35,23 @@ class Core
     public function processRequest(Request $request)
     {
         // try loading pre-built routing table
-        $loading_start = microtime(true);
+        //$loading_start = microtime(true);
         $could_load = $this->router->LoadRoutes();
-        $loading_end = microtime(true);
-        echo 'Took ' . ($loading_end - $loading_start) * 1000 . 'ms to load existing routing table.';
+        //$loading_end = microtime(true);
+        //echo 'Took ' . ($loading_end - $loading_start) * 1000 . 'ms to load existing routing table.';
 
         if (!$could_load) {
             // routing table hasn't been built yet, so build it
-            $parsing_start = microtime(true);
+            //$parsing_start = microtime(true);
             $this->router->RegisterRoutesFromAttributes();
-            $parsing_end = microtime(true);
-            echo 'Took ' . ($parsing_end - $parsing_start) * 1000 . 'ms to build a new routing table.';
+            //$parsing_end = microtime(true);
+            //echo 'Took ' . ($parsing_end - $parsing_start) * 1000 . 'ms to build a new routing table.';
             $this->router->SaveRoutes();
         }
 
         // search for match(es) in routing table
         $matched_routes = $this->router->GetMatchingRoutes($request->method, $request->getEndpoint());
-        echo 'Matching routes: <pre>' . print_r($matched_routes, true) . '</pre>';
+        //echo 'Matching routes: <pre>' . print_r($matched_routes, true) . '</pre>';
 
         $response = new Response();
         $response->setFinal(false);
@@ -59,7 +59,7 @@ class Core
         // A method might return something to indicate that the next method should be used instead.
         foreach ($matched_routes as $matched_route) {
             $parameters = Router::ParsePathParameters($matched_route['path'], $request->getEndpoint());
-            echo 'Parameters: <pre>' . print_r($parameters, true) . '</pre>';
+            //echo 'Parameters: <pre>' . print_r($parameters, true) . '</pre>';
 
             $request->Args = array_merge($request->Args, $parameters);
 

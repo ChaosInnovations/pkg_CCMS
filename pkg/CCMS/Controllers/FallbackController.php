@@ -11,6 +11,7 @@ use Package\CCMS\Models\Response;
 class FallbackController extends BaseController
 {
     #[Route(Method::POST, '~{*path}', order:100)]
+    #[Route(Method::GET, '~{*path}', order:100)]
     public function routeFallback() : Response {
         return new Response(
             content: 'CCMS Core is working, but no packages are loaded.',

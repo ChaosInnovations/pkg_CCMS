@@ -41,12 +41,16 @@ class Utilities
                 }
             }
 
+            //var_dump(self::$pkg_manifest);
+
             // Prevent CCMSIndex from being uninstalled
-            self::$pkg_manifest["CCMSIndex"]["dependencies"]["has_dependent"] = true;
+            //self::$pkg_manifest["CCMSIndex"]["dependencies"]["has_dependent"] = true;
             // Check dependencies
             $missing_dependencies = false;
             do {
                 foreach (self::$pkg_manifest as $module_name => $module_info) {
+                    //echo $module_name . '<br />';
+                    //var_dump($module_info['dependencies']);
                     $dependencies = array_merge($module_info["dependencies"]["libraries"], $module_info["dependencies"]["modules"]);
                     if (count($dependencies) === 0) {
                         $missing_dependencies = false;

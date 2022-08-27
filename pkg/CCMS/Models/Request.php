@@ -60,11 +60,13 @@ class Request
         $this->Args = array_merge($this->Args, $get);
         $this->Args = array_merge($this->Args, $post);
 
-        $contentType = get_headers($url, 1)["Content-Type"];
-        if ($contentType == "application/json") {
-            $bodyObject = json_decode($this->requestBody);
-            if (json_last_error() === JSON_ERROR_NONE && is_object($bodyObject)) {
-                $this->Args = array_merge($this->Args, $bodyObject);
+        if (isset($server['CONTENT_TYPE'])) {
+            $contentType = $server['CONTENT_TYPE'];
+            if ($contentType == "application/json") {
+                $bodyObject = json_decode($this->requestBody);
+                if (json_last_error() === JSON_ERROR_NONE && is_object($bodyObject)) {
+                    $this->Args = array_merge($this->Args, $bodyObject);
+                }
             }
         }
     }

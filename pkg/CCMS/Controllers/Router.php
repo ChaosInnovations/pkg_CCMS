@@ -3,6 +3,7 @@
 namespace Package\CCMS\Controllers;
 
 use Exception;
+use Package\CCMS\Extensions\Route;
 use Package\CCMS\Models\HTTP\Method;
 use Package\CCMS\Utilities;
 use ReflectionClass;
@@ -25,7 +26,7 @@ class Router
             }
 
             foreach ($pkg_info['controllers'] as $c) {
-                $controllers[] = $c::class;
+                $controllers[] = $c;//::class;
             }
         }
 
@@ -75,10 +76,10 @@ class Router
             return false;
         }
 
-        $loading_start = microtime(true);
+        //$loading_start = microtime(true);
         $raw_routes = file_get_contents($_SERVER["DOCUMENT_ROOT"] . '/pkg/CCMS/routes.json');
-        $loading_end = microtime(true);
-        echo "Took " . ($loading_end - $loading_start) * 1000 . 'ms to load file contents.';
+        //$loading_end = microtime(true);
+        //echo "Took " . ($loading_end - $loading_start) * 1000 . 'ms to load file contents.';
         $this->routes = json_decode($raw_routes, true);
         if (json_last_error() != JSON_ERROR_NONE) {
             $this->routes = [];
@@ -95,9 +96,13 @@ class Router
     public function GetMatchingRoutes(Method $method, string $path) : array {
         $path_segments = explode('/', trim($path, '/'));
         $matching_routes = array_values(array_filter($this->routes, function($route) use ($method, $path_segments) {
-            echo "Comparing " . join('/', $path_segments) . ' to template ' . join('/', $route['path']) . ':';
-            if ($method != $route['method']) {
-                echo "Method didn't match<br />";
+            //echo "Comparing " . join('/', $path_segments) . ' to template ' . join('/', $route['path']) . ':';
+            $route_method = $route['method'];
+            if (!($route_method instanceof Method)) {
+                $route_method = Method::tryFrom($route_method) ?? Method::GET;
+            }
+            if ($method != $route_method) {
+                //echo "Method " . $method->value . " didn't match " . $route['method'] . "<br />";
                 return false;
             }
 
@@ -105,7 +110,7 @@ class Router
             $wildcard_matched = false;
             for ($i = 0; $i < count($path_segments); $i++) {
                 if (!isset($route['path'][$template_segment_idx])) {
-                    echo 'Not enough template segments<br />';
+                    //echo 'Not enough template segments<br />';
                     return false;
                 }
 
@@ -186,12 +191,12 @@ class Router
             }
             // If there are segments left in the template, return false
             if ($template_segment_idx < count($route['path'])) {
-                echo 'Still unmatched template segments left over<br />';
+                //echo 'Still unmatched template segments left over<br />';
                 return false;
             }
 
             // Otherwise,
-            echo 'Matched!<br />';
+            //echo 'Matched!<br />';
             return true;
         }));
 
