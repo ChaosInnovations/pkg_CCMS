@@ -22,6 +22,10 @@ class Response
         $this->status = $status;
         $this->headers = $headers;
     }
+
+    public static function GetEmpty() : Response {
+        return new static('', false, StatusCode::OK, []);
+    }
     
     public function send(bool $buffer=true)
     {
@@ -71,13 +75,30 @@ class Response
     {
         return $this->final;
     }
+
+    public function getStatus() : StatusCode
+    {
+        return $this->status;
+    }
+
+    public function getHeaders() : array
+    {
+        return $this->headers;
+    }
+
+    public function isEmpty() : bool
+    {
+        return $this->content === '' && $this->final === false && $this->status === StatusCode::OK && count($this->headers) == 0;
+    }
     
-    public function append(Response $otherResponse)
+    public function append(Response $otherResponse) : void
     {
         if ($this->final) {
             return;
         }
         $this->content .= $otherResponse->getContent();
         $this->final = $otherResponse->isFinal();
+        $this->status = $otherResponse->getStatus();
+        $this->headers = array_merge($this->headers, $otherResponse->getHeaders());
     }
 }
