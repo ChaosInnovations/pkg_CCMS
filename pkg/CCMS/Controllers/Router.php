@@ -72,12 +72,12 @@ class Router
     }
 
     public function LoadRoutes() : bool {
-        if (!file_exists($_SERVER["DOCUMENT_ROOT"] . '/pkg/CCMS/routes.json')) {
+        if (!file_exists(dirname(__FILE__, 2) . '/routes.json')) {
             return false;
         }
 
         //$loading_start = microtime(true);
-        $raw_routes = file_get_contents($_SERVER["DOCUMENT_ROOT"] . '/pkg/CCMS/routes.json');
+        $raw_routes = file_get_contents(dirname(__FILE__, 2) . '/routes.json');
         //$loading_end = microtime(true);
         //echo "Took " . ($loading_end - $loading_start) * 1000 . 'ms to load file contents.';
         $this->routes = json_decode($raw_routes, true);
@@ -90,7 +90,7 @@ class Router
     }
 
     public function SaveRoutes() : void {
-        file_put_contents($_SERVER["DOCUMENT_ROOT"] . '/pkg/CCMS/routes.json', json_encode($this->routes));
+        file_put_contents(dirname(__FILE__, 2) . '/routes.json', json_encode($this->routes));
     }
 
     public function GetMatchingRoutes(Method $method, string $path) : array {
