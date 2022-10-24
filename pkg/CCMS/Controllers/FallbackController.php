@@ -7,14 +7,16 @@ use Package\CCMS\Extensions\RoutePrefix;
 use Package\CCMS\Models\HTTP\Method;
 use Package\CCMS\Models\HTTP\StatusCode;
 use Package\CCMS\Models\Response;
+use Package\CCMS\Views\FallbackView;
 
 class FallbackController extends BaseController
 {
-    #[Route(Method::POST, '~{*path}', order:100)]
-    #[Route(Method::GET, '~{*path}', order:100)]
+    #[Route(Method::POST, '', order:100)]
+    #[Route(Method::GET, '', order:100)]
     public function routeFallback() : Response {
+        $view = new FallbackView();
         return new Response(
-            content: 'CCMS Core is working, but no packages are loaded.',
+            content: $view->Render(),
             status: StatusCode::OK
         );
     }
