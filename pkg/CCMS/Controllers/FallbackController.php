@@ -20,4 +20,14 @@ class FallbackController extends BaseController
             status: StatusCode::OK
         );
     }
+
+    #[Route(Method::POST, '~{*path}', order:200)]
+    #[Route(Method::GET, '~{*path}', order:200)]
+    public function routeNotFound() : Response {
+        //$view = new NotFoundView();
+        return new Response(
+            //content: $view->Render(),
+            status: StatusCode::NotFound
+        );
+    }
 }
