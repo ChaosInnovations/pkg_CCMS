@@ -48,10 +48,10 @@ class Utilities
             // Check dependencies
             $missing_dependencies = false;
             do {
-                foreach (self::$pkg_manifest as $module_name => $module_info) {
+                foreach (self::$pkg_manifest as $pkg_name => $pkg_info) {
                     //echo $module_name . '<br />';
                     //var_dump($module_info['dependencies']);
-                    $dependencies = array_merge($module_info["dependencies"]["libraries"], $module_info["dependencies"]["modules"]);
+                    $dependencies = $pkg_info["dependencies"];
                     if (count($dependencies) === 0) {
                         $missing_dependencies = false;
                         continue;
@@ -59,7 +59,7 @@ class Utilities
 
                     foreach ($dependencies as $index => $dependency) {
                         if (!isset(self::$pkg_manifest[$dependency["name"]])) {
-                            echo "Module \"{$module_name}\" missing dependency \"{$dependency["name"]}\"<br />\n";
+                            echo "Module \"{$pkg_name}\" missing dependency \"{$dependency["name"]}\"<br />\n";
                             $missing_dependencies = true;
                             break;
                         }
@@ -67,7 +67,7 @@ class Utilities
                         self::$pkg_manifest[$dependency["name"]]["dependencies"]["has_dependent"] = true;
 
                         $minVer = $dependency["min_version"];
-                        $depVer = self::$pkg_manifest[$dependency["name"]]["module_data"]["version"];
+                        $depVer = self::$pkg_manifest[$dependency["name"]]["version"];
 
                         $cmp = 8 * ($depVer[0] <=> $minVer[0]);
                         $cmp += 4 * ($depVer[1] <=> $minVer[1]);
@@ -78,7 +78,7 @@ class Utilities
                         $depVerStr = implode(".", $depVer);
 
                         if ($cmp < 0) {
-                            echo "Module \"{$module_name}\" requires dependency \"{$dependency["name"]}\" to be at least version {$minVerStr}, ";
+                            echo "Package \"{$pkg_name}\" requires dependency \"{$dependency["name"]}\" to be at least version {$minVerStr}, ";
                             echo "and \"{$dependency["name"]}\" is only version {$depVerStr}<br />\n";
                             $missing_dependencies = true;
                             break;
@@ -88,7 +88,7 @@ class Utilities
                     }
 
                     if ($missing_dependencies) {
-                        unset(self::$pkg_manifest[$module_name]);
+                        unset(self::$pkg_manifest[$pkg_name]);
                         break;
                     }
                 }
