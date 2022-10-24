@@ -119,7 +119,7 @@ class Router
 
                 if ($template_segment_type == self::SEG_LITERAL) {
                     if ($path_segments[$i] != $template_segment) {
-                        echo 'Literal segment ' . $path_segments[$i] . ' didn\'t match template\'s ' . $template_segment . '<br />';
+                        //echo 'Literal segment ' . $path_segments[$i] . ' didn\'t match template\'s ' . $template_segment . '<br />';
                         return false;
                     }
 
