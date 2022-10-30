@@ -37,7 +37,7 @@ class Utilities
                     $manifest = json_decode(file_get_contents($searchDir . "/" . $fileinfo->getFilename() . "/manifest.json"), true);
 
                     self::$pkg_manifest[$fileinfo->getFilename()] = $manifest;
-                    self::$pkg_manifest[$fileinfo->getFilename()]["dependencies"]["has_dependent"] = false;
+                    self::$pkg_manifest[$fileinfo->getFilename()]["has_dependent"] = false;
                 }
             }
 
@@ -64,7 +64,7 @@ class Utilities
                             break;
                         }
 
-                        self::$pkg_manifest[$dependency["name"]]["dependencies"]["has_dependent"] = true;
+                        self::$pkg_manifest[$dependency["name"]]["has_dependent"] = true;
 
                         $minVer = $dependency["min_version"];
                         $depVer = self::$pkg_manifest[$dependency["name"]]["version"];
