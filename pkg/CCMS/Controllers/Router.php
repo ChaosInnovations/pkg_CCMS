@@ -4,6 +4,7 @@ namespace Package\CCMS\Controllers;
 
 use Exception;
 use Package\CCMS\Extensions\Route;
+use Package\CCMS\Extensions\RoutePrefix;
 use Package\CCMS\Models\HTTP\Method;
 use Package\CCMS\Utilities;
 use ReflectionClass;
@@ -37,7 +38,7 @@ class Router
             $class = new ReflectionClass($c);
 
             $route_prefix_segments = [];
-            $class_attributes = $class->getAttributes(RoutesPrefix::class);
+            $class_attributes = $class->getAttributes(RoutePrefix::class);
             foreach ($class_attributes as $class_attribute) {
                 $route_prefix = $class_attribute->newInstance();
                 $prefix = $route_prefix->pathPrefix;
