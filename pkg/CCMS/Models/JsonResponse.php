@@ -21,6 +21,7 @@ class JsonResponse extends Response
             'message' => $error_message,
             'code' => $error_code,
         ];
+        $headers['Content-Type'] = 'application/json; charset=utf-8';
         parent::__construct(json_encode($json), true, $status, $headers);
     }
 }
