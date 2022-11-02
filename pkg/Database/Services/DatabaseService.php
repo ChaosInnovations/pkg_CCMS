@@ -4,6 +4,7 @@ namespace Package\Database\Services;
 
 use Package\Database\Controllers\IDatabaseProvider;
 use Package\Database\Controllers\MySQLDatabaseProvider;
+use PDO;
 
 class DatabaseService
 {
@@ -60,4 +61,13 @@ class DatabaseService
 
         return true;
     }
+
+    public static function GetAvailableDrivers() : array {
+        return PDO::getAvailableDrivers();
+    }
+
+    public static function CheckDriver(string $driver) : bool {
+        return in_array($driver, PDO::getAvailableDrivers());
+    }
+
 }
