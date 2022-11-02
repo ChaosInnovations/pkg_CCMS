@@ -5,6 +5,7 @@ namespace Package\Database\Services;
 use Package\Database\Controllers\IDatabaseProvider;
 use Package\Database\Controllers\MySQLDatabaseProvider;
 use PDO;
+use PDOException;
 
 class DatabaseService
 {
@@ -70,4 +71,26 @@ class DatabaseService
         return in_array($driver, PDO::getAvailableDrivers());
     }
 
+    public static function CheckHost(string $driver, string $host) : bool {
+        $dsn = "{$driver}:host={$host}";
+        if ($driver == 'sqlite') {
+            // for sqlite, the "host" should be the path to the SQLite 3 database.
+            $dsn = "sqlite:{$host}";
+        }
+        try {
+            $p = new PDO($dsn);
+            $p->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            // if there wasn't an error, then this is probably an sqlite or similar that doesn't use a username/password
+            // or: the username/password could have been injected at the end of $host - in thi case, the lack of an error
+            // would still indicate a valid host/path.
+            return true;
+        } catch(PDOException $e) {
+            // check that error message only indicates that the user/password is incorrect.
+            // any other error, the driver is wrong or the database host is not accessible.
+            if ($driver == 'mysql' && $e->errorInfo[1] == 1045) {
+                return true;
+            }
+            return false;
+        }
+    }
 }
