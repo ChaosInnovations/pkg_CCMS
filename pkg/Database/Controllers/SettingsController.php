@@ -11,6 +11,9 @@ use Package\CCMS\Models\Response;
 #[RoutePrefix('api/database/settings')]
 class SettingsController extends BaseController
 {
+    private function UserHasPermission(string $permission) : bool {
+        return true;
+    }
     #[Route(Method::POST, 'validatehost')]
     public function ValidateHost() : Response {
         // if database has already been configured and not logged in as admin, return 404
