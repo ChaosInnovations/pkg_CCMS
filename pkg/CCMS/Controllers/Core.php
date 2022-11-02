@@ -3,6 +3,8 @@
 namespace Package\CCMS\Controllers;
 
 use \Exception;
+use Package\CCMS\Models\HTTP\StatusCode;
+use Package\CCMS\Models\JsonResponse;
 use \Package\CCMS\Models\Request;
 use \Package\CCMS\Models\Response;
 use \Package\CCMS\Utilities;
@@ -69,7 +71,18 @@ class Core
             try {
                 $result = $controller->$method_name();
             } catch (Exception $e) {
-                $response->append(new Response($e));
+                $response->append(new JsonResponse(
+                    [
+                        'exception' => [
+                            'message' => $e->getMessage(),
+                            'code' => $e->getCode(),
+                            'controller' => $matched_route['controller_class'],
+                            'method' => $method_name,
+                        ],
+                    ],
+                    StatusCode::InternalServerError,
+                    "An exception occurred while executing a route handler."
+                ));
             }
 
             if ($result instanceof Response) {

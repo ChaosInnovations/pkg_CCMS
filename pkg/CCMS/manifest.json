@@ -1,8 +1,8 @@
 {
     "name":"CCMS",
     "description":"CCMS Core framework",
-    "version":[2, 0, 0, 5],
-    "release_date":"2022-10-31",
+    "version":[2, 0, 0, 6],
+    "release_date":"2022-11-01",
     "author": {
         "name":"Thomas Boland",
         "email":"thomas@tbcsvcs.ca",
