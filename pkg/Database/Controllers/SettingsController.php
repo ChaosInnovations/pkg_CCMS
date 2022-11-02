@@ -124,12 +124,112 @@ class SettingsController extends BaseController
     #[Route(Method::POST, 'validateuser')]
     public function ValidateUser() : Response {
         // if database has already been configured and not logged in as admin, return 404
+        if (DatabaseService::Instance()->CheckConfiguration() && $this->UserHasPermission("database:admin")) {
+            return new Response(
+                status: StatusCode::NotFound
+            );
+        }
+
+        // validate args
+        if (!isset($this->request->Args['driver'])) {
+            // missing argument
+            // return response with code 400 (Bad Request)
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'driver',
+                            'description' => 'Database driver name',
+                            'message' => 'Argument is missing.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are missing.'
+            );
+        }
+
+        if (!isset($this->request->Args['host'])) {
+            // missing argument
+            // return response with code 400 (Bad Request)
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'host',
+                            'description' => 'Database host',
+                            'message' => 'Argument is missing.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: "One or more arguments are missing."
+            );
+        }
+
+        if (!DatabaseService::CheckDriver($this->request->Args['driver'])) {
+            // invalid driver argument
+            // return response with code 400 (Bad Request)
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'driver',
+                            'description' => 'Database driver name',
+                            'message' => 'Selected driver is not supported.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
+
+        if (!DatabaseService::CheckHost($this->request->Args['driver'], $this->request->Args['host'])) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'host',
+                            'description' => 'Database host',
+                            'message' => 'Host not accessible.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
+
+        $username = $this->request->Args['username'] ?? null;
+        $password = $this->request->Args['password'] ?? null;
 
         // check if this is a valid user/password on the selected host
+        $privileges = DatabaseService::GetPrivileges(
+            $this->request->Args['driver'],
+            $this->request->Args['host'],
+            $username,
+            $password,
+        );
 
-        // check that this database user has sufficient privileges
+        if ($privileges === false) {
+            return new JsonResponse(
+                data: [
+                    'databaseusercheck' => [
+                        'valid' => false,
+                    ],
+                ],
+                status: StatusCode::OK,
+            );
+        }
         
-        // additionally, check whether user has sufficient privileges to create a new database
+        // return list of user's privileges
+        return new JsonResponse(
+            data: [
+                'databaseusercheck' => $privileges,
+            ],
+            status: StatusCode::OK,
+        );
     }
 
     #[Route(Method::POST, 'getdatabases')]

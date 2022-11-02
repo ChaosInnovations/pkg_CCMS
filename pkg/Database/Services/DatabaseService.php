@@ -93,4 +93,33 @@ class DatabaseService
             return false;
         }
     }
+
+    public static function GetPrivileges(string $driver, string $host, ?string $username, ?string $password) : bool|array {
+        $dsn = "{$driver}:host={$host}";
+        if ($driver == 'sqlite') {
+            // for sqlite, the "host" should be the path to the SQLite 3 database.
+            $dsn = "sqlite:{$host}";
+            // additionally, the sqlite driver does not require authentication.
+            return ['valid'=>true];
+        }
+        try {
+            $p = new PDO($dsn, $username, $password);
+            $p->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            if ($driver == 'mysql') {
+                $stmt = $p->query('SHOW GRANTS FOR CURRENT_USER;');
+                $grants = $stmt->fetchAll();
+                // explicitly set whether user can create new databases:
+                foreach ($grants as $grant) {
+                    if (strpos($grant[0], "GRANT ALL PRIVILEGES ON *.*") === 0) {
+                        return ['valid'=>true,'cancreatedb'=>true];
+                    }
+                }
+                return ['valid'=>true,'cancreatedb'=>false];
+            }
+            return ['valid'=>true];
+        } catch(PDOException $e) {
+            echo $e->getMessage();
+            return false;
+        }
+    }
 }
