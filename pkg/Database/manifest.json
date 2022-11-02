@@ -1,30 +1,21 @@
 {
-    "module_data": {
-        "name":"Database",
-        "description":"Manage connections to the database",
-        "type":"Module",
-        "version":[1, 0, 0, 1],
-        "release_date":"2019-06-23",
-        "author": {
-            "name":"Thomas Boland",
-            "email":"hello@thomasboland.me",
-            "website":"http://ccms.thomasboland.me"
-        }
+    "name":"Database",
+    "description":"Manage connections to a database",
+    "type":"Module",
+    "version":[2, 0, 0, 2],
+    "release_date":"2022-11-01",
+    "author": {
+        "name":"Thomas Boland",
+        "email":"thomas@tbcsvcs.ca",
+        "website":"https://tbcsvcs.ca/ccms"
     },
 
-    "dependencies": {
-        "libraries": [
-            {"name":"CCMS", "min_version":[1, 9, 1, 0]}
-        ],
-        "modules": [
-            {"name":"Bootstrap", "min_version":[4, 1, 1, 0]},
-            {"name":"FontAwesome", "min_version":[5, 0, 13, 0]},
-            {"name":"JQuery", "min_version":[3, 3, 1, 0]},
-            {"name":"PopperJS", "min_version":[1, 0, 0, 0]}
-        ]
-    },
+    "dependencies": [
+        {"name":"CCMS", "min_version":[2, 0, 0, 0]}
+    ],
 
-    "routes": [
-        {"rank":100, "hook":"/.*/", "target":"\\Package\\Database::hookOpenConnection", "description":"Connect to Database"}
+    "controllers": [
+        "\\Package\\Database\\Controllers\\SetupController",
+        "\\Package\\Database\\Controllers\\SettingsController"
     ]
 }
