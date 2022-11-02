@@ -25,15 +25,7 @@ class DatabaseService
     private $connectionStatus = "";
     
     public function __construct() {
-        if (!file_exists(dirname(__FILE__, 2) . '/config.json')) {
-            $this->connectionStatus = "Configuration file missing";
-            return;
-        }
-
-        $raw_config = file_get_contents(dirname(__FILE__, 2) . '/config.json');
-        $this->config = json_decode($raw_config, true);
-        if (json_last_error() != JSON_ERROR_NONE) {
-            $this->config = [];
+        if (!$this->CheckConfiguration()) {
             return;
         }
 
@@ -51,5 +43,21 @@ class DatabaseService
 
     public function IsConnectionOpen() : bool {
         return $this->connectionOpen;
+    }
+
+    public function CheckConfiguration() : bool {
+        if (!file_exists(dirname(__FILE__, 2) . '/config.json')) {
+            $this->connectionStatus = "Configuration file missing";
+            return false;
+        }
+
+        $raw_config = file_get_contents(dirname(__FILE__, 2) . '/config.json');
+        $this->config = json_decode($raw_config, true);
+        if (json_last_error() != JSON_ERROR_NONE) {
+            $this->config = [];
+            return false;
+        }
+
+        return true;
     }
 }
