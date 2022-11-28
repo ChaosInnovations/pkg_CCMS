@@ -164,6 +164,32 @@ class DatabaseService
         }
     }
 
+    public static function CreateDatabase(string $driver, string $host, ?string $username, ?string $password, string $database) : bool {
+        $dsn = "{$driver}:host={$host}";
+        if ($driver == 'sqlite') {
+            // for sqlite, the "host" should be the path to the SQLite 3 database.
+            $dsn = "sqlite:{$host}";
+            // additionally, the sqlite driver does not require authentication.
+            return ['valid'=>true];
+        }
+        try {
+            $p = new PDO($dsn, $username, $password);
+            $p->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            if ($driver == 'mysql') {
+                $stmt = $p->query('SHOW GRANTS FOR CURRENT_USER;');
+                $grants = $stmt->fetchAll();
+                // explicitly set whether user can create new databases:
+                foreach ($grants as $grant) {
+                    if (strpos($grant[0], 'GRANT ALL PRIVILEGES ON *.*') === 0) {
+                        $stmt = $p->prepare("CREATE DATABASE IF NOT EXISTS {$database};");
+                        $stmt->execute();
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return false;
+        } catch(PDOException $e) {
             echo $e->getMessage();
             return false;
         }
