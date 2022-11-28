@@ -204,7 +204,6 @@ class DatabaseService
             }
             return false;
         } catch(PDOException $e) {
-            echo $e->getMessage();
             return false;
         }
     }
