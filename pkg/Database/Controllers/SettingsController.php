@@ -15,7 +15,7 @@ use Package\Database\Services\DatabaseService;
 class SettingsController extends BaseController
 {
     private function UserHasPermission(string $permission) : bool {
-        return true;
+        return false;
     }
 
     #[Route(Method::POST, 'getdrivers')]
