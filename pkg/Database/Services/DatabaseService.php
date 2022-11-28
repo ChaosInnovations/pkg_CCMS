@@ -27,7 +27,7 @@ class DatabaseService
     private $connectionStatus = "";
     
     public function __construct() {
-        if (!$this->CheckConfiguration()) {
+        if (!$this->LoadConfiguration()) {
             return;
         }
 
@@ -47,7 +47,7 @@ class DatabaseService
         return $this->connectionOpen;
     }
 
-    public function CheckConfiguration() : bool {
+    public function LoadConfiguration() : bool {
         if (!file_exists(dirname(__FILE__, 2) . '/config.json')) {
             $this->connectionStatus = "Configuration file missing";
             return false;

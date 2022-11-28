@@ -19,7 +19,7 @@ class SetupController extends BaseController
     #[Route(Method::GET, 'setup')]
     public function SetupStart() : Response {
         // check if we should do startup flow, otherwise return empty Response
-        if (DatabaseService::Instance()->CheckConfiguration()) {
+        if (DatabaseService::Instance()->LoadConfiguration()) {
             return Response::GetEmpty();
         }
 
