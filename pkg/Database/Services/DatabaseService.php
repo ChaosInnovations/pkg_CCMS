@@ -63,6 +63,20 @@ class DatabaseService
         return true;
     }
 
+    public static function UpdateConfiguration(string $driver, string $host, ?string $username, ?string $password, ?string $database) {
+        $config = [
+            'driver' => $driver,
+            'host' => $host,
+            'username' => $username,
+            'password' => $password,
+            'database' => $database,
+        ];
+
+        file_put_contents(dirname(__FILE__, 2) . '/config.json', json_encode($config));
+
+        // if the database configuration is being changed, should database content be migrated?
+    }
+
     public static function GetAvailableDrivers() : array {
         return PDO::getAvailableDrivers();
     }
