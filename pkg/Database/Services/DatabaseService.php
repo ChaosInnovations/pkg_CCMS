@@ -118,6 +118,52 @@ class DatabaseService
             }
             return ['valid'=>true];
         } catch(PDOException $e) {
+            return false;
+        }
+    }
+
+    public static function GetDatabases(string $driver, string $host, ?string $username, ?string $password) : bool|array {
+        $dsn = "{$driver}:host={$host}";
+        if ($driver == 'sqlite') {
+            // for sqlite, the "host" should be the path to the SQLite 3 database.
+            $dsn = "sqlite:{$host}";
+            // additionally, the sqlite driver only has a single database per file connection.
+            return [];
+        }
+        try {
+            $p = new PDO($dsn, $username, $password);
+            $p->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            if ($driver == 'mysql') {$stmt = $p->query('SHOW GRANTS FOR CURRENT_USER;');
+                $grants = $stmt->fetchAll();
+                // check where user has all privileges
+                $dbsWithPrivileges = [];
+                foreach ($grants as $grant) {
+                    if (strpos($grant[0], "GRANT ALL PRIVILEGES ON") === 0) {
+                        $matches = [];
+                        if (!preg_match("/(?<= )(`.*`|\*)(?=\.\*)/", $grant[0], $matches)) {
+                            continue;
+                        }
+                        $match = trim($matches[0], '`');
+                        if ($match == '*') {
+                            $stmt = $p->query('SHOW DATABASES;');
+                            $dbs = $stmt->fetchAll();
+                            $allDbs = [];
+                            foreach ($dbs as $db) {
+                                array_push($allDbs, $db['Database']);
+                            }
+                            return $allDbs;
+                        }
+                        array_push($dbsWithPrivileges, $match);
+                    }
+                }
+                return $dbsWithPrivileges;
+            }
+            return [];
+        } catch(PDOException $e) {
+            return false;
+        }
+    }
+
             echo $e->getMessage();
             return false;
         }
