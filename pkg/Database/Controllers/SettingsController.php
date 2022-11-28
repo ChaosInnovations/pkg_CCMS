@@ -235,8 +235,131 @@ class SettingsController extends BaseController
     #[Route(Method::POST, 'getdatabases')]
     public function GetDatabases() : Response {
         // if database has already been configured and not logged in as admin, return 404
+        if (DatabaseService::Instance()->LoadConfiguration() && !$this->UserHasPermission("database:admin")) {
+            return new Response(
+                status: StatusCode::NotFound
+            );
+        }
+
+        // validate args
+        if (!isset($this->request->Args['driver'])) {
+            // missing argument
+            // return response with code 400 (Bad Request)
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'driver',
+                            'description' => 'Database driver name',
+                            'message' => 'Argument is missing.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are missing.'
+            );
+        }
+
+        if (!isset($this->request->Args['host'])) {
+            // missing argument
+            // return response with code 400 (Bad Request)
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'host',
+                            'description' => 'Database host',
+                            'message' => 'Argument is missing.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: "One or more arguments are missing."
+            );
+        }
+
+        if (!DatabaseService::CheckDriver($this->request->Args['driver'])) {
+            // invalid driver argument
+            // return response with code 400 (Bad Request)
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'driver',
+                            'description' => 'Database driver name',
+                            'message' => 'Selected driver is not supported.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
+
+        if (!DatabaseService::CheckHost($this->request->Args['driver'], $this->request->Args['host'])) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'host',
+                            'description' => 'Database host',
+                            'message' => 'Host not accessible.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
+
+        $username = $this->request->Args['username'] ?? null;
+        $password = $this->request->Args['password'] ?? null;
+
+        // check if this is a valid user/password on the selected host
+        $privileges = DatabaseService::GetPrivileges(
+            $this->request->Args['driver'],
+            $this->request->Args['host'],
+            $username,
+            $password,
+        );
+
+        if ($privileges === false) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'username',
+                            'description' => 'Database username.',
+                            'message' => 'The username or password is incorrect.',
+                        ],
+                        [
+                            'name' => 'password',
+                            'description' => 'Database user password.',
+                            'message' => 'The username or password is incorrect.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
 
         // get a list of databases which this user has privileges on
+        // can't be false because that would mean the user is invalid, which we've already checked.
+        $databases = DatabaseService::GetDatabases(
+            $this->request->Args['driver'],
+            $this->request->Args['host'],
+            $username,
+            $password,
+        );
+
+        // return list of databases
+        return new JsonResponse(
+            data: [
+                'availabledatabases' => $databases,
+            ],
+            status: StatusCode::OK,
+        );
     }
 
     #[Route(Method::POST, 'configure')]
