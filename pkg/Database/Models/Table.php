@@ -15,4 +15,9 @@ class Table
         $this->dbp = $dbp;
         $this->tableName = $tableName;
     }
+
+    public function Exists() : bool {
+        // should also categorize whether this is actually a table, view, or information_schema
+        return $this->dbp->TableExists($this->tableName);
+    }
 }
