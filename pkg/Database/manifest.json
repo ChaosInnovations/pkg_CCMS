@@ -16,6 +16,7 @@
 
     "controllers": [
         "\\Package\\Database\\Controllers\\SetupController",
-        "\\Package\\Database\\Controllers\\SettingsController"
+        "\\Package\\Database\\Controllers\\SettingsController",
+        "\\Package\\Database\\Controllers\\TestObjectController"
     ]
 }
