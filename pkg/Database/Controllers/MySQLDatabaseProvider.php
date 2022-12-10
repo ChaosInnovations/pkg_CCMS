@@ -39,4 +39,12 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
 
         return true;
     }
+
+    public function TableExists(string $tableName): bool
+    {
+        $stmt = $this->prepare("SELECT(IF(EXISTS(SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :dbname AND TABLE_NAME = :tblname),1,0))");
+        $stmt->execute(['dbname'=>$this->database,'tblname'=>$tableName]);
+        $res = $stmt->fetchAll();
+        return $res[0][0] == 1;
+    }
 }
