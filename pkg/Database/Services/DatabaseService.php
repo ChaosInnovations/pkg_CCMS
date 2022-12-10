@@ -9,7 +9,7 @@ use PDOException;
 
 class DatabaseService
 {
-    private IDatabaseProvider $databaseProvider;
+    public IDatabaseProvider $databaseProvider;
 
     // Singleton pattern
     private static null|DatabaseService $instance = null;
