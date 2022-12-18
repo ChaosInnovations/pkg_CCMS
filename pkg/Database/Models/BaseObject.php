@@ -36,7 +36,19 @@ class BaseObject
         //  -> how to handle migrations/future versions where class name changes?
         //  --> in the existing migration methods, such a class could just manually run the queries to change the
         //       table name.
-        return 't_' . md5(get_called_class());
+
+        // should probably have the option to set a name manually via the [#TableStructue] attribute
+        $name = 't_' . md5(get_called_class());
+
+        $class = new ReflectionClass(get_called_class());
+        $class_attributes = $class->getAttributes(TableName::class);
+        if (count($class_attributes) == 1) {
+            /** @var TableName */
+            $tableName = $class_attributes[0]->newInstance();
+            $name = $tableName->tableName;
+        }
+
+        return $name;
     }
 
     protected function UpdateOrCreateEntry() : bool {
