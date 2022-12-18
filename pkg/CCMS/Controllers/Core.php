@@ -71,7 +71,7 @@ class Core
             try {
                 $result = $controller->$method_name();
             } catch (Exception $e) {
-                $response->append(new JsonResponse(
+                $result = new JsonResponse(
                     [
                         'exception' => [
                             'message' => $e->getMessage(),
@@ -82,7 +82,7 @@ class Core
                     ],
                     StatusCode::InternalServerError,
                     "An exception occurred while executing a route handler."
-                ));
+                );
             }
 
             if ($result instanceof Response) {
