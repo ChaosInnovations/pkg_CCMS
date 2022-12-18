@@ -2,6 +2,7 @@
 
 namespace Package\Database\Controllers;
 
+use Package\Database\Models\Type;
 use PDO;
 use PDOException;
 
@@ -46,5 +47,29 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
         $stmt->execute(['dbname'=>$this->database,'tblname'=>$tableName]);
         $res = $stmt->fetchAll();
         return $res[0][0] == 1;
+    }
+
+    public static function ConvertToSQLType(string $phpType) : Type {
+        $type = Type::TEXT;
+        switch ($phpType) {
+            case 'bool':
+                $type = Type::BOOLEAN;
+                break;
+            case 'int':
+                $type = Type::INT;
+                break;
+            case 'float':
+                $type = Type::DOUBLE;
+                break;
+            case 'string':
+                $type = Type::TEXT;
+                break;
+            case 'DateTime':
+                $type = Type::DATETIME;
+                break;
+            default:
+                echo $phpType;
+        }
+        return $type;
     }
 }

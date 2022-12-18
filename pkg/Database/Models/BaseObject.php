@@ -3,7 +3,11 @@
 namespace Package\Database\Models;
 
 use Package\Database\Controllers\IDatabaseProvider;
+use Package\Database\Extensions\TableColumn;
+use Package\Database\Extensions\TableForeignKey;
 use Package\Database\Extensions\TableName;
+use Package\Database\Extensions\TablePrimaryKey;
+use Package\Database\Models\TableColumn as ModelsTableColumn;
 use Package\Database\Services\DatabaseService;
 use ReflectionClass;
 
@@ -13,7 +17,7 @@ class BaseObject
 
     protected static function getTable() : Table {
         if (!self::$table instanceof Table) {
-            self::$table  = new Table(self::getDbi(), self::getTableName());
+            self::$table = new Table(self::getDbi(), self::getTableName(), self::getColumns());
         }
 
         return self::$table;
@@ -53,8 +57,80 @@ class BaseObject
         return $name;
     }
 
-    protected function UpdateOrCreateEntry() : bool {
-        return false;
+    private static function getColumns() : array {
+        // test table structure
+        $class = new ReflectionClass(get_called_class());
+
+        $columns = [];
+
+        foreach ($class->getProperties() as $property) {
+            $method_attributes = $property->getAttributes(TableColumn::class);
+            $method_pk_attributes = $property->getAttributes(TablePrimaryKey::class);
+            $method_fk_attributes = $property->getAttributes(TableForeignKey::class);
+            $isPrimaryKey = count($method_pk_attributes) == 1;
+            
+            if (count($method_attributes) != 1) {
+                continue;
+            }
+
+            /** @var TableColumn */
+            $tableColumn = $method_attributes[0]->newInstance();
+
+            $column_name = $tableColumn->columnName;
+            $ai = $tableColumn->autoIncrement;
+            $sqlType = $tableColumn->sqlType;
+            $phpType = $property->getType()->getName();
+            $property_name = $property->getName();
+            $foreignKey = false;
+            $foreignKeyTable = null;
+            $foreignKeyColumnName = null;
+            $fkOnUpdate = ReferenceBehaviour::RESTRICT;
+            $fkOnDelete = ReferenceBehaviour::RESTRICT;
+
+            if ($sqlType === null) {
+                if (is_subclass_of($phpType, self::class)) {
+                    // sql type should be the type of the primary key in the other class
+                    // also need a FOREIGN KEY constraint
+                    /** @var Table */
+                    $foreignTable = $phpType::getTable();
+                    $foreignColumn = $foreignTable->GetPrimaryKeyColumn();
+                    $sqlType = $foreignColumn->columnType;
+                    $foreignKey = true;
+                    $foreignKeyTable = $foreignTable->tableName;
+                    $foreignKeyColumnName = $foreignColumn->columnName;
+                    if (count($method_fk_attributes) == 1) {
+                        /** @var TableForeignKey */
+                        $fkAttr = $method_fk_attributes[0]->newInstance();
+                        $fkOnUpdate = $fkAttr->onUpdate;
+                        $fkOnDelete = $fkAttr->onDelete;
+                    }
+                } else {
+                    $sqlType = self::getDbi()->ConvertToSQLType($phpType);
+                }
+            }
+
+            $columns[$column_name] = new ModelsTableColumn(
+                $column_name,
+                $property_name,
+                $sqlType,
+                $phpType,
+                $ai,
+                $isPrimaryKey,
+                $foreignKey,
+                $foreignKeyTable,
+                $foreignKeyColumnName,
+                $fkOnUpdate,
+                $fkOnDelete,
+            );
+            
+            // if the property type is another BaseObject, then that column's data should be the other
+            // BaseObject's id and the column should have a constraint/relation to the other BaseObject's
+            // id column.
+        }
+
+        //print_r($columns);
+        return $columns;
+    }
     }
 
     protected function LoadEntry() : bool {
