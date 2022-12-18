@@ -106,7 +106,7 @@ class TestObjectController extends BaseController
 
     #[Route(Method::POST, 'create')]
     #[Route(Method::POST, 'update')]
-    #[Route(Method::POST, 'update/{id}')]
+    #[Route(Method::POST, '{id}/update')]
     public function CreateOrUpdateObject() : Response {
         if (!$this->ServerInTestMode()) {
             return new Response(
@@ -131,10 +131,14 @@ class TestObjectController extends BaseController
         $object->bool = $bool;
         
         $object->Save();
+
+        return new JsonResponse(
+            status: StatusCode::OK,
+        );
     }
 
     #[Route(Method::POST, 'remove')]
-    #[Route(Method::POST, 'remove/{id}')]
+    #[Route(Method::POST, '{id}/remove')]
     public function RemoveObject() : Response {
         if (!$this->ServerInTestMode()) {
             return new Response(
@@ -146,5 +150,9 @@ class TestObjectController extends BaseController
         
         $object = new TestObject('a',1,1.2,false);
         $object->Delete();
+
+        return new JsonResponse(
+            status: StatusCode::OK,
+        );
     }
 }
