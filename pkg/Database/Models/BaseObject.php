@@ -3,7 +3,9 @@
 namespace Package\Database\Models;
 
 use Package\Database\Controllers\IDatabaseProvider;
+use Package\Database\Extensions\TableName;
 use Package\Database\Services\DatabaseService;
+use ReflectionClass;
 
 class BaseObject
 {
