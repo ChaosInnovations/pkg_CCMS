@@ -115,13 +115,16 @@ class TestObjectController extends BaseController
         }
         // validate parameters
         $name = $this->request->Args['name'];
-        $float = $this->request->Args['name'];
-        $int = $this->request->Args['name'];
-        $bool = $this->request->Args['name'];
+        $float = $this->request->Args['float'];
+        $int = $this->request->Args['int'];
+        $bool = $this->request->Args['bool'];
 
         // first, search for existing object with id (if provided)
-        $object = TestObject::LoadFromId($this->request->Args['id']);
-        if ($object === null) {
+        $object = null;
+        if (isset($this->request->Args['id'])) {
+            $object = TestObject::LoadFromId($this->request->Args['id']);
+        }
+        if ($object == null) {
             // if none found:
             $object = new TestObject($name, $int, $float, $bool);
         }
@@ -147,9 +150,28 @@ class TestObjectController extends BaseController
         }
 
         // find existing object with id (if provided)
-        
-        $object = new TestObject('a',1,1.2,false);
-        $object->Delete();
+        if (!isset($this->request->Args['id'])) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'id',
+                            'description' => 'TestObject ID',
+                            'message' => 'Argument not provided.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are mising.'
+            );
+        }
+
+        // first, search for existing object with id (if provided)
+        $object = TestObject::LoadFromId($this->request->Args['id']);
+
+        if ($object != null) {
+            $object->Delete();
+        }
 
         return new JsonResponse(
             status: StatusCode::OK,
