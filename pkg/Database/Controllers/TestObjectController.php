@@ -55,6 +55,55 @@ class TestObjectController extends BaseController
         );
     }
 
+    #[Route(Method::GET, '{id}')]
+    public function GetObject() : Response {
+        if (!$this->ServerInTestMode()) {
+            return new Response(
+                status: StatusCode::NotFound
+            );
+        }
+
+        if (!isset($this->request->Args['id'])) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'id',
+                            'description' => 'TestObject ID',
+                            'message' => 'Argument not provided.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are mising.'
+            );
+        }
+
+        // first, search for existing object with id (if provided)
+        $object = TestObject::LoadFromId($this->request->Args['id']);
+
+        // get array of all objects
+        $serializedObjects = [];
+        if ($object !== null) {
+            $serializedObjects[] = [
+                'id' => $object->id,
+                'insertedTime' => $object->insertedTime,
+                'updatedTime' => $object->updatedTime,
+                'name' => $object->name,
+                'int' => $object->int,
+                'float' => $object->float,
+                'bool' => $object->bool
+            ];
+        }
+
+        return new JsonResponse(
+            data: [
+                'testobjects' => $serializedObjects,
+            ],
+            status: StatusCode::OK,
+        );
+    }
+
     #[Route(Method::POST, 'create')]
     #[Route(Method::POST, 'update')]
     #[Route(Method::POST, 'update/{id}')]
