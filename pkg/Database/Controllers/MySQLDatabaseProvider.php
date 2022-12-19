@@ -86,6 +86,36 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
         return [];
     }
 
+    public function Insert(string $tableName, array $data) : void {
+        $columnsString = implode(',', array_keys($data));
+        $valuePlaceholdersString = implode(',', array_map(fn($v):string=>':'.$v,array_keys($data)));
+        $stmt = $this->prepare("INSERT INTO ".$tableName." (".$columnsString.") VALUES (".$valuePlaceholdersString.")");
+        try {
+            $stmt->execute($data);
+        } catch (PDOException $e) {
+            if ($e->errorInfo[0] == '42S02') {
+                throw new TableNotFoundException($e->getMessage(), 0);
+            } else {
+                throw $e;
+            }
+        }
+    }
+
+    public function InsertOrUpdate(string $tableName, $data, $primaryKeyName) : void {
+        $columnsString = implode(',', array_keys($data));
+        $valuePlaceholdersString = implode(',', array_map(fn($k):string=>':'.$k,array_keys($data)));
+        $updateValuesPlaceholderString = implode(',', array_map(fn($k):string=>$k.'=:'.$k,array_filter(array_keys($data),fn($k)=>$k!=$primaryKeyName)));
+        $stmt = $this->prepare("INSERT INTO ".$tableName." (".$columnsString.") VALUES (".$valuePlaceholdersString.") ON DUPLICATE KEY UPDATE ".$updateValuesPlaceholderString);
+        try {
+            $stmt->execute($data);
+        } catch (PDOException $e) {
+            if ($e->errorInfo[0] == '42S02') {
+                throw new TableNotFoundException($e->getMessage(), 0);
+            } else {
+                throw $e;
+            }
+        }
+    }
     static private function getColumnSQL(TableColumn $col) : string {
         // column_name [def] [PRIMARY KEY|FOREIGN KEY]
         $s = $col->columnName.' '.$col->columnType->value;

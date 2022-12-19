@@ -9,6 +9,9 @@ interface IDatabaseProvider
     public function CreateTableIfNotExists(string $tableName, array $columns);
     // Methods for manipulating table data
     public function Select(string $tableName, array $columns, null|Where $where, $order, $limit) : array;
+    public function Insert(string $tableName, array $data) : void;
+    //public function Update(string $tableName, $data, $columns, $where, $order, $limit);
+    public function InsertOrUpdate(string $tableName, array $data, string $primaryKeyName) : void;
 
     // Helper methods
     public static function ConvertToSQLType(string $phpType) : Type;

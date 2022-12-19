@@ -3,7 +3,8 @@
 namespace Package\Database\Models;
 
 use Package\Database\Controllers\IDatabaseProvider;
-use Package\Database\Services\DatabaseService;
+use Package\Database\Extensions\TableNotFoundException;
+use Package\Database\Extensions\Where;
 
 class Table
 {
@@ -80,5 +81,46 @@ class Table
         }
         
         return $results;
+    }
+    
+    public function Insert(array $data) {
+        /*[
+            'column_name' => value,
+            'column_name2' => value2,
+        ]*/
+
+        foreach ($data as $key => $value) {
+            if (is_subclass_of($this->columns[$key]->propertyType, BaseObject::class)) {
+                $data[$key] = $value->GetPrimaryKeyColumn();
+            } else if ($this->columns[$key]->propertyType == 'DateTime') {
+                $data[$key] = $value->format('c');
+            }
+        }
+
+        try {
+            $this->dbp->Insert($this->tableName, $data);
+        } catch (TableNotFoundException) {
+            $this->CreateTable();
+            $this->dbp->Insert($this->tableName, $data);
+        }
+    }
+    
+    //public function Update($data, $where, $order, $limit);
+    
+    public function InsertOrUpdate($data) {
+        foreach ($data as $key => $value) {
+            if (is_subclass_of($this->columns[$key]->propertyType, BaseObject::class)) {
+                $data[$key] = $value->GetPrimaryKeyColumn();
+            } else if ($this->columns[$key]->propertyType == 'DateTime') {
+                $data[$key] = $value->format('c');
+            }
+        }
+
+        try {
+            $this->dbp->InsertOrUpdate($this->tableName, $data, $this->GetPrimaryKeyColumn()->columnName);
+        } catch (TableNotFoundException) {
+            $this->CreateTable();
+            $this->dbp->InsertOrUpdate($this->tableName, $data, $this->GetPrimaryKeyColumn()->columnName);
+        }
     }
 }
