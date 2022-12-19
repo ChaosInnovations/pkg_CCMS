@@ -49,7 +49,13 @@ class DatabaseService
     public function __construct(string $configurationKey='primary') {
         $config = self::LoadConfiguration($configurationKey);
         if ($config == false) {
-            throw new InvalidConfigurationException("Configuration '{$configurationKey}' couldn't be loaded.", 1);
+            if ($configurationKey != 'primary') {
+                throw new InvalidConfigurationException("Configuration '{$configurationKey}' couldn't be loaded.", 1);
+            }
+
+            // if primary not configured yet, set default.sqlite3 as the default.
+            self::UpdateConfiguration('sqlite', 'default.sqlite3', null, null, null, $configurationKey);
+            $config = self::LoadConfiguration($configurationKey);
         }
 
         $this->databaseProvider = self::GetDatabaseProvider(

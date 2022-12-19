@@ -22,7 +22,7 @@ class SettingsController extends BaseController
     public function GetDrivers() : Response
     {
         // if database has already been configured and not logged in as admin, return 404
-        if (DatabaseService::IsPrimaryConnected() && !$this->UserHasPermission("database:admin")) {
+        if (!DatabaseService::IsPrimaryConnected() || !$this->UserHasPermission("database:admin")) {
             return new Response(
                 status: StatusCode::NotFound
             );
@@ -40,7 +40,7 @@ class SettingsController extends BaseController
     #[Route(Method::POST, 'validatehost')]
     public function ValidateHost() : Response {
         // if database has already been configured and not logged in as admin, return 404
-        if (DatabaseService::IsPrimaryConnected() && !$this->UserHasPermission("database:admin")) {
+        if (!DatabaseService::IsPrimaryConnected() || !$this->UserHasPermission("database:admin")) {
             return new Response(
                 status: StatusCode::NotFound
             );
@@ -124,7 +124,7 @@ class SettingsController extends BaseController
     #[Route(Method::POST, 'validateuser')]
     public function ValidateUser() : Response {
         // if database has already been configured and not logged in as admin, return 404
-        if (DatabaseService::IsPrimaryConnected() && !$this->UserHasPermission("database:admin")) {
+        if (!DatabaseService::IsPrimaryConnected() || !$this->UserHasPermission("database:admin")) {
             return new Response(
                 status: StatusCode::NotFound
             );
@@ -235,7 +235,7 @@ class SettingsController extends BaseController
     #[Route(Method::POST, 'getdatabases')]
     public function GetDatabases() : Response {
         // if database has already been configured and not logged in as admin, return 404
-        if (DatabaseService::IsPrimaryConnected() && !$this->UserHasPermission("database:admin")) {
+        if (!DatabaseService::IsPrimaryConnected() || !$this->UserHasPermission("database:admin")) {
             return new Response(
                 status: StatusCode::NotFound
             );
@@ -365,7 +365,7 @@ class SettingsController extends BaseController
     #[Route(Method::POST, 'configure')]
     public function SaveConfiguration() : Response {
         // if database has already been configured and not logged in as admin, return 404
-        if (DatabaseService::IsPrimaryConnected() && !$this->UserHasPermission("database:admin")) {
+        if (!DatabaseService::IsPrimaryConnected() || !$this->UserHasPermission("database:admin")) {
             return new Response(
                 status: StatusCode::NotFound
             );
