@@ -62,4 +62,19 @@ class Table
 
         return null;
     }
+
+    public function Select(array $columns=null, $where=null, $order=null, $limit=null) {
+        if ($columns == null) {
+            $columns = $this->columns;
+        }
+
+        try {
+            $results = $this->dbp->Select($this->tableName, $columns, $where, $order, $limit);
+        } catch (TableNotFoundException) {
+            $this->CreateTable();
+            $results = $this->dbp->Select($this->tableName, $columns, $where, $order, $limit);
+        }
+        
+        return $results;
+    }
 }

@@ -2,6 +2,9 @@
 
 namespace Package\Database\Controllers;
 
+use Package\Database\Extensions\TableNotFoundException;
+use Package\Database\Extensions\Where;
+use Package\Database\Models\TableColumn;
 use Package\Database\Models\Type;
 use PDO;
 use PDOException;
@@ -41,7 +44,7 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
         return true;
     }
 
-    public function TableExists(string $tableName): bool
+    public function TableExists(string $tableName) : bool
     {
         $stmt = $this->prepare("SELECT(IF(EXISTS(SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :dbname AND TABLE_NAME = :tblname),1,0))");
         $stmt->execute(['dbname'=>$this->database,'tblname'=>$tableName]);
@@ -49,6 +52,22 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
         return $res[0][0] == 1;
     }
 
+
+    public function Select(string $tableName, array $columns, null|Where $where, $order, $limit) : array {
+        $columnsString = implode(',',array_map(fn($col):string=>$col->columnName,$columns));
+        $stmt = $this->prepare("SELECT ".$columnsString." FROM ".$tableName.($where==null?"":" ".$where->GetParameterizedQueryString()));
+        try {
+            $stmt->execute($where==null?[]:$where->GetParameters());
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            if ($e->errorInfo[0] == '42S02') {
+                throw new TableNotFoundException($e->getMessage(), 0);
+            } else {
+                throw $e;
+            }
+        }
+        return [];
+    }
     public static function ConvertToSQLType(string $phpType) : Type {
         $type = Type::TEXT;
         switch ($phpType) {
