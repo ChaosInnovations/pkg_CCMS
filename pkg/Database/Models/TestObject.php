@@ -5,21 +5,29 @@ namespace Package\Database\Models;
 use DateTime;
 use DateTimeZone;
 use Package\Database\Extensions\TableColumn;
+use Package\Database\Extensions\TablePrimaryKey;
+use Package\Database\Extensions\TableName;
 
+#[TableName('test_object')]
 class TestObject extends BaseObject {
-    #[TableColumn('object_id', autoIncrement:true)]
+    #[TableColumn('id', autoIncrement:true)]
+    #[TablePrimaryKey]
     public null|int $id = null;
-    #[TableColumn('object_inserted')]
+    public function getId() : int { return $this->id; }
+    
+    #[TableColumn('inserted')]
     public null|DateTime $insertedTime = null;
-    #[TableColumn('object_updated')]
+    public function getInsertedTime() : DateTime { return $this->insertedTime; }
+
+    #[TableColumn('updated')]
     public null|DateTime $updatedTime = null;
-    #[TableColumn('object_name')]
+    #[TableColumn('name')]
     public string $name;
-    #[TableColumn('object_int')]
+    #[TableColumn('obj_int')]
     public int $int;
-    #[TableColumn('object_float')]
+    #[TableColumn('obj_float')]
     public float $float;
-    #[TableColumn('object_bool')]
+    #[TableColumn('obj_bool')]
     public bool $bool;
 
     public bool $isNew = false;
