@@ -48,6 +48,11 @@ class Table
         // should also categorize whether this is actually a table, view, or information_schema
         return $this->dbp->TableExists($this->tableName);
     }
+
+    public function HasColumn(string $columnName) : bool {
+        return false;
+    }
+
     public function GetPrimaryKeyColumn() : null|TableColumn {
         foreach ($this->columns as $column) {
             if ($column->primaryKey) {
