@@ -14,9 +14,9 @@ use ReflectionClass;
 
 class BaseObject
 {
-    protected static null|Table $table = null;
+    protected static ?Table $table = null;
 
-    protected static function getTable() : Table {
+    protected static function getTable() : ?Table {
         if (!self::$table instanceof Table) {
             self::$table = new Table(self::getDbi(), self::getTableName(), self::getColumns());
         }
@@ -29,7 +29,11 @@ class BaseObject
         
     }
 
-    private static function getDbi() : IDatabaseProvider {
+    private static function getDbi() : ?IDatabaseProvider {
+        if (!DatabaseService::IsPrimaryConnected()) {
+            return null;
+        }
+
         return DatabaseService::Instance()->databaseProvider;
     }
 
@@ -105,8 +109,10 @@ class BaseObject
                         $fkOnUpdate = $fkAttr->onUpdate;
                         $fkOnDelete = $fkAttr->onDelete;
                     }
-                } else {
+                } else if (DatabaseService::IsPrimaryConnected()) {
                     $sqlType = self::getDbi()->ConvertToSQLType($phpType);
+                } else {
+                    $sqlType = Type::TEXT;
                 }
             }
 
@@ -133,7 +139,7 @@ class BaseObject
         return $columns;
     }
 
-    public static function CastFromRow(array $row) {
+    public static function CastFromRow(array $row) : mixed {
         // get columns
         $columns = self::getTable()->GetColumns();
 
@@ -178,7 +184,7 @@ class BaseObject
         return $this->{$pkColumn->propertyName};
     }
 
-    protected function UpdateOrCreateEntry() : void {
+    protected function UpdateOrCreateEntry() : bool {
         $data = [];
         foreach (self::getTable()->GetColumns() as $column) {
             if ($this->{$column->propertyName} === null) {
@@ -186,11 +192,11 @@ class BaseObject
             }
             $data[$column->columnName] = $this->{$column->propertyName};
         }
-        self::getTable()->InsertOrUpdate($data);
+        return self::getTable()->InsertOrUpdate($data);
     }
 
-    protected function DeleteEntry() : void {
-        self::getTable()->DeleteId($this->GetPrimaryKeyValue());
+    protected function DeleteEntry() : bool {
+        return self::getTable()->DeleteId($this->GetPrimaryKeyValue());
     }
     
     // functions for creating database table if it doesn't yet exist, and

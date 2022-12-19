@@ -5,6 +5,7 @@ namespace Package\Database\Services;
 use Package\Database\Controllers\IDatabaseProvider;
 use Package\Database\Controllers\MySQLDatabaseProvider;
 use Package\Database\Extensions\Exceptions\HostNotFoundException;
+use Package\Database\Extensions\Exceptions\InvalidConfigurationException;
 use Package\Database\Extensions\Exceptions\InvalidUserException;
 use PDO;
 use PDOException;
@@ -16,12 +17,24 @@ class DatabaseService
     // Singleton pattern
     private static null|DatabaseService $instance = null;
     
-    public static function Instance() : DatabaseService {
+    public static function Instance() : ?DatabaseService {
         if (!self::$instance instanceof DatabaseService) {
-            self::$instance = new static();
+            try {
+                self::$instance = new static();
+            } catch (InvalidConfigurationException) {
+                self::$instance = null;
+            } catch (HostNotFoundException) {
+                self::$instance = null;
+            } catch (InvalidUserException) {
+                self::$instance = null;
+            }
         }
         
         return self::$instance;
+    }
+
+    public static function IsPrimaryConnected() : bool {
+        return (self::Instance() instanceof DatabaseService && self::Instance()->IsConnectionOpen());
     }
 
     private array $config;
@@ -31,20 +44,22 @@ class DatabaseService
         'mysql' => MySQLDatabaseProvider::class,
     ];
     
-    public function __construct() {
-        if (!$this->LoadConfiguration()) {
-            return;
+    public function __construct(string $configurationKey='primary') {
+        $config = self::LoadConfiguration($configurationKey);
+        if ($config == false) {
+            throw new InvalidConfigurationException("Configuration '{$configurationKey}' couldn't be loaded.", 1);
         }
 
         $this->databaseProvider = self::GetDatabaseProvider(
-            $this->config['driver'],
-            $this->config['host'],
-            $this->config['database'],
-            $this->config['username'],
-            $this->config['password'],
+            $config['driver'],
+            $config['host'],
+            $config['database'],
+            $config['username'],
+            $config['password'],
         );
+
         if (!($this->databaseProvider instanceof IDatabaseProvider)) {
-            return;
+            throw new InvalidConfigurationException("Configuration \"{$configurationKey}\" is invalid.", 2);
         }
 
         $this->connectionOpen = $this->databaseProvider->OpenConnection();
@@ -63,32 +78,38 @@ class DatabaseService
         return $this->connectionOpen;
     }
 
-    public function LoadConfiguration() : bool {
+    public static function LoadConfiguration(string $configurationKey) : bool|array {
         if (!file_exists(dirname(__FILE__, 2) . '/config.json')) {
-            $this->connectionStatus = "Configuration file missing";
             return false;
         }
 
         $raw_config = file_get_contents(dirname(__FILE__, 2) . '/config.json');
+        /** @var array[] */
         $c = json_decode($raw_config, true);
         if (json_last_error() != JSON_ERROR_NONE) {
-            $this->config = [];
             return false;
         }
-        $this->config = $c['primary'];
 
-        return true;
+        return $c[$configurationKey]??[];
     }
 
-    public static function UpdateConfiguration(string $driver, string $host, ?string $username, ?string $password, ?string $database) {
-        $config = [
-            'primary' =>[
-                'driver' => $driver,
-                'host' => $host,
-                'username' => $username,
-                'password' => $password,
-                'database' => $database,
-            ],
+    public static function UpdateConfiguration(string $driver, string $host, ?string $username, ?string $password, ?string $database, string $configurationKey='primary') {
+        $config = [];
+
+        if (file_exists(dirname(__FILE__, 2) . '/config.json')) {
+            $raw_config = file_get_contents(dirname(__FILE__, 2) . '/config.json');
+            $config = json_decode($raw_config, true);
+            if (json_last_error() != JSON_ERROR_NONE) {
+                $config = [];
+            }
+        }
+
+        $config[$configurationKey] = [
+            'driver' => $driver,
+            'host' => $host,
+            'username' => $username,
+            'password' => $password,
+            'database' => $database,
         ];
 
         file_put_contents(dirname(__FILE__, 2) . '/config.json', json_encode($config));

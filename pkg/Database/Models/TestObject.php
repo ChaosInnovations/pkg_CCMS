@@ -45,7 +45,7 @@ class TestObject extends BaseObject {
         return new TestObject("",0,0.0,false);
     }
 
-    public static function LoadFromId(int $id) : TestObject|null {
+    public static function LoadFromId(int $id) : ?TestObject {
         // 1. need to run a query like:
         //     SELECT * FROM [tablename] WHERE [idcolumnname] = [id];
         $table = self::getTable();
@@ -76,17 +76,17 @@ class TestObject extends BaseObject {
         return array_map(fn($row)=>self::CastFromRow($row), $results);
     }
 
-    public function Save() : void {
+    public function Save() : bool {
         $now = new DateTime(timezone:new DateTimeZone('UTC'));
         $this->updatedTime = $now;
         if ($this->insertedTime === null) {
             $this->insertedTime = $now;
         }
 
-        $this->UpdateOrCreateEntry();
+        return $this->UpdateOrCreateEntry();
     }
 
-    public function Delete() : void {
-        $this->DeleteEntry();
+    public function Delete() : bool {
+        return $this->DeleteEntry();
     }
 }

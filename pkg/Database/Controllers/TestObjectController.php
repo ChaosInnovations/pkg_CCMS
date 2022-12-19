@@ -133,7 +133,13 @@ class TestObjectController extends BaseController
         $object->float = $float;
         $object->bool = $bool;
         
-        $object->Save();
+        if (!$object->Save()) {
+            return new JsonResponse(
+                null,
+                StatusCode::InternalServerError,
+                "There was a problem with the database."
+            );
+        }
 
         return new JsonResponse(
             status: StatusCode::OK,
@@ -169,8 +175,12 @@ class TestObjectController extends BaseController
         // first, search for existing object with id (if provided)
         $object = TestObject::LoadFromId($this->request->Args['id']);
 
-        if ($object != null) {
-            $object->Delete();
+        if ($object != null && !$object->Delete()) {
+            return new JsonResponse(
+                null,
+                StatusCode::InternalServerError,
+                "There was a problem with the database."
+            );
         }
 
         return new JsonResponse(
