@@ -79,7 +79,7 @@ class TestObject extends BaseObject {
     public function Save() : void {
         $now = new DateTime(timezone:new DateTimeZone('UTC'));
         $this->updatedTime = $now;
-        if ($this->isNew) {
+        if ($this->insertedTime === null) {
             $this->insertedTime = $now;
         }
 
