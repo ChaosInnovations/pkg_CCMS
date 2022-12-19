@@ -59,6 +59,9 @@ class TestObject extends BaseObject {
         return self::CastFromRow($results[0]);
     }
 
+    /**
+     * @return TestObject[]
+     */
     public static function GetAll() : array {
         // 1. need to run a query like:
         //     SELECT * FROM [tablename];
@@ -66,14 +69,11 @@ class TestObject extends BaseObject {
         //      self::table->dbi->query($query, $params) to run the query
         //      directly)
         $table = self::getTable();
-        //var_dump($table->tableName);
-        //var_dump($table->Exists());
+        $results = $table->Select();
         // 3. 'cast' each result to an instance of TestObject
         // 4. return array of instances
 
-        $testObjects = [];
-        $testObjects[] = new TestObject('1',1,1.1,false);
-        return $testObjects;
+        return array_map(fn($row)=>self::CastFromRow($row), $results);
     }
 
     public function Save() : void {
