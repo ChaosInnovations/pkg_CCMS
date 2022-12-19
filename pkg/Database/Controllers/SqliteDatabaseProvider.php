@@ -87,7 +87,7 @@ class SqliteDatabaseProvider extends PDO implements IDatabaseProvider
             $stmt->execute($where==null?[]:$where->GetParameters());
             return $stmt->fetchAll();
         } catch (PDOException $e) {
-            if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 1) {
+            if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 1 && str_contains($e->errorInfo[2], 'no such table')) {
                 throw new TableNotFoundException($e->getMessage(), 0);
             } else {
                 throw $e;
@@ -103,7 +103,7 @@ class SqliteDatabaseProvider extends PDO implements IDatabaseProvider
             $stmt = $this->prepare("INSERT INTO ".$tableName." (".$columnsString.") VALUES (".$valuePlaceholdersString.")");
             $stmt->execute($data);
         } catch (PDOException $e) {
-            if ($e->errorInfo[0] == '42S02') {
+            if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 1 && str_contains($e->errorInfo[2], 'no such table')) {
                 throw new TableNotFoundException($e->getMessage(), 0);
             } else {
                 throw $e;
@@ -123,7 +123,7 @@ class SqliteDatabaseProvider extends PDO implements IDatabaseProvider
                 $stmt->execute($data);
             }            
         } catch (PDOException $e) {
-            if ($e->errorInfo[0] == '42S02') {
+            if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 1 && str_contains($e->errorInfo[2], 'no such table')) {
                 throw new TableNotFoundException($e->getMessage(), 0);
             } else {
                 throw $e;
@@ -136,7 +136,7 @@ class SqliteDatabaseProvider extends PDO implements IDatabaseProvider
             $stmt = $this->prepare("DELETE FROM ".$tableName.($where==null?"":" ".$where->GetParameterizedQueryString()));
             $stmt->execute($where==null?[]:$where->GetParameters());
         } catch (PDOException $e) {
-            if ($e->errorInfo[0] == '42S02') {
+            if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 1 && str_contains($e->errorInfo[2], 'no such table')) {
                 throw new TableNotFoundException($e->getMessage(), 0);
             } else {
                 throw $e;
