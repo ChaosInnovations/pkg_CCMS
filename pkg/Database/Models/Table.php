@@ -21,6 +21,27 @@ class Table
         $this->dbp = $dbp;
         $this->tableName = $tableName;
         $this->columns = $columns;
+        
+
+        // Need to compare local column structure and server column structure.
+        // If there is a mis-match, need to create table or alter/add table columns to reconcile
+        // differences could be:
+        // Server is missing column(s)
+        // Server has extra column(s)
+        // Columns out of order
+        // Column(s) have wrong type or other attributes
+        // Table-level attributes don't match (collation, storage engine, partition)
+        
+        // There would be a performance impact if the above is checked on
+        //  every request and every time an object's Table is instantiated.
+        //  This should only be checked if necessary:
+        //   - Operate using just the local column representation unless an error is
+        //     encountered that would suggest there is a structure mis-match. We
+        //     should try to automatically reconcile (only in cases where we need to
+        //     create a new table or add a new column), otherwise throw an error
+        //     (the calling controller should return a 500 response) and save a log
+        //     entry with details. We should not delete or alter column structures
+        //     automatically due to the risk of unintentional data loss.
     }
 
     public function Exists() : bool {
