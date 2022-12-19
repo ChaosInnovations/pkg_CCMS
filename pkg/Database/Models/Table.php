@@ -123,4 +123,17 @@ class Table
             $this->dbp->InsertOrUpdate($this->tableName, $data, $this->GetPrimaryKeyColumn()->columnName);
         }
     }
+
+    public function DeleteId(mixed $id) {
+        $this->Delete((new Where())->Equal($this->GetPrimaryKeyColumn()->columnName, $id), null, null);
+    }
+    
+    public function Delete(Where $where, $order, $limit) {
+        try {
+            $this->dbp->Delete($this->tableName, $where, $order, $limit);
+        } catch (TableNotFoundException) {
+            $this->CreateTable();
+            $this->dbp->Delete($this->tableName, $where, $order, $limit);
+        }
+    }
 }

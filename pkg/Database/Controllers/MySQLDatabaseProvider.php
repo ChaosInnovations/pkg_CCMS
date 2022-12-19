@@ -116,6 +116,20 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
             }
         }
     }
+
+    public function Delete(string $tableName, Where $where, $order, $limit) : void {
+        $stmt = $this->prepare("DELETE FROM ".$tableName.($where==null?"":" ".$where->GetParameterizedQueryString()));
+        try {
+            $stmt->execute($where==null?[]:$where->GetParameters());
+        } catch (PDOException $e) {
+            if ($e->errorInfo[0] == '42S02') {
+                throw new TableNotFoundException($e->getMessage(), 0);
+            } else {
+                throw $e;
+            }
+        }
+    }
+
     static private function getColumnSQL(TableColumn $col) : string {
         // column_name [def] [PRIMARY KEY|FOREIGN KEY]
         $s = $col->columnName.' '.$col->columnType->value;

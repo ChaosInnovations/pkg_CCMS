@@ -2,6 +2,9 @@
 
 namespace Package\Database\Controllers;
 
+use Package\Database\Extensions\Where;
+use Package\Database\Models\Type;
+
 interface IDatabaseProvider
 {
     public function OpenConnection() : bool;
@@ -12,6 +15,7 @@ interface IDatabaseProvider
     public function Insert(string $tableName, array $data) : void;
     //public function Update(string $tableName, $data, $columns, $where, $order, $limit);
     public function InsertOrUpdate(string $tableName, array $data, string $primaryKeyName) : void;
+    public function Delete(string $tableName, Where $where, $order, $limit) : void;
 
     // Helper methods
     public static function ConvertToSQLType(string $phpType) : Type;
