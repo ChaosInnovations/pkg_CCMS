@@ -1,6 +1,6 @@
 <?php
 
-namespace Package\Database\Extensions;
+namespace Package\Database\Extensions\Exceptions;
 
 use Exception;
 use Throwable;
