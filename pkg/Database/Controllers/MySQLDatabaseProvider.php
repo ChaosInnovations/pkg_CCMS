@@ -2,7 +2,9 @@
 
 namespace Package\Database\Controllers;
 
-use Package\Database\Extensions\TableNotFoundException;
+use Package\Database\Extensions\Exceptions\HostNotFoundException;
+use Package\Database\Extensions\Exceptions\InvalidUserException;
+use Package\Database\Extensions\Exceptions\TableNotFoundException;
 use Package\Database\Extensions\Where;
 use Package\Database\Models\TableColumn;
 use Package\Database\Models\Type;
@@ -12,13 +14,11 @@ use PDOException;
 class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
 {
     private string $host;
-    private string $database;
-    private string $username;
-    private string $password;
+    private ?string $database;
+    private ?string $username;
+    private ?string $password;
 
-    private string $connectionStatus;
-
-    public function __construct(string $host, string $database, string $username, string $password) {
+    public function __construct(string $host, ?string $database, ?string $username, ?string $password) {
         $this->host = $host;
         $this->database = $database;
         $this->username = $username;
@@ -37,10 +37,62 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
             );
             $this->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch(PDOException $e) {
-            $this->connectionStatus = $e->getMessage();
+            if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 2002) {
+                throw new HostNotFoundException($e->getMessage(), 0);
+            }
+            if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 1045) {
+                throw new InvalidUserException($e->getMessage(), 0);
+            }
             return false;
         }
 
+        return true;
+    }
+
+    /** @return string[] */
+    private function GetUserGrants(?string $username=null) : array {
+        $stmt = $this->prepare('SHOW GRANTS FOR '.($username??'CURRENT_USER'));
+        $stmt->execute();
+        $grants = $stmt->fetchAll();
+        return array_map(fn($g)=>$g[0],$grants);
+    }
+
+    public function CanCreateDatabases(?string $username=null) : bool {
+        $grants = $this->GetUserGrants($username);
+        foreach ($grants as $grant) {
+            if (strpos($grant, "GRANT ALL PRIVILEGES ON *.*") === 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function GetDatabases() : array {
+        $grants = $this->GetUserGrants();
+        // check where user has all privileges
+        $dbsWithPrivileges = [];
+        foreach ($grants as $grant) {
+            if (strpos($grant, "GRANT ALL PRIVILEGES ON") === 0) {
+                $matches = [];
+                if (!preg_match("/(?<= )(`.*`|\*)(?=\.\*)/", $grant, $matches)) {
+                    continue;
+                }
+                $match = trim($matches[0], '`');
+                if ($match == '*') {
+                    $stmt = $this->prepare('SHOW DATABASES;');
+                    $stmt->execute();
+                    $dbs = $stmt->fetchAll();
+                    return array_map(fn($d)=>$d['Database'],$dbs);
+                }
+                array_push($dbsWithPrivileges, $match);
+            }
+        }
+        return $dbsWithPrivileges;
+    }
+
+    public function CreateDatabase(string $database) : bool {
+        $stmt = $this->prepare("CREATE DATABASE IF NOT EXISTS {$database};");
+        $stmt->execute();
         return true;
     }
 

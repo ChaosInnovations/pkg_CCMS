@@ -7,8 +7,13 @@ use Package\Database\Models\Type;
 
 interface IDatabaseProvider
 {
+    public function __construct(string $host, ?string $database, ?string $username, ?string $password);
     // Methods for opening/checking host/user/connection
     public function OpenConnection() : bool;
+    public function CanCreateDatabases(?string $username=null) : bool;
+    /** @return string[] */
+    public function GetDatabases() : array;
+    public function CreateDatabase(string $database) : bool;
 
     // Methods for manipulating tables
     public function TableExists(string $tableName) : bool;

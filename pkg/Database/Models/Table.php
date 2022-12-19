@@ -3,7 +3,7 @@
 namespace Package\Database\Models;
 
 use Package\Database\Controllers\IDatabaseProvider;
-use Package\Database\Extensions\TableNotFoundException;
+use Package\Database\Extensions\Exceptions\TableNotFoundException;
 use Package\Database\Extensions\Where;
 
 class Table
