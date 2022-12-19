@@ -4,6 +4,7 @@ namespace Package\Database\Services;
 
 use Package\Database\Controllers\IDatabaseProvider;
 use Package\Database\Controllers\MySQLDatabaseProvider;
+use Package\Database\Controllers\SqliteDatabaseProvider;
 use Package\Database\Extensions\Exceptions\HostNotFoundException;
 use Package\Database\Extensions\Exceptions\InvalidConfigurationException;
 use Package\Database\Extensions\Exceptions\InvalidUserException;
@@ -42,6 +43,7 @@ class DatabaseService
 
     private static array $databaseProviders = [
         'mysql' => MySQLDatabaseProvider::class,
+        'sqlite' => SqliteDatabaseProvider::class,
     ];
     
     public function __construct(string $configurationKey='primary') {

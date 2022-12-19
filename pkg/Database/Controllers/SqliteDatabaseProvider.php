@@ -11,97 +11,55 @@ use Package\Database\Models\Type;
 use PDO;
 use PDOException;
 
-class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
+class SqliteDatabaseProvider extends PDO implements IDatabaseProvider
 {
-    private string $host;
-    private ?string $database;
-    private ?string $username;
-    private ?string $password;
+    private string $file;
 
     public function __construct(string $host, ?string $database, ?string $username, ?string $password) {
-        $this->host = $host;
-        $this->database = $database;
-        $this->username = $username;
-        $this->password = $password;
-
-        
+        $this->file = $host;
     }
 
     public function OpenConnection() : bool
     {
         try {
             parent::__construct(
-                "mysql:host=" . $this->host . ";dbname=" . $this->database,
-                $this->username,
-                $this->password,
+                "sqlite:" . $this->file
             );
             $this->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch(PDOException $e) {
-            if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 2002) {
-                throw new HostNotFoundException($e->getMessage(), 0);
-            }
-            if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 1045) {
-                throw new InvalidUserException($e->getMessage(), 0);
-            }
+            //if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 2002) {
+            //    throw new HostNotFoundException($e->getMessage(), 0);
+            //}
+            //if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 1045) {
+            //    throw new InvalidUserException($e->getMessage(), 0);
+            //}
             return false;
         }
 
         return true;
     }
 
-    /** @return string[] */
-    private function GetUserGrants(?string $username=null) : array {
-        $stmt = $this->prepare('SHOW GRANTS FOR '.($username??'CURRENT_USER'));
-        $stmt->execute();
-        $grants = $stmt->fetchAll();
-        return array_map(fn($g)=>$g[0],$grants);
-    }
-
     public function CanCreateDatabases(?string $username=null) : bool {
-        $grants = $this->GetUserGrants($username);
-        foreach ($grants as $grant) {
-            if (strpos($grant, "GRANT ALL PRIVILEGES ON *.*") === 0) {
-                return true;
-            }
-        }
-        return false;
+        // Sqlite doesn't have multiple databases in a file
+        return true;
     }
 
     public function GetDatabases() : array {
-        $grants = $this->GetUserGrants();
-        // check where user has all privileges
-        $dbsWithPrivileges = [];
-        foreach ($grants as $grant) {
-            if (strpos($grant, "GRANT ALL PRIVILEGES ON") === 0) {
-                $matches = [];
-                if (!preg_match("/(?<= )(`.*`|\*)(?=\.\*)/", $grant, $matches)) {
-                    continue;
-                }
-                $match = trim($matches[0], '`');
-                if ($match == '*') {
-                    $stmt = $this->prepare('SHOW DATABASES;');
-                    $stmt->execute();
-                    $dbs = $stmt->fetchAll();
-                    return array_map(fn($d)=>$d['Database'],$dbs);
-                }
-                array_push($dbsWithPrivileges, $match);
-            }
-        }
-        return $dbsWithPrivileges;
+        // Sqlite doesn't have multiple databases in a file
+        return [];
     }
 
     public function CreateDatabase(string $database) : bool {
-        $stmt = $this->prepare("CREATE DATABASE IF NOT EXISTS {$database};");
-        $stmt->execute();
+        // Sqlite doesn't have multiple databases in a file
         return true;
     }
 
     public function TableExists(string $tableName) : bool
     {
-        $stmt = $this->prepare("SELECT(IF(EXISTS(SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :dbname AND TABLE_NAME = :tblname),1,0))");
-        $stmt->execute(['dbname'=>$this->database,'tblname'=>$tableName]);
+        $stmt = $this->prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=':tblname'");
+        $stmt->execute(['tblname'=>$tableName]);
         $res = $stmt->fetchAll();
-        return $res[0][0] == 1;
+        return count($res) == 1;
     }
 
     /** @param TableColumn[] $columns */
@@ -124,12 +82,12 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
 
     public function Select(string $tableName, array $columns, null|Where $where, $order, $limit) : array {
         $columnsString = implode(',',array_map(fn($col):string=>$col->columnName,$columns));
-        $stmt = $this->prepare("SELECT ".$columnsString." FROM ".$tableName.($where==null?"":" ".$where->GetParameterizedQueryString()));
         try {
+            $stmt = $this->prepare("SELECT ".$columnsString." FROM ".$tableName.($where==null?"":" ".$where->GetParameterizedQueryString()));
             $stmt->execute($where==null?[]:$where->GetParameters());
             return $stmt->fetchAll();
         } catch (PDOException $e) {
-            if ($e->errorInfo[0] == '42S02') {
+            if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 1) {
                 throw new TableNotFoundException($e->getMessage(), 0);
             } else {
                 throw $e;
@@ -141,8 +99,8 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
     public function Insert(string $tableName, array $data) : void {
         $columnsString = implode(',', array_keys($data));
         $valuePlaceholdersString = implode(',', array_map(fn($v):string=>':'.$v,array_keys($data)));
-        $stmt = $this->prepare("INSERT INTO ".$tableName." (".$columnsString.") VALUES (".$valuePlaceholdersString.")");
         try {
+            $stmt = $this->prepare("INSERT INTO ".$tableName." (".$columnsString.") VALUES (".$valuePlaceholdersString.")");
             $stmt->execute($data);
         } catch (PDOException $e) {
             if ($e->errorInfo[0] == '42S02') {
@@ -154,12 +112,16 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
     }
 
     public function InsertOrUpdate(string $tableName, array $data, ?string $primaryKeyName) : void {
-        $columnsString = implode(',', array_keys($data));
+        $columnsString = implode(',', array_map(fn($k):string=>'`'.$k.'`',array_keys($data)));
         $valuePlaceholdersString = implode(',', array_map(fn($k):string=>':'.$k,array_keys($data)));
-        $updateValuesPlaceholderString = implode(',', array_map(fn($k):string=>$k.'=:'.$k,array_filter(array_keys($data),fn($k)=>$k!=$primaryKeyName)));
-        $stmt = $this->prepare("INSERT INTO ".$tableName." (".$columnsString.") VALUES (".$valuePlaceholdersString.") ON DUPLICATE KEY UPDATE ".$updateValuesPlaceholderString);
+        $updateValuesPlaceholderString = implode(',', array_map(fn($k):string=>'`'.$k.'`=:'.$k,array_filter(array_keys($data),fn($k)=>$k!=$primaryKeyName)));
         try {
+            $stmt = $this->prepare("INSERT OR IGNORE INTO ".$tableName." (".$columnsString.") VALUES (".$valuePlaceholdersString.")");
             $stmt->execute($data);
+            if ($primaryKeyName !== null) {
+                $stmt = $this->prepare("UPDATE ".$tableName." SET ".$updateValuesPlaceholderString." WHERE `".$primaryKeyName."`=:".$primaryKeyName);
+                $stmt->execute($data);
+            }            
         } catch (PDOException $e) {
             if ($e->errorInfo[0] == '42S02') {
                 throw new TableNotFoundException($e->getMessage(), 0);
@@ -170,8 +132,8 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
     }
 
     public function Delete(string $tableName, Where $where, $order, $limit) : void {
-        $stmt = $this->prepare("DELETE FROM ".$tableName.($where==null?"":" ".$where->GetParameterizedQueryString()));
         try {
+            $stmt = $this->prepare("DELETE FROM ".$tableName.($where==null?"":" ".$where->GetParameterizedQueryString()));
             $stmt->execute($where==null?[]:$where->GetParameters());
         } catch (PDOException $e) {
             if ($e->errorInfo[0] == '42S02') {
@@ -184,14 +146,14 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
 
     static private function getColumnSQL(TableColumn $col) : string {
         // column_name [def] [PRIMARY KEY|FOREIGN KEY]
-        $s = $col->columnName.' '.$col->columnType->value;
+        $s = $col->columnName.' '.self::getEquivalentType($col->columnType).(($col->autoIncrement&&$col->primaryKey)?' PRIMARY KEY AUTOINCREMENT':'');
         return $s;
     }
 
     static private function getConstraintSQL(TableColumn $col) : null|string {
         // column_name [def] [PRIMARY KEY|FOREIGN KEY]
         if ($col->primaryKey) {
-            return 'PRIMARY KEY ('.$col->columnName.')';
+            return null; //sqlite primary keys are declared inline.
         }
 
         if ($col->foreignKey) {
@@ -201,6 +163,14 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
         }
 
         return null;
+    }
+
+    public static function getEquivalentType(Type $type) : string {
+        if ($type == Type::INT) {
+            return "INTEGER";
+        }
+
+        return $type->value;
     }
 
     public static function ConvertToSQLType(string $phpType) : Type {
@@ -225,5 +195,6 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
                 echo $phpType;
         }
         return $type;
+        return Type::TEXT;
     }
 }
