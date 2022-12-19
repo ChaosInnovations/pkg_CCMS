@@ -2,8 +2,8 @@
     "name":"Database",
     "description":"Manage connections to a database",
     "type":"Module",
-    "version":[2, 0, 0, 2],
-    "release_date":"2022-11-01",
+    "version":[2, 0, 0, 3],
+    "release_date":"2022-12-18",
     "author": {
         "name":"Thomas Boland",
         "email":"thomas@tbcsvcs.ca",
