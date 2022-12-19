@@ -178,12 +178,19 @@ class BaseObject
         return $this->{$pkColumn->propertyName};
     }
 
-    protected function LoadEntry() : bool {
-        return false;
+    protected function UpdateOrCreateEntry() : void {
+        $data = [];
+        foreach (self::getTable()->GetColumns() as $column) {
+            if ($this->{$column->propertyName} === null) {
+                continue;
+            }
+            $data[$column->columnName] = $this->{$column->propertyName};
+        }
+        self::getTable()->InsertOrUpdate($data);
     }
 
-    protected function DeleteEntry() : bool {
-        return false;
+    protected function DeleteEntry() : void {
+        self::getTable()->DeleteId($this->GetPrimaryKeyValue());
     }
     
     // functions for creating database table if it doesn't yet exist, and
