@@ -52,6 +52,23 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
         return $res[0][0] == 1;
     }
 
+    /** @param TableColumn[] $columns */
+    public function CreateTableIfNotExists(string $tableName, array $columns) : void {
+        $columnStructureString = implode(',',array_map(function(TableColumn $col) {
+            return self::getColumnSQL($col);
+        },$columns));
+
+        $constraintStructureString = implode(',',array_map(function($col) {
+            return self::getConstraintSQL($col);
+        },array_filter($columns,fn(TableColumn $col)=>$col->primaryKey||$col->foreignKey)));
+
+        if ($constraintStructureString != '') {
+            $columnStructureString .= ','.$constraintStructureString;
+        }
+
+        $stmt = $this->prepare("CREATE TABLE IF NOT EXISTS ".$tableName." (".$columnStructureString.")");
+        $stmt->execute();
+    }
 
     public function Select(string $tableName, array $columns, null|Where $where, $order, $limit) : array {
         $columnsString = implode(',',array_map(fn($col):string=>$col->columnName,$columns));
@@ -68,6 +85,28 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
         }
         return [];
     }
+
+    static private function getColumnSQL(TableColumn $col) : string {
+        // column_name [def] [PRIMARY KEY|FOREIGN KEY]
+        $s = $col->columnName.' '.$col->columnType->value;
+        return $s;
+    }
+
+    static private function getConstraintSQL(TableColumn $col) : null|string {
+        // column_name [def] [PRIMARY KEY|FOREIGN KEY]
+        if ($col->primaryKey) {
+            return 'PRIMARY KEY ('.$col->columnName.')';
+        }
+
+        if ($col->foreignKey) {
+            $s = 'FOREIGN KEY ('.$col->columnName.') REFERENCES '.$col->foreignKeyTable.'.'.$col->foreignKeyColumnName;
+            $s .= ' ON UPDATE '.$col->foreignKeyOnUpdate->value.' ON DELETE '.$col->foreignKeyOnDelete->value;
+            return $s;
+        }
+
+        return null;
+    }
+
     public static function ConvertToSQLType(string $phpType) : Type {
         $type = Type::TEXT;
         switch ($phpType) {

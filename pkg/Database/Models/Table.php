@@ -63,6 +63,10 @@ class Table
         return null;
     }
 
+    public function CreateTable() {
+        $this->dbp->CreateTableIfNotExists($this->tableName, $this->columns);
+    }
+
     public function Select(array $columns=null, $where=null, $order=null, $limit=null) {
         if ($columns == null) {
             $columns = $this->columns;
