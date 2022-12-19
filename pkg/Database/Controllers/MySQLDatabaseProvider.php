@@ -124,8 +124,8 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
 
     public function Select(string $tableName, array $columns, null|Where $where, $order, $limit) : array {
         $columnsString = implode(',',array_map(fn($col):string=>$col->columnName,$columns));
-        $stmt = $this->prepare("SELECT ".$columnsString." FROM ".$tableName.($where==null?"":" ".$where->GetParameterizedQueryString()));
         try {
+            $stmt = $this->prepare("SELECT ".$columnsString." FROM ".$tableName.($where==null?"":" ".$where->GetParameterizedQueryString()));
             $stmt->execute($where==null?[]:$where->GetParameters());
             return $stmt->fetchAll();
         } catch (PDOException $e) {
@@ -141,8 +141,8 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
     public function Insert(string $tableName, array $data) : void {
         $columnsString = implode(',', array_keys($data));
         $valuePlaceholdersString = implode(',', array_map(fn($v):string=>':'.$v,array_keys($data)));
-        $stmt = $this->prepare("INSERT INTO ".$tableName." (".$columnsString.") VALUES (".$valuePlaceholdersString.")");
         try {
+            $stmt = $this->prepare("INSERT INTO ".$tableName." (".$columnsString.") VALUES (".$valuePlaceholdersString.")");
             $stmt->execute($data);
         } catch (PDOException $e) {
             if ($e->errorInfo[0] == '42S02') {
@@ -157,8 +157,8 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
         $columnsString = implode(',', array_keys($data));
         $valuePlaceholdersString = implode(',', array_map(fn($k):string=>':'.$k,array_keys($data)));
         $updateValuesPlaceholderString = implode(',', array_map(fn($k):string=>$k.'=:'.$k,array_filter(array_keys($data),fn($k)=>$k!=$primaryKeyName)));
-        $stmt = $this->prepare("INSERT INTO ".$tableName." (".$columnsString.") VALUES (".$valuePlaceholdersString.") ON DUPLICATE KEY UPDATE ".$updateValuesPlaceholderString);
         try {
+            $stmt = $this->prepare("INSERT INTO ".$tableName." (".$columnsString.") VALUES (".$valuePlaceholdersString.") ON DUPLICATE KEY UPDATE ".$updateValuesPlaceholderString);
             $stmt->execute($data);
         } catch (PDOException $e) {
             if ($e->errorInfo[0] == '42S02') {
@@ -170,8 +170,8 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
     }
 
     public function Delete(string $tableName, Where $where, $order, $limit) : void {
-        $stmt = $this->prepare("DELETE FROM ".$tableName.($where==null?"":" ".$where->GetParameterizedQueryString()));
         try {
+            $stmt = $this->prepare("DELETE FROM ".$tableName.($where==null?"":" ".$where->GetParameterizedQueryString()));
             $stmt->execute($where==null?[]:$where->GetParameters());
         } catch (PDOException $e) {
             if ($e->errorInfo[0] == '42S02') {
@@ -184,7 +184,7 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
 
     static private function getColumnSQL(TableColumn $col) : string {
         // column_name [def] [PRIMARY KEY|FOREIGN KEY]
-        $s = $col->columnName.' '.$col->columnType->value;
+        $s = $col->columnName.' '.$col->columnType->value.($col->autoIncrement?' AUTOINCREMENT':'');
         return $s;
     }
 
