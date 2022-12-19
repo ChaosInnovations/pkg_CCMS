@@ -2,6 +2,7 @@
 
 namespace Package\Database\Models;
 
+use DateTime;
 use Package\Database\Controllers\IDatabaseProvider;
 use Package\Database\Extensions\TableColumn;
 use Package\Database\Extensions\TableForeignKey;
@@ -131,6 +132,50 @@ class BaseObject
         //print_r($columns);
         return $columns;
     }
+
+    public static function CastFromRow(array $row) {
+        // get columns
+        $columns = self::getTable()->GetColumns();
+
+        // instantiate blank child class
+        $className = get_called_class();
+        $object = $className::Blank();
+        
+        foreach ($row as $columnName => $value) {
+
+            if (!isset($columns[$columnName])) {
+                continue;
+            }
+
+            $column = $columns[$columnName];
+
+            $sqlType = $column->columnType;
+            $phpType = $column->propertyType;
+            $propertyName = $column->propertyName;
+
+            $castValue = null;
+            if ($phpType == 'DateTime') {
+                $castValue = new DateTime($value.'+00:00');
+            } else {
+                $castValue = $value;
+            }
+
+            $object->SetProperty($propertyName, $castValue);
+        }
+
+        return $object;
+    }
+
+    public function SetProperty($propertyName, $value) {
+        $this->$propertyName = $value;
+    }
+
+    public function GetPrimaryKeyValue() {
+        $pkColumn = self::getTable()->GetPrimaryKeyColumn();
+        if ($pkColumn === null) {
+            return null;
+        }
+        return $this->{$pkColumn->propertyName};
     }
 
     protected function LoadEntry() : bool {

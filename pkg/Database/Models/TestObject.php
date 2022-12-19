@@ -36,6 +36,10 @@ class TestObject extends BaseObject {
         parent::__construct();
     }
 
+    public static function Blank() : TestObject {
+        return new TestObject("",0,0.0,false);
+    }
+
     public static function LoadFromId(int $id) : TestObject|null {
         // 1. need to run a query like:
         //     SELECT * FROM [tablename] WHERE [idcolumnname] = [id];
