@@ -1,2 +1,3 @@
 *.code-workspace
 pkg/Database/config.json
+*.sqlite3
