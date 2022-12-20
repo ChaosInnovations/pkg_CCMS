@@ -5,7 +5,7 @@ namespace Package\Pivel\Hydro2\Core;
 use \Package\Pivel\Hydro2\Core\Utilities;
 
 // Manually require Utilities.php because we don't have a working autoloader yet
-require_once $_SERVER["DOCUMENT_ROOT"]."/pkg/CCMS/Utilities.php";
+require_once $_SERVER["DOCUMENT_ROOT"]."/pkg/Pivel/Hydro2/Core/Utilities.php";
 
 class Autoloader
 {
@@ -75,9 +75,10 @@ class Autoloader
             return false;
         }
 
-        $pkg_name = explode("\\", $relative_class)[0];
+        $vendor_name = explode("\\", $relative_class)[0];
+        $pkg_name = explode("\\", $relative_class)[1];
 
-        if (!isset(Utilities::getPackageManifest()[$pkg_name])) {
+        if (!isset(Utilities::getPackageManifest()[$vendor_name][$pkg_name])) {
             echo "Couldn't load class \"{$prefix}{$relative_class}\" because package \"{$pkg_name}\" is either missing or has missing dependencies.<br />\n";
             return false;
         }

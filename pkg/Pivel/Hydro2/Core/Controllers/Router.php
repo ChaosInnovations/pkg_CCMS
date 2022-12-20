@@ -21,13 +21,15 @@ class Router
         // Get list of controllers from Utilities\getPackageManifest()
         $controllers = [];
         $pkg_manifest = Utilities::getPackageManifest();
-        foreach ($pkg_manifest as $pkg_name => $pkg_info) {
-            if (!isset($pkg_info['controllers'])) {
-                continue;
-            }
+        foreach ($pkg_manifest as $vendor_name => $vendor_pkg) {
+            foreach ($vendor_pkg as $pkg_name => $pkg_info) {
+                if (!isset($pkg_info['controllers'])) {
+                    continue;
+                }
 
-            foreach ($pkg_info['controllers'] as $c) {
-                $controllers[] = $c;//::class;
+                foreach ($pkg_info['controllers'] as $c) {
+                    $controllers[] = $c;//::class;
+                }
             }
         }
 

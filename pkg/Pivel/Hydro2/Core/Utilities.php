@@ -18,26 +18,37 @@ class Utilities
         
             foreach ($pkgDirs as $searchDir) {
                 $dir = new DirectoryIterator($searchDir);
-                foreach ($dir as $fileinfo) {
-                    if ($fileinfo->isDot()) {
+                foreach ($dir as $vendorDir) {
+                    if ($vendorDir->isDot()) {
                         continue;
                     }
-                    if (!$fileinfo->isDir()) {
+                    if (!$vendorDir->isDir()) {
                         continue;
                     }
-                
-                    if (!file_exists($searchDir . "/" . $fileinfo->getFilename() . "/manifest.json")) {
-                        continue;
-                    }
-                
-                    if (!is_file($searchDir . "/" . $fileinfo->getFilename() . "/manifest.json")) {
-                        continue;
-                    }
-                
-                    $manifest = json_decode(file_get_contents($searchDir . "/" . $fileinfo->getFilename() . "/manifest.json"), true);
 
-                    self::$pkg_manifest[$fileinfo->getFilename()] = $manifest;
-                    self::$pkg_manifest[$fileinfo->getFilename()]["has_dependent"] = false;
+                    self::$pkg_manifest[$vendorDir->getFilename()] = [];
+                    $vdir = new DirectoryIterator($vendorDir->getPath().'/'.$vendorDir->getFilename());
+                    foreach ($vdir as $fileinfo) {
+                        if ($fileinfo->isDot()) {
+                            continue;
+                        }
+                        if (!$fileinfo->isDir()) {
+                            continue;
+                        }
+                    
+                        if (!file_exists($fileinfo->getPath().'/'.$fileinfo->getFilename()."/manifest.json")) {
+                            continue;
+                        }
+                    
+                        if (!is_file($fileinfo->getPath().'/'.$fileinfo->getFilename()."/manifest.json")) {
+                            continue;
+                        }
+                    
+                        $manifest = json_decode(file_get_contents($fileinfo->getPath().'/'.$fileinfo->getFilename()."/manifest.json"), true);
+    
+                        self::$pkg_manifest[$vendorDir->getFilename()][$fileinfo->getFilename()] = $manifest;
+                        self::$pkg_manifest[$vendorDir->getFilename()][$fileinfo->getFilename()]["has_dependent"] = false;
+                    }
                 }
             }
 
@@ -48,48 +59,50 @@ class Utilities
             // Check dependencies
             $missing_dependencies = false;
             do {
-                foreach (self::$pkg_manifest as $pkg_name => $pkg_info) {
-                    //echo $module_name . '<br />';
-                    //var_dump($module_info['dependencies']);
-                    $dependencies = $pkg_info["dependencies"];
-                    if (count($dependencies) === 0) {
-                        $missing_dependencies = false;
-                        continue;
-                    }
-
-                    foreach ($dependencies as $index => $dependency) {
-                        if (!isset(self::$pkg_manifest[$dependency["name"]])) {
-                            echo "Module \"{$pkg_name}\" missing dependency \"{$dependency["name"]}\"<br />\n";
-                            $missing_dependencies = true;
-                            break;
+                foreach (self::$pkg_manifest as $vendor_name => $vendor_pkgs) {
+                    foreach ($vendor_pkgs as $pkg_name => $pkg_info) {
+                        //echo $module_name . '<br />';
+                        //var_dump($module_info['dependencies']);
+                        $dependencies = $pkg_info["dependencies"];
+                        if (count($dependencies) === 0) {
+                            $missing_dependencies = false;
+                            continue;
                         }
 
-                        self::$pkg_manifest[$dependency["name"]]["has_dependent"] = true;
+                        foreach ($dependencies as $index => $dependency) {
+                            if (!isset(self::$pkg_manifest[$dependency["vendor"]][$dependency["name"]])) {
+                                echo "Module \"{$pkg_name}\" missing dependency \"{$dependency["vendor"]}/{$dependency["name"]}\"<br />\n";
+                                $missing_dependencies = true;
+                                break;
+                            }
 
-                        $minVer = $dependency["min_version"];
-                        $depVer = self::$pkg_manifest[$dependency["name"]]["version"];
+                            self::$pkg_manifest[$dependency["vendor"]][$dependency["name"]]["has_dependent"] = true;
 
-                        $cmp = 8 * ($depVer[0] <=> $minVer[0]);
-                        $cmp += 4 * ($depVer[1] <=> $minVer[1]);
-                        $cmp += 2 * ($depVer[2] <=> $minVer[2]);
-                        $cmp += 1 * ($depVer[3] <=> $minVer[3]);
+                            $minVer = $dependency["min_version"];
+                            $depVer = self::$pkg_manifest[$dependency["vendor"]][$dependency["name"]]["version"];
 
-                        $minVerStr = implode(".", $minVer);
-                        $depVerStr = implode(".", $depVer);
+                            $cmp = 8 * ($depVer[0] <=> $minVer[0]);
+                            $cmp += 4 * ($depVer[1] <=> $minVer[1]);
+                            $cmp += 2 * ($depVer[2] <=> $minVer[2]);
+                            $cmp += 1 * ($depVer[3] <=> $minVer[3]);
 
-                        if ($cmp < 0) {
-                            echo "Package \"{$pkg_name}\" requires dependency \"{$dependency["name"]}\" to be at least version {$minVerStr}, ";
-                            echo "and \"{$dependency["name"]}\" is only version {$depVerStr}<br />\n";
-                            $missing_dependencies = true;
+                            $minVerStr = implode(".", $minVer);
+                            $depVerStr = implode(".", $depVer);
+
+                            if ($cmp < 0) {
+                                echo "Package \"{$vendor_name}/{$pkg_name}\" requires dependency \"{$dependency["name"]}\" to be at least version {$minVerStr}, ";
+                                echo "and \"{$dependency["name"]}\" is only version {$depVerStr}<br />\n";
+                                $missing_dependencies = true;
+                                break;
+                            }
+                            
+                            $missing_dependencies = false;
+                        }
+
+                        if ($missing_dependencies) {
+                            unset(self::$pkg_manifest[$pkg_name]);
                             break;
                         }
-                        
-                        $missing_dependencies = false;
-                    }
-
-                    if ($missing_dependencies) {
-                        unset(self::$pkg_manifest[$pkg_name]);
-                        break;
                     }
                 }
             } while ($missing_dependencies);

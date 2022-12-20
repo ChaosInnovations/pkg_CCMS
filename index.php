@@ -7,7 +7,7 @@ use \Package\Pivel\Hydro2\Core\Controllers\Core;
 $_SERVER["DOCUMENT_ROOT"] = dirname(__FILE__);
 
 // Manually require Autoloader.php, because we don't have a working autoloader yet
-require_once $_SERVER["DOCUMENT_ROOT"]."/pkg/CCMS/Autoloader.php";
+require_once $_SERVER["DOCUMENT_ROOT"]."/pkg/Pivel/Hydro2/Core/Autoloader.php";
 
 // Add namespaces to Autoloader
 $loader = new Autoloader;
