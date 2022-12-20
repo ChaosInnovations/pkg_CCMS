@@ -1,7 +1,7 @@
 <?php
 
-use \Package\CCMS\Autoloader;
-use \Package\CCMS\Controllers\Core;
+use \Package\Pivel\Hydro2\Core\Autoloader;
+use \Package\Pivel\Hydro2\Core\Controllers\Core;
 
 // Set DOCUMENT_ROOT to the correct root document
 $_SERVER["DOCUMENT_ROOT"] = dirname(__FILE__);
