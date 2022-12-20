@@ -2,22 +2,21 @@
 
 namespace Package\CCMS;
 
-use \Package\CCMS\Utilities;
 use \DirectoryIterator;
 use \PDO;
 
 class Utilities
 {
-    public static $module_manifest = null;
-    public static function getPackageManifest() {
-        if (self::$module_manifest === null) {
-            self::$module_manifest = [];
+    public static $pkg_manifest = null;
+    public static function getPackageManifest() : array {
+        if (self::$pkg_manifest === null) {
+            self::$pkg_manifest = [];
 
-            $moduleDirs = [
+            $pkgDirs = [
                 $_SERVER["DOCUMENT_ROOT"] . "/pkg",
             ];
         
-            foreach ($moduleDirs as $searchDir) {
+            foreach ($pkgDirs as $searchDir) {
                 $dir = new DirectoryIterator($searchDir);
                 foreach ($dir as $fileinfo) {
                     if ($fileinfo->isDot()) {
@@ -37,34 +36,38 @@ class Utilities
                 
                     $manifest = json_decode(file_get_contents($searchDir . "/" . $fileinfo->getFilename() . "/manifest.json"), true);
 
-                    self::$module_manifest[$fileinfo->getFilename()] = $manifest;
-                    self::$module_manifest[$fileinfo->getFilename()]["dependencies"]["has_dependent"] = false;
+                    self::$pkg_manifest[$fileinfo->getFilename()] = $manifest;
+                    self::$pkg_manifest[$fileinfo->getFilename()]["has_dependent"] = false;
                 }
             }
 
+            //var_dump(self::$pkg_manifest);
+
             // Prevent CCMSIndex from being uninstalled
-            self::$module_manifest["CCMSIndex"]["dependencies"]["has_dependent"] = true;
+            //self::$pkg_manifest["CCMSIndex"]["dependencies"]["has_dependent"] = true;
             // Check dependencies
             $missing_dependencies = false;
             do {
-                foreach (self::$module_manifest as $module_name => $module_info) {
-                    $dependencies = array_merge($module_info["dependencies"]["libraries"], $module_info["dependencies"]["modules"]);
+                foreach (self::$pkg_manifest as $pkg_name => $pkg_info) {
+                    //echo $module_name . '<br />';
+                    //var_dump($module_info['dependencies']);
+                    $dependencies = $pkg_info["dependencies"];
                     if (count($dependencies) === 0) {
                         $missing_dependencies = false;
                         continue;
                     }
 
                     foreach ($dependencies as $index => $dependency) {
-                        if (!isset(self::$module_manifest[$dependency["name"]])) {
-                            echo "Module \"{$module_name}\" missing dependency \"{$dependency["name"]}\"<br />\n";
+                        if (!isset(self::$pkg_manifest[$dependency["name"]])) {
+                            echo "Module \"{$pkg_name}\" missing dependency \"{$dependency["name"]}\"<br />\n";
                             $missing_dependencies = true;
                             break;
                         }
 
-                        self::$module_manifest[$dependency["name"]]["dependencies"]["has_dependent"] = true;
+                        self::$pkg_manifest[$dependency["name"]]["has_dependent"] = true;
 
                         $minVer = $dependency["min_version"];
-                        $depVer = self::$module_manifest[$dependency["name"]]["module_data"]["version"];
+                        $depVer = self::$pkg_manifest[$dependency["name"]]["version"];
 
                         $cmp = 8 * ($depVer[0] <=> $minVer[0]);
                         $cmp += 4 * ($depVer[1] <=> $minVer[1]);
@@ -75,7 +78,7 @@ class Utilities
                         $depVerStr = implode(".", $depVer);
 
                         if ($cmp < 0) {
-                            echo "Module \"{$module_name}\" requires dependency \"{$dependency["name"]}\" to be at least version {$minVerStr}, ";
+                            echo "Package \"{$pkg_name}\" requires dependency \"{$dependency["name"]}\" to be at least version {$minVerStr}, ";
                             echo "and \"{$dependency["name"]}\" is only version {$depVerStr}<br />\n";
                             $missing_dependencies = true;
                             break;
@@ -85,7 +88,7 @@ class Utilities
                     }
 
                     if ($missing_dependencies) {
-                        unset(self::$module_manifest[$module_name]);
+                        unset(self::$pkg_manifest[$pkg_name]);
                         break;
                     }
                 }
@@ -93,7 +96,7 @@ class Utilities
 
         }
 
-        return self::$module_manifest;
+        return self::$pkg_manifest;
     }
 
     public static function fillTemplate(string $template, array $vars)
@@ -102,16 +105,5 @@ class Utilities
             $template = str_replace('{'.$k.'}', $v, $template);
         }
         return $template;
-    }
-
-    public static function setMaintenanceMode(bool $enable)
-    {
-        if ($enable) {
-            unlink($_SERVER["DOCUMENT_ROOT"] . "/.htaccess");
-            copy($_SERVER["DOCUMENT_ROOT"] . "/.htaccess.maintenance", $_SERVER["DOCUMENT_ROOT"] . "/.htaccess");
-        } else {
-            unlink($_SERVER["DOCUMENT_ROOT"] . "/.htaccess");
-            copy($_SERVER["DOCUMENT_ROOT"] . "/.htaccess.production", $_SERVER["DOCUMENT_ROOT"] . "/.htaccess");
-        }
     }
 }

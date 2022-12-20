@@ -75,10 +75,10 @@ class Autoloader
             return false;
         }
 
-        $package_name = explode("\\", $relative_class)[0];
+        $pkg_name = explode("\\", $relative_class)[0];
 
-        if (!isset(Utilities::getPackageManifest()[$package_name])) {
-            echo "Couldn't load class \"{$prefix}{$relative_class}\" because package \"{$package_name}\" is either missing or has missing dependencies.<br />\n";
+        if (!isset(Utilities::getPackageManifest()[$pkg_name])) {
+            echo "Couldn't load class \"{$prefix}{$relative_class}\" because package \"{$pkg_name}\" is either missing or has missing dependencies.<br />\n";
             return false;
         }
 

@@ -1,21 +1,18 @@
 {
-    "module_data": {
-        "name":"CCMS",
-        "description":"CCMS core library and framework",
-        "type":"Library",
-        "version":[1, 9, 2, 0],
-        "release_date":"2019-11-15",
-        "author": {
-            "name":"Thomas Boland",
-            "email":"hello@thomasboland.me",
-            "website":"http://ccms.thomasboland.me"
-        }
+    "name":"CCMS",
+    "description":"CCMS Core framework",
+    "version":[2, 0, 0, 7],
+    "release_date":"2022-11-01",
+    "author": {
+        "name":"Thomas Boland",
+        "email":"thomas@tbcsvcs.ca",
+        "website":"https://tbcsvcs.ca/ccms"
     },
 
-    "dependencies": {
-        "libraries": [
-        ],
-        "modules": [
-        ]
-    }
+    "dependencies": [
+    ],
+
+    "controllers": [
+        "\\Package\\CCMS\\Controllers\\FallbackController"
+    ]
 }
