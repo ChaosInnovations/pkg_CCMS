@@ -1,0 +1,21 @@
+{
+    "name":"Database",
+    "description":"Manage connections to a database",
+    "type":"Module",
+    "version":[2, 0, 0, 4],
+    "release_date":"2022-12-19",
+    "author": {
+        "name":"Thomas Boland",
+        "email":"thomas@tbcsvcs.ca",
+        "website":"https://tbcsvcs.ca/ccms"
+    },
+
+    "dependencies": [
+        {"name":"CCMS", "min_version":[2, 0, 0, 0]}
+    ],
+
+    "controllers": [
+        "\\Package\\Database\\Controllers\\SettingsController",
+        "\\Package\\Database\\Controllers\\TestObjectController"
+    ]
+}
