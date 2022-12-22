@@ -8,6 +8,7 @@ use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
 use Package\Pivel\Hydro2\Database\Extensions\TableForeignKey;
 use Package\Pivel\Hydro2\Database\Extensions\TableName;
 use Package\Pivel\Hydro2\Database\Extensions\TablePrimaryKey;
+use Package\Pivel\Hydro2\Database\Extensions\Where;
 use Package\Pivel\Hydro2\Database\Models\TableColumn as ModelsTableColumn;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
 use ReflectionClass;
@@ -139,12 +140,12 @@ class BaseObject
         return $columns;
     }
 
-    public static function CastFromRow(array $row) : mixed {
+    public static function CastFromRow(array $row, string $className=null) : mixed {
         // get columns
         $columns = self::getTable()->GetColumns();
 
         // instantiate blank child class
-        $className = get_called_class();
+        $className??=get_called_class();
         $object = $className::Blank();
         
         foreach ($row as $columnName => $value) {
@@ -160,7 +161,10 @@ class BaseObject
             $propertyName = $column->propertyName;
 
             $castValue = null;
-            if ($phpType == 'DateTime') {
+            if (is_subclass_of($phpType, self::class)) {
+                // How to deal with objects that have circular foreign keys?
+                $castValue = $phpType::LoadFromId($value);
+            } else if ($phpType == 'DateTime') {
                 $castValue = new DateTime($value.'+00:00');
             } else {
                 $castValue = $value;
@@ -170,6 +174,35 @@ class BaseObject
         }
 
         return $object;
+    }
+
+    public static function LoadFromId(int $id) : mixed {
+        // 1. need to run a query like:
+        //     SELECT * FROM [tablename] WHERE [idcolumnname] = [id];
+        $table = self::getTable();
+        $primaryKeyColumn = $table->GetPrimaryKeyColumn();
+        if ($primaryKeyColumn === null) {
+            return null;
+        }
+        $results = $table->Select(null, (new Where())->Equal($primaryKeyColumn->columnName, $id));
+        // 2. check that there is a single result
+        if (count($results) != 1) {
+            return null;
+        }
+        // 3. 'cast' result to an instance of User
+        // 4. return instance
+        return self::CastFromRow($results[0], className:get_called_class());
+    }
+
+    public static function GetAll() : array {
+        // 1. need to run a query like:
+        //     SELECT * FROM [tablename];
+        $table = self::getTable();
+        $results = $table->Select();
+        // 3. 'cast' each result to an instance of TestObject
+        // 4. return array of instances
+
+        return array_map(fn($row)=>self::CastFromRow($row), $results);
     }
 
     public function SetProperty($propertyName, $value) {

@@ -31,8 +31,12 @@ class TestObject extends BaseObject {
     #[TableColumn('obj_bool')]
     public bool $bool;
 
-    public function __construct(string $name, int $int, float $float, bool $bool)
-    {
+    public function __construct(
+        string $name = '',
+        int $int = 0,
+        float $float = 0.0,
+        bool $bool = false,
+        ) {
         $this->name = $name;
         $this->int = $int;
         $this->float = $float;
@@ -43,37 +47,6 @@ class TestObject extends BaseObject {
 
     public static function Blank() : TestObject {
         return new TestObject("",0,0.0,false);
-    }
-
-    public static function LoadFromId(int $id) : ?TestObject {
-        // 1. need to run a query like:
-        //     SELECT * FROM [tablename] WHERE [idcolumnname] = [id];
-        $table = self::getTable();
-        $results = $table->Select(null, (new Where())->Equal($table->GetPrimaryKeyColumn()->columnName, $id));
-        // 2. check that there is a single result
-        if (count($results) != 1) {
-            return null;
-        }
-        // 3. 'cast' result to an instance of TestObject
-        // 4. return instance
-        return self::CastFromRow($results[0]);
-    }
-
-    /**
-     * @return TestObject[]
-     */
-    public static function GetAll() : array {
-        // 1. need to run a query like:
-        //     SELECT * FROM [tablename];
-        //     (until easy-to-use querying is implemented, can just use
-        //      self::table->dbi->query($query, $params) to run the query
-        //      directly)
-        $table = self::getTable();
-        $results = $table->Select();
-        // 3. 'cast' each result to an instance of TestObject
-        // 4. return array of instances
-
-        return array_map(fn($row)=>self::CastFromRow($row), $results);
     }
 
     public function Save() : bool {
