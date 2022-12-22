@@ -1,36 +1,75 @@
 <?php
 
-namespace Package;
+namespace Package\Pivel\Hydro2\Identity\Models;
 
-use \Package\CCMS\Response;
-use \Package\CCMS\Request;
-use \Package\CCMS\Utilities;
-use \Package\Mailer;
-use \Package\Database;
-use \Package\ModuleMenu;
-use \Package\Page;
-use \Package\SecureMenu;
-use \Package\SiteConfiguration;
-use \Package\User\AccountManager;
-use \Package\User\UserPermissions;
-use \PDO;
+use DateTime;
+use DateTimeZone;
+use \Package\Pivel\Hydro2\Core\Models\Response;
+use \Package\Pivel\Hydro2\Core\Models\Request;
+use \Package\Pivel\Hydro2\Core\Utilities;
+use Package\Pivel\Hydro2\Database\Extensions\ChildTable;
+use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
+use Package\Pivel\Hydro2\Database\Extensions\TableForeignKey;
+use Package\Pivel\Hydro2\Database\Extensions\TableName;
+use Package\Pivel\Hydro2\Database\Extensions\TablePrimaryKey;
+use Package\Pivel\Hydro2\Database\Extensions\Where;
+//use \Package\Mailer;
+use \Package\Pivel\Hydro2\Database\Models\BaseObject;
+//use \Package\ModuleMenu;
+//use \Package\Page;
+//use \Package\SecureMenu;
+//use \Package\SiteConfiguration;
+//use \Package\User\AccountManager;
+//use \Package\User\UserPermissions;
 
-class User
+#[TableName('hydro2_users')]
+class User extends BaseObject
 {
-    public $name = "User";
-    public $email = "";
-    public $uid = null;
-    public $pwdHash = "";
-    public $registerdate = "";
-    public $rawperms = "";
-    public $permissions = null;
-    public $notify = false;
-    public $online = false;
+    #[TableColumn('id', autoIncrement:true)]
+    #[TablePrimaryKey]
+    public ?int $Id = null;
+    #[TableColumn('random_id')]
+    public ?string $RandomId = null;
+    #[TableColumn('inserted')]
+    public ?DateTime $InsertedTime = null;
+    #[TableColumn('email')]
+    public string $Email;
+    #[TableColumn('name')]
+    public string $Name;
+    #[TableColumn('user_role_id')]
+    #[TableForeignKey()]
+    public UserRole $role;
+    #[TableColumn('needs_review')]
+    public bool $NeedsReview;
+    #[TableColumn('enabled')]
+    public bool $Enabled;
+    #[TableColumn('failed_login_attempts')]
+    public int $FailedLoginAttempts;
+    #[ChildTable('hydro2_user_sessions')]
+    /** @var Session[] */
+    public array $Sessions;
+    #[ChildTable('hydro2_user_passwords')]
+    /** @var UserPassword[] */
+    public array $Passwords;
     
-    public static User $currentUser = null;
+    // move this to IdentityService as a singleton
+    //public static User $currentUser = null;
 
-    public function __construct($uid)
-    {
+    public function __construct(
+        string $email='',
+        string $name='',
+        bool $needsReview=false,
+        bool $enabled=false,
+        int $failedLoginAttempts=0
+        ) {
+        $this->Email = $email;
+        $this->Name = $name;
+        $this->NeedsReview = $needsReview;
+        $this->Enabled = $enabled;
+        $this->FailedLoginAttempts = $failedLoginAttempts;
+        
+        parent::__construct();
+        /*
         $this->uid = $uid;
         $this->permissions = new UserPermissions();
 
@@ -90,19 +129,59 @@ class User
         // Blacklists
         $this->permissions->page_viewblacklist = preg_split('@;@', $udata[0]["permviewbl"], -1, PREG_SPLIT_NO_EMPTY);
         $this->permissions->page_editblacklist = preg_split('@;@', $udata[0]["permeditbl"], -1, PREG_SPLIT_NO_EMPTY);
+        */
+    }
+
+    public static function LoadFromRandomId(int $randomId) : ?User {
+        // 1. need to run a query like:
+        //     SELECT * FROM [tablename] WHERE [idcolumnname] = [id];
+        $table = self::getTable();
+        $results = $table->Select(null, (new Where())->Equal('random_id', $randomId));
+        // 2. check that there is a single result
+        if (count($results) != 1) {
+            return null;
+        }
+        // 3. 'cast' result to an instance of User
+        // 4. return instance
+        return self::CastFromRow($results[0]);
+    }
+
+    public static function LoadFromEmail(string $email) : ?User {
+        // 1. need to run a query like:
+        //     SELECT * FROM [tablename] WHERE [idcolumnname] = [id];
+        $table = self::getTable();
+        $results = $table->Select(null, (new Where())->Equal('email', $email));
+        // 2. check that there is a single result
+        if (count($results) != 1) {
+            return null;
+        }
+        // 3. 'cast' result to an instance of User
+        // 4. return instance
+        return self::CastFromRow($results[0]);
+    }
+
+    public function Save() : bool {
+        if ($this->RandomId === null) {
+            $this->RandomId = md5(uniqid($this->email, true));
+        }
+        if ($this->InsertedTime === null) {
+            $this->InsertedTime = new DateTime(timezone:new DateTimeZone('UTC'));
+        }
+
+        return $this->UpdateOrCreateEntry();
+    }
+
+    public function Delete() : bool {
+        return $this->DeleteEntry();
     }
     
     public function isValidUser()
     {
-        return $this->uid !== null;
+        return $this->Id !== null;
     }
     
-    public function authenticate($password)
-    {
-        return password_verify($password, $this->pwdHash);
-    }
-    
-    public function notify($from, $what)
+    // Needs rewrite of email system first
+    /*public function notify($from, $what)
     {
         global $TEMPLATES;
         if ($from->uid == $this->uid) {
@@ -163,43 +242,38 @@ class User
         $stmt->bindParam(":what", $what);
         $stmt->bindParam(":uid", $this->uid);
         $stmt->execute();
-    }
+    }*/
     
-    public static function userFromToken($token)
+
+    // Move to UserSessions
+    /*public static function userFromToken($token)
     {
         $stmt = Database::Instance()->prepare("SELECT * FROM tokens WHERE tid=:tid;");
         $stmt->bindParam(":tid", $token);
         $stmt->execute();$stmt->setFetchMode(PDO::FETCH_ASSOC);
 
         return new User($stmt->fetchAll()[0]["uid"]);
-    }
+    }*/
     
-    public static function userFromEmail($email)
-    {
-        return new User(User::uidFromEmail($email));
-    }
-    
-    public static function uidFromEmail($email)
-    {
-        return md5(User::normalizeEmail($email));
-    }
-    
-    public static function normalizeEmail($email)
+    // should be provided by future Email sub-package
+    /*public static function normalizeEmail($email)
     {
         $email = strtolower($email);
         $email = preg_replace('/\s+/', '', $email); // remove whitespace
         return $email;
-    }
+    }*/
     
-    public static function numberOfOwners()
+    // Move to IdentityService or UserRoles static function like GetAllWithPermission(string permission)
+    /*public static function numberOfOwners()
     {
         $stmt = Database::Instance()->prepare("SELECT uid FROM users WHERE permissions LIKE '%owner%';");
         $stmt->execute();$stmt->setFetchMode(PDO::FETCH_ASSOC);
 
         return count($stmt->fetchAll());
-    }
+    }*/
     
-    public static function hookMenu(Request $request)
+    // Move to view, +standalone menu route
+    /*public static function hookMenu(Request $request)
     {
         SecureMenu::Instance()->addEntry("account", "Account Details", "showDialog('account');", '<i class="fas fa-user-cog"></i>', SecureMenu::HORIZONTAL);
         SecureMenu::Instance()->addEntry("signout", "Sign Out", "logout();", '<i class="fas fa-sign-out-alt"></i>', SecureMenu::HORIZONTAL);
@@ -245,39 +319,10 @@ class User
             SecureMenu::Instance()->addModal("dialog_users", "Manage Users", $userListBody, "");
             ModuleMenu::Instance()->addEntry("showDialog('users');", "Manage Users");
         }
-    }
-
-    public static function hookVerifyConfiguration(Request $request)
-    {
-        $db = Database::Instance();
-
-        $stmt = $db->prepare("SHOW TABLES LIKE 'users'");
-        $stmt->execute();$stmt->setFetchMode(PDO::FETCH_ASSOC);
-        if (count($stmt->fetchAll())) {
-            return;
-        }
-
-        $dbTemplate = file_get_contents(dirname(__FILE__) . "/templates/database.template.sql");
-
-        $stmt = $db->prepare($dbTemplate);
-        $stmt->execute();
-    }
+    }*/
     
-    public static function hookAuthenticateFromRequest(Request $request)
-    {
-        $token = $request->getCookie("token");
-        
-        if (AccountManager::validateToken($token, $_SERVER["REMOTE_ADDR"])) {
-            User::$currentUser = User::userFromToken($token);
-            return;
-        }
-        
-        User::$currentUser = new User(null);
-        
-        setcookie("token", "0", 1);
-    }
-    
-    public static function hookCheckUser(Request $request)
+    // Move to UserController
+    /*public static function hookCheckUser(Request $request)
     {
         if (!$_POST["email"]) {
             return new Response("FALSE");
@@ -288,9 +333,10 @@ class User
         }
         
         return new Response("TRUE");
-    }
+    }*/
     
-    public static function hookCheckPassword(Request $request)
+    // Move to UserController
+    /*public static function hookCheckPassword(Request $request)
     {
         if (!isset($_POST["password"])) {
             return "FALSE";
@@ -310,9 +356,10 @@ class User
             return new Response("FALSE");
         }
         return new Response("TRUE");
-    }
+    }*/
     
-    public static function hookNewUser(Request $request)
+    // Move to UserController
+    /*public static function hookNewUser(Request $request)
     {
         // api/user/new        
         if (!isset($_POST["email"]) or !isset($_POST["name"]) or !isset($_POST["permissions"])) {
@@ -465,9 +512,10 @@ class User
             }
         }
         return new Response("TRUE");
-    }
+    }*/
     
-    public static function placeholderLoginForm($args)
+    // Move to view
+    /*public static function placeholderLoginForm($args)
     {
         if (User::$currentUser->uid == null) {
             $html = file_get_contents(dirname(__FILE__) . "/templates/LoginForm.template.html");
@@ -494,6 +542,5 @@ class User
             ];
             $html = Utilities::fillTemplate(file_get_contents(dirname(__FILE__) . "/templates/LoggedIn.template.html"), $template_vars);
             return $html;
-        }
-    }
+        }*/
 }
