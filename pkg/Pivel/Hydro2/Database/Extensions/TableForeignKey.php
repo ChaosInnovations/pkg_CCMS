@@ -10,6 +10,8 @@ class TableForeignKey {
     public function __construct(
         public ReferenceBehaviour $onUpdate = ReferenceBehaviour::RESTRICT,
         public ReferenceBehaviour $onDelete = ReferenceBehaviour::RESTRICT,
+        public ?string $foreignTableName = null,
+        public ?string $foreignTableColumnName = null,
     ) {
     }
 }
