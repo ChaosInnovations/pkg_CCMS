@@ -104,17 +104,21 @@ class BaseObject
                     $foreignKey = true;
                     $foreignKeyTable = $foreignTable->tableName;
                     $foreignKeyColumnName = $foreignColumn->columnName;
-                    if (count($method_fk_attributes) == 1) {
-                        /** @var TableForeignKey */
-                        $fkAttr = $method_fk_attributes[0]->newInstance();
-                        $fkOnUpdate = $fkAttr->onUpdate;
-                        $fkOnDelete = $fkAttr->onDelete;
-                    }
                 } else if (DatabaseService::IsPrimaryConnected()) {
                     $sqlType = self::getDbi()->ConvertToSQLType($phpType);
                 } else {
                     $sqlType = Type::TEXT;
                 }
+            }
+            
+            if (count($method_fk_attributes) == 1) {
+                /** @var TableForeignKey */
+                $fkAttr = $method_fk_attributes[0]->newInstance();
+                $fkOnUpdate = $fkAttr->onUpdate;
+                $fkOnDelete = $fkAttr->onDelete;
+                $foreignKey = true;
+                $foreignKeyTable = $fkAttr->foreignTableName??$foreignTable;
+                $foreignKeyColumnName = $fkAttr->foreignTableColumnName??$foreignKey;
             }
 
             $columns[$column_name] = new ModelsTableColumn(
