@@ -18,5 +18,16 @@
         "\\Package\\Pivel\\Hydro2\\Core\\Identity\\UserController",
         "\\Package\\Pivel\\Hydro2\\Core\\Identity\\UserRoleController",
         "\\Package\\Pivel\\Hydro2\\Core\\Identity\\SessionController"
+    ],
+
+    "permissions": [
+        {"key":"viewusers","name":"View Users","description":"Allow viewing a list of other users."},
+        {"key":"manageusers","requires":["pivel/hydro2/viewusers"],"name":"Manage Users","description":"Allow editing/deleting other users."},
+        {"key":"createusers","requires":["pivel/hydro2/viewusers"],"name":"Create Users","description":"Allow creating new users."},
+        {"key":"passwordreset","requires":["pivel/hydro2/viewusers"],"name":"Reset User Passwords","description":"Allow resetting other users' passwords."},
+        {"key":"createuserroles","name":"Create User Roles","description":"Allow creating new user roles."},
+        {"key":"manageuserroles","name":"Manage User Roles","description":"Allow editing/deleting user roles."},
+        {"key":"viewusersessions","requires":["pivel/hydro2/viewusers"],"name":"View User Sessions","description":"Allow viewing a list of user' sessions."},
+        {"key":"endusersessions","requires":["pivel/hydro2/viewusersessions"],"name":"End User Sessions","description":"Allow terminating a list of user' sessions."}
     ]
 }
