@@ -27,6 +27,8 @@ class Session extends BaseObject
     public ?DateTime $StartTime;
     #[TableColumn('expire')]
     public ?DateTime $ExpireTime;
+    #[TableColumn('expire_2fa')]
+    public ?DateTime $Expire2FATime;
     #[TableColumn('last_access')]
     public ?DateTime $LastAccessTime;
     #[TableColumn('start_ip')]
@@ -39,6 +41,7 @@ class Session extends BaseObject
         ?string $browser = null,
         ?DateTime $startTime = null,
         ?DateTime $expireTime = null,
+        ?DateTime $expire2FATime = null,
         ?DateTime $lastAccessTime = null,
         ?string $startIP = null,
         ?string $lastIP = null,
@@ -47,6 +50,7 @@ class Session extends BaseObject
         $this->Browser = $browser;
         $this->StartTime = $startTime;
         $this->ExpireTime = $expireTime;
+        $this->Expire2FATime = $expire2FATime;
         $this->LastAccessTime = $lastAccessTime;
         $this->StartIP = $startIP;
         $this->LastIP = $lastIP;
