@@ -38,7 +38,7 @@ class User extends BaseObject
     public string $Name;
     #[TableColumn('user_role_id')]
     #[TableForeignKey()]
-    public UserRole $role;
+    public UserRole $Role;
     #[TableColumn('needs_review')]
     public bool $NeedsReview;
     #[TableColumn('enabled')]
@@ -60,13 +60,15 @@ class User extends BaseObject
         string $name='',
         bool $needsReview=false,
         bool $enabled=false,
-        int $failedLoginAttempts=0
+        int $failedLoginAttempts=0,
+        ?UserRole $role=null,
         ) {
         $this->Email = $email;
         $this->Name = $name;
         $this->NeedsReview = $needsReview;
         $this->Enabled = $enabled;
         $this->FailedLoginAttempts = $failedLoginAttempts;
+        $this->Role = $role??(new UserRole());
         
         parent::__construct();
         /*

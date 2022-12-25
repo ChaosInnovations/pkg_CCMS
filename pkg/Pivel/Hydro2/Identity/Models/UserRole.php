@@ -33,8 +33,8 @@ class UserRole extends BaseObject
     public int $ChallengeIntervalMinutes;
     #[TableColumn('max_2fa_attempts')]
     public int $Max2FAAttempts;
-    #[ChildTable('hydro2_user_roles')]
     /** @var Permission[] */
+    #[ChildTable('hydro2_user_roles')]
     public array $Permissions;
 
     /** @param Permission[] $permissions */
@@ -75,5 +75,15 @@ class UserRole extends BaseObject
 
         $this->Permissions[] = $permission;
         return true;
+    }
+
+    public function HasPermission(string $permissionString) : bool {
+        foreach ($this->Permissions as $permission) {
+            if ($permission->PermissionString == $permissionString) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

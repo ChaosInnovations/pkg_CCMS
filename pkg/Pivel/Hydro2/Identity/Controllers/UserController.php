@@ -9,15 +9,51 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
 use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
+use Package\Pivel\Hydro2\Database\Services\DatabaseService;
+use Package\Pivel\Hydro2\Identity\Models\User;
+use Package\Pivel\Hydro2\Identity\Services\IdentityService;
 
 #[RoutePrefix('api/hydro2/core/identity/users')]
 class IdentityController extends BaseController
 {
     #[Route(Method::GET, '')]
     public function ListUsers() : Response {
+        // if current user doesn't have permission pivel/hydro2/viewusers/, return 404
+        if (
+            !DatabaseService::IsPrimaryConnected() ||
+            !IdentityService::GetRequestUser($this->request)->role->HasPermission('pivel/hydro2/viewusers')
+            ) {
+            return new Response(
+                status: StatusCode::NotFound
+            );
+        }
+
+        /** @var User[] */
+        $users = User::GetAll();
+
+        $userResults = [];
+
+        foreach ($users as $user) {
+            $userResults[] = [
+                'random_id' => $user->RandomId,
+                'created' => $user->InsertedTime,
+                'email' => $user->Email,
+                'name' => $user->Name,
+                'needs_review' => $user->NeedsReview,
+                'enabled' => $user->Enabled,
+                'failed_login_attempts' => $user->FailedLoginAttempts,
+                'role' => [
+                    'id' => $user->Role->Id,
+                    'name' => $user->Role->Name,
+                    'description' => $user->Role->Description,
+                ],
+            ];
+        }
+
         return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
+            data:[
+                'users' => $userResults,
+            ],
         );
     }
 
