@@ -28,7 +28,6 @@ class SettingsController extends BaseController
             );
         }
 
-        // return response with code 400 (Bad Request)
         return new JsonResponse(
             data: [
                 'databasedrivers' => DatabaseService::GetAvailableDrivers(),

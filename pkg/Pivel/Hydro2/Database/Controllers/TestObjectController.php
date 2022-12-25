@@ -16,7 +16,7 @@ class TestObjectController extends BaseController
 {
     // These endpoints should only be enabled when running in debug/test mode,
     //  but core doesn't have a method to detect for this yet.
-
+    // TODO Implement test/dev mode detection in core
     private function ServerInTestMode() : bool {
         return true;
     }
