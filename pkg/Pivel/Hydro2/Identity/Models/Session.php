@@ -7,6 +7,7 @@ use Package\Pivel\Hydro2\Database\Extensions\TableName;
 use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
 use Package\Pivel\Hydro2\Database\Extensions\TablePrimaryKey;
 use Package\Pivel\Hydro2\Database\Extensions\TableForeignKey;
+use Package\Pivel\Hydro2\Database\Extensions\Where;
 use Package\Pivel\Hydro2\Database\Models\BaseObject;
 use Package\Pivel\Hydro2\Database\Models\ReferenceBehaviour;
 
@@ -19,6 +20,8 @@ class Session extends BaseObject
     #[TableColumn('user_id')]
     #[TableForeignKey(ReferenceBehaviour::CASCADE,ReferenceBehaviour::CASCADE,'hydro2_users','id')]
     public ?int $UserId; // use int rather than User to avoid circular reference issues.
+    #[TableColumn('random_id')]
+    public ?string $RandomId = null;
     //session key hash
 
     #[TableColumn('browser')]
@@ -54,6 +57,20 @@ class Session extends BaseObject
         $this->LastAccessTime = $lastAccessTime;
         $this->StartIP = $startIP;
         $this->LastIP = $lastIP;
+    }
+
+    public static function LoadFromRandomId(int $randomId) : ?Session {
+        // 1. need to run a query like:
+        //     SELECT * FROM [tablename] WHERE [idcolumnname] = [id];
+        $table = self::getTable();
+        $results = $table->Select(null, (new Where())->Equal('random_id', $randomId));
+        // 2. check that there is a single result
+        if (count($results) != 1) {
+            return null;
+        }
+        // 3. 'cast' result to an instance of User
+        // 4. return instance
+        return self::CastFromRow($results[0]);
     }
 
     public function Save() : bool {
