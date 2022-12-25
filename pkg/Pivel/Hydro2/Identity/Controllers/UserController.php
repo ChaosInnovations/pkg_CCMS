@@ -133,10 +133,43 @@ class IdentityController extends BaseController
     #[Route(Method::POST, '{id}/remove')]
     #[Route(Method::DELETE, '{id}/remove')]
     public function DeleteUser() : Response {
-        return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
-        );
+        if (!DatabaseService::IsPrimaryConnected()) {
+            return new Response(status: StatusCode::NotFound);
+        }
+        // if current user doesn't have permission pivel/hydro2/manageusers/, return 404
+        if (!IdentityService::GetRequestUser($this->request)->role->HasPermission(Permissions::ManageUsers->value)) {
+            return new Response(status: StatusCode::NotFound);
+        }
+
+        if (!isset($this->request->Args['id'])) {
+            // missing argument
+            // return response with code 400 (Bad Request)
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'id',
+                            'description' => 'User ID',
+                            'message' => 'Argument is missing.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are missing.'
+            );
+        }
+
+        $user = User::LoadFromRandomId($this->request->Args['id']);
+
+        if ($user != null && !$user->Delete()) {
+            return new JsonResponse(
+                null,
+                StatusCode::InternalServerError,
+                "There was a problem with the database."
+            );
+        }
+
+        return new JsonResponse(status:StatusCode::OK);
     }
 
     #[Route(Method::POST, '{id}/changepassword')]
