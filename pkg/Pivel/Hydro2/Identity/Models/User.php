@@ -183,6 +183,7 @@ class User extends BaseObject
     }
     
     // Needs rewrite of email system first
+    // TODO re-implement after new email system
     /*public function notify($from, $what)
     {
         global $TEMPLATES;
@@ -244,21 +245,9 @@ class User extends BaseObject
         $stmt->bindParam(":what", $what);
         $stmt->bindParam(":uid", $this->uid);
         $stmt->execute();
-    }*/
+    }
     
-
-    // Move to UserSessions
-    /*public static function userFromToken($token)
-    {
-        $stmt = Database::Instance()->prepare("SELECT * FROM tokens WHERE tid=:tid;");
-        $stmt->bindParam(":tid", $token);
-        $stmt->execute();$stmt->setFetchMode(PDO::FETCH_ASSOC);
-
-        return new User($stmt->fetchAll()[0]["uid"]);
-    }*/
-    
-    // should be provided by future Email sub-package
-    /*public static function normalizeEmail($email)
+    public static function normalizeEmail($email)
     {
         $email = strtolower($email);
         $email = preg_replace('/\s+/', '', $email); // remove whitespace
@@ -274,7 +263,7 @@ class User extends BaseObject
         return count($stmt->fetchAll());
     }*/
     
-    // Move to view, +standalone menu route
+    // TODO Move to view, +standalone menu route
     /*public static function hookMenu(Request $request)
     {
         SecureMenu::Instance()->addEntry("account", "Account Details", "showDialog('account');", '<i class="fas fa-user-cog"></i>', SecureMenu::HORIZONTAL);
@@ -323,7 +312,7 @@ class User extends BaseObject
         }
     }*/
     
-    // Move to UserController
+    // TODO Move to UserController
     /*public static function hookCheckUser(Request $request)
     {
         if (!$_POST["email"]) {
@@ -337,7 +326,7 @@ class User extends BaseObject
         return new Response("TRUE");
     }*/
     
-    // Move to UserController
+    // TODO Move to UserController
     /*public static function hookCheckPassword(Request $request)
     {
         if (!isset($_POST["password"])) {
@@ -360,7 +349,7 @@ class User extends BaseObject
         return new Response("TRUE");
     }*/
     
-    // Move to UserController
+    // TODO Move to UserController
     /*public static function hookNewUser(Request $request)
     {
         // api/user/new        
@@ -409,30 +398,6 @@ class User extends BaseObject
         if (!$mail->send()) {
             return new Response("Failed: the account was created successfully, but the notification email failed to send.");
         }
-
-        return new Response("TRUE");
-    }
-    
-    public static function hookRemoveUser(Request $request)
-    {
-        // api/user/remove
-        if (!isset($_POST["uid"]) or !(new User($_POST["uid"]))->isValidUser()) {
-            return new Response("FALSE");
-        }
-        $uid = $_POST["uid"];
-        if (!User::$currentUser->permissions->owner and User::$currentUser->uid != $uid) {
-            return new Response("FALSE");
-        }
-        if (User::$currentUser->permissions->owner and User::$currentUser->uid == $uid and User::numberOfOwners() <= 1) {
-            return new Response("OWNER");
-        }
-        $stmt = Database::Instance()->prepare("DELETE FROM users WHERE uid=:uid;");
-        $stmt->bindParam(":uid", $uid);
-        $stmt->execute();
-
-        $stmt = Database::Instance()->prepare("DELETE FROM tokens WHERE uid=:uid;");
-        $stmt->bindParam(":uid", $uid);
-        $stmt->execute();
 
         return new Response("TRUE");
     }
@@ -516,7 +481,7 @@ class User extends BaseObject
         return new Response("TRUE");
     }*/
     
-    // Move to view
+    // TODO Move to view
     /*public static function placeholderLoginForm($args)
     {
         if (User::$currentUser->uid == null) {

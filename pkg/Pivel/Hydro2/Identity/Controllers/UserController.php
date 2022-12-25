@@ -56,6 +56,7 @@ class IdentityController extends BaseController
         );
     }
 
+    // TODO: Implement CreateUser
     #[Route(Method::POST, '')]
     #[Route(Method::POST, 'create')]
     public function CreateUser() : Response {
@@ -121,6 +122,7 @@ class IdentityController extends BaseController
         );
     }
 
+    // TODO Implement UpdateUser
     #[Route(Method::POST, '{id}')]
     #[Route(Method::POST, '{id}/update')]
     public function UpdateUser() : Response {
@@ -172,6 +174,7 @@ class IdentityController extends BaseController
         return new JsonResponse(status:StatusCode::OK);
     }
 
+    // TODO Implement UserChangePassword
     #[Route(Method::POST, '{id}/changepassword')]
     public function UserChangePassword() : Response {
         return new JsonResponse(
@@ -180,6 +183,7 @@ class IdentityController extends BaseController
         );
     }
 
+    // TODO Implement UserResetPassword
     #[Route(Method::POST, '{id}/resetpassword')]
     public function UserResetPassword() : Response {
         return new JsonResponse(

@@ -10,6 +10,7 @@ use \PDO;
 
 class AccountManager
 {
+    // TODO move to new SessionController
     public static function registerNewToken($uid, $ip)
     {
         // Kill other tokens from this uid
