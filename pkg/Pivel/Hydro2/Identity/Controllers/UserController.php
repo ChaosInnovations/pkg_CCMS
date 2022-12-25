@@ -19,13 +19,11 @@ class IdentityController extends BaseController
     #[Route(Method::GET, '')]
     public function ListUsers() : Response {
         // if current user doesn't have permission pivel/hydro2/viewusers/, return 404
-        if (
-            !DatabaseService::IsPrimaryConnected() ||
-            !IdentityService::GetRequestUser($this->request)->role->HasPermission('pivel/hydro2/viewusers')
-            ) {
-            return new Response(
-                status: StatusCode::NotFound
-            );
+        if (!DatabaseService::IsPrimaryConnected()) {
+            return new Response(status: StatusCode::NotFound);
+        }
+        if (!IdentityService::GetRequestUser($this->request)->role->HasPermission('pivel/hydro2/viewusers')) {
+            return new Response(status: StatusCode::NotFound);
         }
 
         /** @var User[] */
@@ -68,9 +66,57 @@ class IdentityController extends BaseController
 
     #[Route(Method::GET, '{id}')]
     public function ListUser() : Response {
+        if (!DatabaseService::IsPrimaryConnected()) {
+            return new Response(status: StatusCode::NotFound);
+        }
+        // if current user doesn't have permission pivel/hydro2/viewusers/, return 404,
+        //  unless trying to get info about self which is always allowed
+        if (!(
+            IdentityService::GetRequestUser($this->request)->role->HasPermission('pivel/hydro2/viewusers') ||
+            IdentityService::GetRequestUser($this->request)->RandomId === ($this->request->Args['id']??null)
+            )) {
+            return new Response(status: StatusCode::NotFound);
+        }
+
+        if (!isset($this->request->Args['id'])) {
+            // missing argument
+            // return response with code 400 (Bad Request)
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'id',
+                            'description' => 'User ID',
+                            'message' => 'Argument is missing.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are missing.'
+            );
+        }
+
+        $user = User::LoadFromRandomId($this->request->Args['id']);
+
+        $userResults = [[
+            'random_id' => $user->RandomId,
+            'created' => $user->InsertedTime,
+            'email' => $user->Email,
+            'name' => $user->Name,
+            'needs_review' => $user->NeedsReview,
+            'enabled' => $user->Enabled,
+            'failed_login_attempts' => $user->FailedLoginAttempts,
+            'role' => [
+                'id' => $user->Role->Id,
+                'name' => $user->Role->Name,
+                'description' => $user->Role->Description,
+            ],
+        ]];
+
         return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
+            data:[
+                'users' => $userResults,
+            ],
         );
     }
 
