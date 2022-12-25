@@ -1,7 +1,6 @@
 {
-    "name":"User",
+    "name":"Identity",
     "description":"Manage user accounts",
-    "type":"Module",
     "version":[2, 0, 0, 1],
     "release_date":"2022-12-24",
     "author": {
