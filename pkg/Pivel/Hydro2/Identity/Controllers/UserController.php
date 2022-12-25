@@ -10,6 +10,7 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
+use Package\Pivel\Hydro2\Identity\Extensions\Permissions;
 use Package\Pivel\Hydro2\Identity\Models\User;
 use Package\Pivel\Hydro2\Identity\Services\IdentityService;
 
@@ -22,7 +23,7 @@ class IdentityController extends BaseController
         if (!DatabaseService::IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
-        if (!IdentityService::GetRequestUser($this->request)->role->HasPermission('pivel/hydro2/viewusers')) {
+        if (!IdentityService::GetRequestUser($this->request)->role->HasPermission(Permissions::ViewUsers->value)) {
             return new Response(status: StatusCode::NotFound);
         }
 
@@ -72,7 +73,7 @@ class IdentityController extends BaseController
         // if current user doesn't have permission pivel/hydro2/viewusers/, return 404,
         //  unless trying to get info about self which is always allowed
         if (!(
-            IdentityService::GetRequestUser($this->request)->role->HasPermission('pivel/hydro2/viewusers') ||
+            IdentityService::GetRequestUser($this->request)->role->HasPermission(Permissions::ViewUsers->value) ||
             IdentityService::GetRequestUser($this->request)->RandomId === ($this->request->Args['id']??null)
             )) {
             return new Response(status: StatusCode::NotFound);
