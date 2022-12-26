@@ -18,4 +18,9 @@ class IdentityService
 
         return self::$requestUser;
     }
+
+    // TODO get this from some kind of settings/configuration
+    public static function GetDefaultUserRole() : UserRole {
+        return UserRole::LoadFromId(1)??(new UserRole('Default','Default Role'));
+    }
 }

@@ -34,6 +34,8 @@ class User extends BaseObject
     public ?DateTime $InsertedTime = null;
     #[TableColumn('email')]
     public string $Email;
+    #[TableColumn('email_confirmed')]
+    public bool $EmailConfirmed;
     #[TableColumn('name')]
     public string $Name;
     #[TableColumn('user_role_id')]
@@ -45,6 +47,8 @@ class User extends BaseObject
     public bool $Enabled;
     #[TableColumn('failed_login_attempts')]
     public int $FailedLoginAttempts;
+    #[TableColumn('failed_2FA_attempts')]
+    public int $Failed2FAAttempts;
     #[ChildTable('hydro2_user_sessions')]
     /** @var Session[] */
     public array $Sessions;
@@ -64,6 +68,7 @@ class User extends BaseObject
         ?UserRole $role=null,
         ) {
         $this->Email = $email;
+        $this->EmailConfirmed = false;
         $this->Name = $name;
         $this->NeedsReview = $needsReview;
         $this->Enabled = $enabled;

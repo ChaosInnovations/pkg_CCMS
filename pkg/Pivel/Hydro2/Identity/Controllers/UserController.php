@@ -12,6 +12,7 @@ use Package\Pivel\Hydro2\Core\Models\Response;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
 use Package\Pivel\Hydro2\Identity\Extensions\Permissions;
 use Package\Pivel\Hydro2\Identity\Models\User;
+use Package\Pivel\Hydro2\Identity\Models\UserRole;
 use Package\Pivel\Hydro2\Identity\Services\IdentityService;
 
 #[RoutePrefix('api/hydro2/core/identity/users')]
@@ -56,13 +57,115 @@ class IdentityController extends BaseController
         );
     }
 
-    // TODO: Implement CreateUser
     #[Route(Method::POST, '')]
     #[Route(Method::POST, 'create')]
     public function CreateUser() : Response {
+        if (!DatabaseService::IsPrimaryConnected()) {
+            return new Response(status: StatusCode::NotFound);
+        }
+        // if current user doesn't have permission pivel/hydro2/viewusers/, return 404,
+        //  unless trying to get info about self which is always allowed
+        // TODO Self-creation
+        if (!IdentityService::GetRequestUser($this->request)->role->HasPermission(Permissions::CreateUsers->value)) {
+            return new Response(status: StatusCode::NotFound);
+        }
+
+        // need to provide email, name, and role (optional)
+        if (!isset($this->request->Args['email'])) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'email',
+                            'description' => 'New User\'s email address.',
+                            'message' => 'Argument is missing.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are missing.'
+            );
+        }
+        if (!isset($this->request->Args['name'])) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'name',
+                            'description' => 'New User\'s name.',
+                            'message' => 'Argument is missing.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are missing.'
+            );
+        }
+        $roleId = $this->request->Args['role_id']??null;
+        $role = null;
+        if ($roleId !== null) {
+            $role = UserRole::LoadFromId($roleId);
+            if ($role === null) {
+                return new JsonResponse(
+                    data: [
+                        'validation_errors' => [
+                            [
+                                'name' => 'role_id',
+                                'description' => 'New User\'s Role.',
+                                'message' => 'This user role doesn\t exist.',
+                            ],
+                        ],
+                    ],
+                    status: StatusCode::BadRequest,
+                    error_message: 'One or more arguments are missing.'
+                );
+            }
+        } else {
+            $role = IdentityService::GetDefaultUserRole();
+        }
+
+        // check that there isn't already a User with this email
+        if (User::LoadFromEmail($this->request->Args['email']) !== null) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'email',
+                            'description' => 'New User\'s name.',
+                            'message' => 'A user already exists with this email.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are missing.'
+            );
+        }
+
+        // TODO email validation
+
+        $user = new User(
+            email: $this->request->Args['email'],
+            name: $this->request->Args['name'],
+            enabled: true,
+            role: $role,
+        );
+
+        // TODO send confirmation email to new address
+
+        if (!$user->Save()) {
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "There was a problem with the database."
+            );
+        }
+
         return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
+            data: [
+                'new_user' => [
+                    'id' => $user->RandomId,
+                ],
+            ],
+            status:StatusCode::OK
         );
     }
 
@@ -100,6 +203,22 @@ class IdentityController extends BaseController
 
         $user = User::LoadFromRandomId($this->request->Args['id']);
 
+        if ($user === null) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'id',
+                            'description' => 'User ID.',
+                            'message' => 'This user doesn\'t exist.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are missing.'
+            );
+        }
+
         $userResults = [[
             'random_id' => $user->RandomId,
             'created' => $user->InsertedTime,
@@ -122,13 +241,118 @@ class IdentityController extends BaseController
         );
     }
 
-    // TODO Implement UpdateUser
     #[Route(Method::POST, '{id}')]
     #[Route(Method::POST, '{id}/update')]
     public function UpdateUser() : Response {
+        if (!DatabaseService::IsPrimaryConnected()) {
+            return new Response(status: StatusCode::NotFound);
+        }
+        // if manageuser or if self.
+        if (!(
+            IdentityService::GetRequestUser($this->request)->role->HasPermission(Permissions::ManageUsers->value) ||
+            IdentityService::GetRequestUser($this->request)->RandomId === ($this->request->Args['id']??null)
+            )) {
+            return new Response(status: StatusCode::NotFound);
+        }
+
+        if (!isset($this->request->Args['id'])) {
+            // missing argument
+            // return response with code 400 (Bad Request)
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'id',
+                            'description' => 'User ID',
+                            'message' => 'Argument is missing.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are missing.'
+            );
+        }
+
+        $user = User::LoadFromRandomId($this->request->Args['id']);
+
+        if ($user === null) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'id',
+                            'description' => 'User ID.',
+                            'message' => 'This user doesn\'t exist.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are missing.'
+            );
+        }
+
+        // TODO email validation
+        // TODO send notfication to old email + send confirmation email to new address
+        $email = $this->request->Args['email']??$user->Email;
+        $emailChanged = $email !== $user->Email;
+        $user->Email = $email;
+        $user->EmailConfirmed = $user->EmailConfirmed && (!$emailChanged);
+        $user->Name = $this->request->Args['name']??$user->Name;
+
+        // the following fields cannot be edited by self/without manageuser permissions:
+        //  Role
+        //  NeedsReview
+        //  Enabled
+        //  FailedLogin/2FAAttempts (to unlock a user's login attempts)
+        $roleId = $this->request->Args['role_id']??null;
+        $role = null;
+        if ($roleId !== null) {
+            $role = UserRole::LoadFromId($roleId);
+            if ($role === null) {
+                return new JsonResponse(
+                    data: [
+                        'validation_errors' => [
+                            [
+                                'name' => 'role_id',
+                                'description' => 'New User\'s Role.',
+                                'message' => 'This user role doesn\t exist.',
+                            ],
+                        ],
+                    ],
+                    status: StatusCode::BadRequest,
+                    error_message: 'One or more arguments are missing.'
+                );
+            }
+        } else {
+            $role = $user->Role;
+        }
+        
+        if (IdentityService::GetRequestUser($this->request)->role->HasPermission(Permissions::ManageUsers->value)) {
+            $user->Role = $role;
+            $user->NeedsReview = $this->request->Args['needs_review']??$user->NeedsReview;
+            $user->Enabled = $this->request->Args['enabled']??$user->Enabled;
+            if ($this->request->Args['reset_failed_login_attempts']??false) {
+                $user->FailedLoginAttempts = 0;
+            }
+            if ($this->request->Args['reset_failed_2fa_attempts']??false) {
+                $user->Failed2FAAttempts = 0;
+            }
+        }
+
+        if (!$user->Save()) {
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "There was a problem with the database."
+            );
+        }
+
         return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
+            data: [
+                'new_user' => [
+                    'id' => $user->RandomId,
+                ],
+            ],
+            status:StatusCode::OK
         );
     }
 
@@ -165,9 +389,8 @@ class IdentityController extends BaseController
 
         if ($user != null && !$user->Delete()) {
             return new JsonResponse(
-                null,
-                StatusCode::InternalServerError,
-                "There was a problem with the database."
+                status: StatusCode::InternalServerError,
+                error_message: "There was a problem with the database."
             );
         }
 
