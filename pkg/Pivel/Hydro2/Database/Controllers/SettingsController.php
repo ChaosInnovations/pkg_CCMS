@@ -19,6 +19,37 @@ class SettingsController extends BaseController
         return false;
     }
 
+    #[Route(Method::GET, '~/api/hydro2/database/profiles')]
+    public function GetAllProfiles() : Response
+    {
+        // if database has already been configured and not logged in as admin, return 404
+        if (!DatabaseService::IsPrimaryConnected() || !$this->UserHasPermission("database:admin")) {
+            return new Response(
+                status: StatusCode::NotFound
+            );
+        }
+
+        $profiles = DatabaseConfigurationProfile::GetAll();
+        $serializedProfiles = [];
+        foreach ($profiles as $profile) {
+            $serializedProfiles[] = [
+                'key' => $profile->Key,
+                'driver' => $profile->Driver,
+                'host' => $profile->Host,
+                'username' => $profile->Username,
+                // Don't return the password.
+                'database' => $profile->DatabaseSchema,
+            ];
+        }
+
+        return new JsonResponse(
+            data: [
+                'databaseprofiles' => $serializedProfiles,
+            ],
+            status: StatusCode::OK,
+        );
+    }
+
     #[Route(Method::POST, 'getdrivers')]
     public function GetDrivers() : Response
     {

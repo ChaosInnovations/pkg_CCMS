@@ -15,6 +15,34 @@ class DatabaseConfigurationProfile
 
     }
 
+    /**
+     * @return DatabaseConfigurationProfile[]
+     */
+    public static function GetAll() : array {
+        if (!file_exists(dirname(__FILE__, 2) . '/config.json')) {
+            $defaultConfig = new DatabaseConfigurationProfile('primary', 'sqlite', 'default.sqlite3', null, null, null);
+            $defaultConfig->Save();
+        }
+
+        $raw_config = file_get_contents(dirname(__FILE__, 2) . '/config.json');
+        /** @var array[] */
+        $config = json_decode($raw_config, true);
+        if (json_last_error() != JSON_ERROR_NONE) {
+            return [];
+        }
+
+        return array_map(function($k) use ($config) : DatabaseConfigurationProfile {
+            return new self(
+                $k,
+                $config[$k]['driver'],
+                $config[$k]['host'],
+                $config[$k]['username']??null,
+                $config[$k]['password']??null,
+                $config[$k]['databaseschema']??null,
+            );
+        }, array_keys($config));
+    }
+
     public static function LoadFromKey(string $key) : ?self {
         if (!file_exists(dirname(__FILE__, 2) . '/config.json')) {
             $defaultConfig = new DatabaseConfigurationProfile('primary', 'sqlite', 'default.sqlite3', null, null, null);
