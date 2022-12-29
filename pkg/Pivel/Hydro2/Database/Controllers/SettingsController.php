@@ -9,6 +9,7 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
 use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
+use Package\Pivel\Hydro2\Database\Models\DatabaseConfigurationProfile;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
 
 #[RoutePrefix('api/hydro2/core/database/settings')]
@@ -525,14 +526,18 @@ class SettingsController extends BaseController
             }
         }
 
+        $configurationKey = $this->request->Args['key']??'primary';
+
+        $profile = DatabaseConfigurationProfile::LoadFromKey($configurationKey)??new DatabaseConfigurationProfile($configurationKey,'','');
+
+        $profile->Driver = $this->request->Args['driver'];
+        $profile->Host = $this->request->Args['host'];
+        $profile->Username = $username;
+        $profile->Password = $password;
+        $profile->DatabaseSchema = $database;
+
         // save configuration settings
-        DatabaseService::UpdateConfiguration(
-            $this->request->Args['driver'],
-            $this->request->Args['host'],
-            $username,
-            $password,
-            $database,
-        );
+        $profile->Save();
         
         return new JsonResponse(
             data: [
