@@ -8,9 +8,9 @@ class DatabaseConfigurationProfile
         public string $Key,
         public string $Driver,
         public string $Host,
-        public ?string $Username,
-        public ?string $Password,
-        public ?string $DatabaseSchema,
+        public ?string $Username = null,
+        public ?string $Password = null,
+        public ?string $DatabaseSchema = null,
     ) {
 
     }

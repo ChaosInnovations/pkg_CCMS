@@ -4,6 +4,7 @@ namespace Package\Pivel\Hydro2\Database\Controllers;
 
 use Package\Pivel\Hydro2\Database\Extensions\Exceptions\TableNotFoundException;
 use Package\Pivel\Hydro2\Database\Extensions\Where;
+use Package\Pivel\Hydro2\Database\Models\DatabaseConfigurationProfile;
 use Package\Pivel\Hydro2\Database\Models\TableColumn;
 use Package\Pivel\Hydro2\Database\Models\Type;
 use PDO;
@@ -13,8 +14,8 @@ class SqliteDatabaseProvider extends PDO implements IDatabaseProvider
 {
     private string $file;
 
-    public function __construct(string $host, ?string $database, ?string $username, ?string $password) {
-        $this->file = $host;
+    public function __construct(DatabaseConfigurationProfile $profile) {
+        $this->file = $profile->Host;
     }
 
     public function OpenConnection() : bool
