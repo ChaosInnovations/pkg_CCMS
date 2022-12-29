@@ -9,6 +9,7 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
 use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
+use Package\Pivel\Hydro2\Database\Models\DatabaseConfigurationProfile;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
 
 #[RoutePrefix('api/hydro2/core/database/settings')]
@@ -16,6 +17,37 @@ class SettingsController extends BaseController
 {
     private function UserHasPermission(string $permission) : bool {
         return false;
+    }
+
+    #[Route(Method::GET, '~/api/hydro2/database/profiles')]
+    public function GetAllProfiles() : Response
+    {
+        // if database has already been configured and not logged in as admin, return 404
+        if (!DatabaseService::IsPrimaryConnected() || !$this->UserHasPermission("database:admin")) {
+            return new Response(
+                status: StatusCode::NotFound
+            );
+        }
+
+        $profiles = DatabaseConfigurationProfile::GetAll();
+        $serializedProfiles = [];
+        foreach ($profiles as $profile) {
+            $serializedProfiles[] = [
+                'key' => $profile->Key,
+                'driver' => $profile->Driver,
+                'host' => $profile->Host,
+                'username' => $profile->Username,
+                // Don't return the password.
+                'database' => $profile->DatabaseSchema,
+            ];
+        }
+
+        return new JsonResponse(
+            data: [
+                'databaseprofiles' => $serializedProfiles,
+            ],
+            status: StatusCode::OK,
+        );
     }
 
     #[Route(Method::POST, 'getdrivers')]
@@ -525,14 +557,18 @@ class SettingsController extends BaseController
             }
         }
 
+        $configurationKey = $this->request->Args['key']??'primary';
+
+        $profile = DatabaseConfigurationProfile::LoadFromKey($configurationKey)??new DatabaseConfigurationProfile($configurationKey,'','');
+
+        $profile->Driver = $this->request->Args['driver'];
+        $profile->Host = $this->request->Args['host'];
+        $profile->Username = $username;
+        $profile->Password = $password;
+        $profile->DatabaseSchema = $database;
+
         // save configuration settings
-        DatabaseService::UpdateConfiguration(
-            $this->request->Args['driver'],
-            $this->request->Args['host'],
-            $username,
-            $password,
-            $database,
-        );
+        $profile->Save();
         
         return new JsonResponse(
             data: [

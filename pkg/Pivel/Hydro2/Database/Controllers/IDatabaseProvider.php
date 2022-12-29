@@ -3,11 +3,12 @@
 namespace Package\Pivel\Hydro2\Database\Controllers;
 
 use Package\Pivel\Hydro2\Database\Extensions\Where;
+use Package\Pivel\Hydro2\Database\Models\DatabaseConfigurationProfile;
 use Package\Pivel\Hydro2\Database\Models\Type;
 
 interface IDatabaseProvider
 {
-    public function __construct(string $host, ?string $database, ?string $username, ?string $password);
+    public function __construct(DatabaseConfigurationProfile $profile);
     // Methods for opening/checking host/user/connection
     public function OpenConnection() : bool;
     public function CanCreateDatabases(?string $username=null) : bool;

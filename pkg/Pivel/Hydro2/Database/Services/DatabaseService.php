@@ -8,6 +8,7 @@ use Package\Pivel\Hydro2\Database\Controllers\SqliteDatabaseProvider;
 use Package\Pivel\Hydro2\Database\Extensions\Exceptions\HostNotFoundException;
 use Package\Pivel\Hydro2\Database\Extensions\Exceptions\InvalidConfigurationException;
 use Package\Pivel\Hydro2\Database\Extensions\Exceptions\InvalidUserException;
+use Package\Pivel\Hydro2\Database\Models\DatabaseConfigurationProfile;
 use PDO;
 use PDOException;
 
@@ -47,24 +48,13 @@ class DatabaseService
     ];
     
     public function __construct(string $configurationKey='primary') {
-        $config = self::LoadConfiguration($configurationKey);
-        if ($config == false) {
-            if ($configurationKey != 'primary') {
-                throw new InvalidConfigurationException("Configuration '{$configurationKey}' couldn't be loaded.", 1);
-            }
+        $config = DatabaseConfigurationProfile::LoadFromKey($configurationKey);
 
-            // if primary not configured yet, set default.sqlite3 as the default.
-            self::UpdateConfiguration('sqlite', 'default.sqlite3', null, null, null, $configurationKey);
-            $config = self::LoadConfiguration($configurationKey);
+        if ($config === null) {
+            throw new InvalidConfigurationException("Configuration '{$configurationKey}' couldn't be loaded.", 1);
         }
-
-        $this->databaseProvider = self::GetDatabaseProvider(
-            $config['driver'],
-            $config['host'],
-            $config['database'],
-            $config['username'],
-            $config['password'],
-        );
+        
+        $this->databaseProvider = self::GetDatabaseProvider($config);
 
         if (!($this->databaseProvider instanceof IDatabaseProvider)) {
             throw new InvalidConfigurationException("Configuration \"{$configurationKey}\" is invalid.", 2);
@@ -73,56 +63,18 @@ class DatabaseService
         $this->connectionOpen = $this->databaseProvider->OpenConnection();
     }
 
-    public static function GetDatabaseProvider(string $driver, string $host, ?string $database, ?string $username, ?string $password) : null|IDatabaseProvider {
-        if (!isset(self::$databaseProviders[$driver])) {
+    public static function GetDatabaseProvider(DatabaseConfigurationProfile $profile) : ?IDatabaseProvider {
+        // string $driver, string $host, ?string $database, ?string $username, ?string $password) : null|IDatabaseProvider {
+        if (!isset(self::$databaseProviders[$profile->Driver])) {
             return null;
         }
 
-        $providerName = self::$databaseProviders[$driver];
-        return new $providerName($host, $database, $username, $password);
+        $providerName = self::$databaseProviders[$profile->Driver];
+        return new $providerName($profile);
     }
 
     public function IsConnectionOpen() : bool {
         return $this->connectionOpen;
-    }
-
-    public static function LoadConfiguration(string $configurationKey) : bool|array {
-        if (!file_exists(dirname(__FILE__, 2) . '/config.json')) {
-            return false;
-        }
-
-        $raw_config = file_get_contents(dirname(__FILE__, 2) . '/config.json');
-        /** @var array[] */
-        $c = json_decode($raw_config, true);
-        if (json_last_error() != JSON_ERROR_NONE) {
-            return false;
-        }
-
-        return $c[$configurationKey]??[];
-    }
-
-    public static function UpdateConfiguration(string $driver, string $host, ?string $username, ?string $password, ?string $database, string $configurationKey='primary') {
-        $config = [];
-
-        if (file_exists(dirname(__FILE__, 2) . '/config.json')) {
-            $raw_config = file_get_contents(dirname(__FILE__, 2) . '/config.json');
-            $config = json_decode($raw_config, true);
-            if (json_last_error() != JSON_ERROR_NONE) {
-                $config = [];
-            }
-        }
-
-        $config[$configurationKey] = [
-            'driver' => $driver,
-            'host' => $host,
-            'username' => $username,
-            'password' => $password,
-            'database' => $database,
-        ];
-
-        file_put_contents(dirname(__FILE__, 2) . '/config.json', json_encode($config));
-
-        // if the database configuration is being changed, should database content be migrated?
     }
 
     /** @return string[] */
@@ -135,7 +87,7 @@ class DatabaseService
     }
 
     public static function CheckHost(string $driver, string $host) : bool {
-        $dbp = self::GetDatabaseProvider($driver, $host, null, null, null);
+        $dbp = self::GetDatabaseProvider(new DatabaseConfigurationProfile('', $driver, $host));
         if (!($dbp instanceof IDatabaseProvider)) {
             return false;
         }
@@ -152,7 +104,7 @@ class DatabaseService
     }
 
     public static function GetPrivileges(string $driver, string $host, ?string $username, ?string $password) : bool|array {
-        $dbp = self::GetDatabaseProvider($driver, $host, null, $username, $password);
+        $dbp = self::GetDatabaseProvider(new DatabaseConfigurationProfile('', $driver, $host, $username, $password));
         if (!($dbp instanceof IDatabaseProvider)) {
             return false;
         }
@@ -171,7 +123,7 @@ class DatabaseService
     }
 
     public static function GetDatabases(string $driver, string $host, ?string $username, ?string $password) : bool|array {
-        $dbp = self::GetDatabaseProvider($driver, $host, null, $username, $password);
+        $dbp = self::GetDatabaseProvider(new DatabaseConfigurationProfile('', $driver, $host, $username, $password));
         if (!($dbp instanceof IDatabaseProvider)) {
             return false;
         }
@@ -189,7 +141,7 @@ class DatabaseService
     }
 
     public static function CreateDatabase(string $driver, string $host, ?string $username, ?string $password, string $database) : bool {
-        $dbp = self::GetDatabaseProvider($driver, $host, null, $username, $password);
+        $dbp = self::GetDatabaseProvider(new DatabaseConfigurationProfile('', $driver, $host, $username, $password));
         if (!($dbp instanceof IDatabaseProvider)) {
             return false;
         }

@@ -6,6 +6,7 @@ use Package\Pivel\Hydro2\Database\Extensions\Exceptions\HostNotFoundException;
 use Package\Pivel\Hydro2\Database\Extensions\Exceptions\InvalidUserException;
 use Package\Pivel\Hydro2\Database\Extensions\Exceptions\TableNotFoundException;
 use Package\Pivel\Hydro2\Database\Extensions\Where;
+use Package\Pivel\Hydro2\Database\Models\DatabaseConfigurationProfile;
 use Package\Pivel\Hydro2\Database\Models\TableColumn;
 use Package\Pivel\Hydro2\Database\Models\Type;
 use PDO;
@@ -18,11 +19,11 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
     private ?string $username;
     private ?string $password;
 
-    public function __construct(string $host, ?string $database, ?string $username, ?string $password) {
-        $this->host = $host;
-        $this->database = $database;
-        $this->username = $username;
-        $this->password = $password;
+    public function __construct(DatabaseConfigurationProfile $profile) {
+        $this->host = $profile->Host;
+        $this->database = $profile->DatabaseSchema;
+        $this->username = $profile->Username;
+        $this->password = $profile->Password;
 
         
     }
