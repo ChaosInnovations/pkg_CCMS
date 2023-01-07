@@ -77,13 +77,32 @@ class SettingsController extends BaseController
 
     #[Route(Method::GET, '{key}')]
     public function GetProfile() : Response {
-        return new Response(
-            status: StatusCode::NotImplemented
+        // if database has already been configured and not logged in as admin, return 404
+        if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
+            return new Response(
+                status: StatusCode::NotFound
+            );
+        }
+
+        $profile = OutboundEmailProfile::LoadFromKey($this->request->Args['key']);
+        $serializedProfiles = [
+            [
+                'key' => $profile->Key,
+                'name' => $profile->Name,
+                'type' => $profile->Type,
+            ]
+        ];
+
+        return new JsonResponse(
+            data: [
+                'outboundemailprofiles' => $serializedProfiles,
+            ],
+            status: StatusCode::OK,
         );
     }
 
     #[Route(Method::POST, '{key}')]
-    #[Route(Method::POST, '{key}}/update')]
+    #[Route(Method::POST, '{key}/update')]
     public function UpdateProfile() : Response {
         return new Response(
             status: StatusCode::NotImplemented
