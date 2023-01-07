@@ -40,4 +40,11 @@ class EmailService
         $providerName = self::$emailProviders[$profile->Key];
         return new $providerName($profile);
     }
+
+    /**
+     * @return string[]
+     */
+    public static function GetAvailableProviders() : array {
+        return array_keys(self::$emailProviders);
+    }
 }
