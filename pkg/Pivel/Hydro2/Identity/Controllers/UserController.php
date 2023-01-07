@@ -10,6 +10,8 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
+use Package\Pivel\Hydro2\Email\Models\EmailMessage;
+use Package\Pivel\Hydro2\Email\Services\EmailService;
 use Package\Pivel\Hydro2\Identity\Extensions\Permissions;
 use Package\Pivel\Hydro2\Identity\Models\User;
 use Package\Pivel\Hydro2\Identity\Models\UserRole;
@@ -24,7 +26,7 @@ class IdentityController extends BaseController
         if (!DatabaseService::IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
-        if (!IdentityService::GetRequestUser($this->request)->role->HasPermission(Permissions::ViewUsers->value)) {
+        if (!IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ViewUsers->value)) {
             return new Response(status: StatusCode::NotFound);
         }
 
@@ -66,7 +68,7 @@ class IdentityController extends BaseController
         // if current user doesn't have permission pivel/hydro2/viewusers/, return 404,
         //  unless trying to get info about self which is always allowed
         // TODO Self-creation
-        if (!IdentityService::GetRequestUser($this->request)->role->HasPermission(Permissions::CreateUsers->value)) {
+        if (!IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUsers->value)) {
             return new Response(status: StatusCode::NotFound);
         }
 
@@ -117,7 +119,7 @@ class IdentityController extends BaseController
                         ],
                     ],
                     status: StatusCode::BadRequest,
-                    error_message: 'One or more arguments are missing.'
+                    error_message: 'One or more arguments are invalid.'
                 );
             }
         } else {
@@ -137,11 +139,27 @@ class IdentityController extends BaseController
                     ],
                 ],
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are missing.'
+                error_message: 'One or more arguments are invalid.'
             );
         }
 
         // TODO email validation
+        $emailProfileProvider = EmailService::GetOutboundEmailProviderInstance('noreply');
+        if ($emailProfileProvider === null) {
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "Unable to send validation email."
+            );
+        }
+        $message = new EmailMessage();
+        //$message->SetHTMLBody();
+        //$message->SetAltBody();
+        if (!$emailProfileProvider->SendEmail($message)) {
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "Unable to send validation email."
+            );
+        }
 
         $user = new User(
             email: $this->request->Args['email'],
@@ -149,8 +167,6 @@ class IdentityController extends BaseController
             enabled: true,
             role: $role,
         );
-
-        // TODO send confirmation email to new address
 
         if (!$user->Save()) {
             return new JsonResponse(
@@ -177,7 +193,7 @@ class IdentityController extends BaseController
         // if current user doesn't have permission pivel/hydro2/viewusers/, return 404,
         //  unless trying to get info about self which is always allowed
         if (!(
-            IdentityService::GetRequestUser($this->request)->role->HasPermission(Permissions::ViewUsers->value) ||
+            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ViewUsers->value) ||
             IdentityService::GetRequestUser($this->request)->RandomId === ($this->request->Args['id']??null)
             )) {
             return new Response(status: StatusCode::NotFound);
@@ -215,7 +231,7 @@ class IdentityController extends BaseController
                     ],
                 ],
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are missing.'
+                error_message: 'One or more arguments are invalid.'
             );
         }
 
@@ -249,7 +265,7 @@ class IdentityController extends BaseController
         }
         // if manageuser or if self.
         if (!(
-            IdentityService::GetRequestUser($this->request)->role->HasPermission(Permissions::ManageUsers->value) ||
+            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value) ||
             IdentityService::GetRequestUser($this->request)->RandomId === ($this->request->Args['id']??null)
             )) {
             return new Response(status: StatusCode::NotFound);
@@ -287,7 +303,7 @@ class IdentityController extends BaseController
                     ],
                 ],
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are missing.'
+                error_message: 'One or more arguments are invalid.'
             );
         }
 
@@ -320,14 +336,14 @@ class IdentityController extends BaseController
                         ],
                     ],
                     status: StatusCode::BadRequest,
-                    error_message: 'One or more arguments are missing.'
+                    error_message: 'One or more arguments are invalid.'
                 );
             }
         } else {
             $role = $user->Role;
         }
         
-        if (IdentityService::GetRequestUser($this->request)->role->HasPermission(Permissions::ManageUsers->value)) {
+        if (IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value)) {
             $user->Role = $role;
             $user->NeedsReview = $this->request->Args['needs_review']??$user->NeedsReview;
             $user->Enabled = $this->request->Args['enabled']??$user->Enabled;
@@ -363,7 +379,7 @@ class IdentityController extends BaseController
             return new Response(status: StatusCode::NotFound);
         }
         // if current user doesn't have permission pivel/hydro2/manageusers/, return 404
-        if (!IdentityService::GetRequestUser($this->request)->role->HasPermission(Permissions::ManageUsers->value)) {
+        if (!IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value)) {
             return new Response(status: StatusCode::NotFound);
         }
 
