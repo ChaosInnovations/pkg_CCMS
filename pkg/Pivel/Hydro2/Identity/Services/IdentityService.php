@@ -23,4 +23,13 @@ class IdentityService
     public static function GetDefaultUserRole() : UserRole {
         return UserRole::LoadFromId(1)??(new UserRole('Default','Default Role'));
     }
+
+    public static function GetEmailVerificationUrl(Request $request, User $user, bool $regenerate=false) {
+        if ($regenerate) {
+            $user->GenerateEmailVerificationToken();
+        }
+        $token = $user->GetEmailVerificationToken();
+        $url = "{$request->baseUrl}/verifyuseremail/{$user->RandomId}?token={$token}";
+        return $url;
+    }
 }

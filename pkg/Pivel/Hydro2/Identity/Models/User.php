@@ -34,8 +34,10 @@ class User extends BaseObject
     public ?DateTime $InsertedTime = null;
     #[TableColumn('email')]
     public string $Email;
-    #[TableColumn('email_confirmed')]
-    public bool $EmailConfirmed;
+    #[TableColumn('email_verified')]
+    public bool $EmailVerified;
+    #[TableColumn('email_verification_token')]
+    public ?string $EmailVerificationToken = null;
     #[TableColumn('name')]
     public string $Name;
     #[TableColumn('user_role_id')]
@@ -175,7 +177,22 @@ class User extends BaseObject
             $this->InsertedTime = new DateTime(timezone:new DateTimeZone('UTC'));
         }
 
-        return $this->UpdateOrCreateEntry();
+        if (!$this->UpdateOrCreateEntry()) {
+            return false;
+        }
+
+        // if this was a new entry, update our record of Id
+        if ($this->Id !== null) {
+            return true;
+        }
+
+        $table = self::getTable();
+        $results = $table->Select(null, (new Where())->Equal('random_id', $this->RandomId));
+        if (count($results) != 1) {
+            return false;
+        }
+
+        $this->Id = $results[0]['id'];
     }
 
     public function Delete() : bool {
@@ -185,6 +202,22 @@ class User extends BaseObject
     public function isValidUser()
     {
         return $this->Id !== null;
+    }
+
+    public function GetEmailVerificationToken() : string
+    {
+        return $this->EmailVerificationToken??$this->GenerateEmailVerificationToken();
+    }
+
+    public function GenerateEmailVerificationToken() : string {
+        $this->EmailVerificationToken = bin2hex(random_bytes(16));
+        $this->Save();
+        return $this->EmailVerificationToken;
+    }
+
+    public function ValidateEmailVerificationToken(string $token) : bool
+    {
+        return $token === $this->EmailVerificationToken;
     }
     
     // Needs rewrite of email system first

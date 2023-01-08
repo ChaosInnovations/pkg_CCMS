@@ -16,6 +16,7 @@ use Package\Pivel\Hydro2\Identity\Extensions\Permissions;
 use Package\Pivel\Hydro2\Identity\Models\User;
 use Package\Pivel\Hydro2\Identity\Models\UserRole;
 use Package\Pivel\Hydro2\Identity\Services\IdentityService;
+use Package\Pivel\Hydro2\Identity\Views\NewUserVerificationEmailView;
 
 #[RoutePrefix('api/hydro2/core/identity/users')]
 class IdentityController extends BaseController
@@ -143,24 +144,6 @@ class IdentityController extends BaseController
             );
         }
 
-        // TODO email validation
-        $emailProfileProvider = EmailService::GetOutboundEmailProviderInstance('noreply');
-        if ($emailProfileProvider === null) {
-            return new JsonResponse(
-                status: StatusCode::InternalServerError,
-                error_message: "Unable to send validation email."
-            );
-        }
-        $message = new EmailMessage();
-        //$message->SetHTMLBody();
-        //$message->SetAltBody();
-        if (!$emailProfileProvider->SendEmail($message)) {
-            return new JsonResponse(
-                status: StatusCode::InternalServerError,
-                error_message: "Unable to send validation email."
-            );
-        }
-
         $user = new User(
             email: $this->request->Args['email'],
             name: $this->request->Args['name'],
@@ -172,6 +155,25 @@ class IdentityController extends BaseController
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database."
+            );
+        }
+
+        // TODO email validation
+        $emailProfileProvider = EmailService::GetOutboundEmailProviderInstance('noreply');
+        if ($emailProfileProvider === null) {
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "Unable to send validation email."
+            );
+        }
+        $message = new EmailMessage();
+        $view = new NewUserVerificationEmailView(IdentityService::GetEmailVerificationUrl($this->request, $user, true), $user->Name);
+        $message->SetHTMLBody($view);
+        //$message->SetAltBody();
+        if (!$emailProfileProvider->SendEmail($message)) {
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "Unable to send validation email."
             );
         }
 
@@ -197,24 +199,6 @@ class IdentityController extends BaseController
             IdentityService::GetRequestUser($this->request)->RandomId === ($this->request->Args['id']??null)
             )) {
             return new Response(status: StatusCode::NotFound);
-        }
-
-        if (!isset($this->request->Args['id'])) {
-            // missing argument
-            // return response with code 400 (Bad Request)
-            return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'id',
-                            'description' => 'User ID',
-                            'message' => 'Argument is missing.',
-                        ],
-                    ],
-                ],
-                status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are missing.'
-            );
         }
 
         $user = User::LoadFromRandomId($this->request->Args['id']);
@@ -271,24 +255,6 @@ class IdentityController extends BaseController
             return new Response(status: StatusCode::NotFound);
         }
 
-        if (!isset($this->request->Args['id'])) {
-            // missing argument
-            // return response with code 400 (Bad Request)
-            return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'id',
-                            'description' => 'User ID',
-                            'message' => 'Argument is missing.',
-                        ],
-                    ],
-                ],
-                status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are missing.'
-            );
-        }
-
         $user = User::LoadFromRandomId($this->request->Args['id']);
 
         if ($user === null) {
@@ -308,7 +274,7 @@ class IdentityController extends BaseController
         }
 
         // TODO email validation
-        // TODO send notfication to old email + send confirmation email to new address
+        // TODO send notfication to old email + send verification email to new address
         $email = $this->request->Args['email']??$user->Email;
         $emailChanged = $email !== $user->Email;
         $user->Email = $email;
@@ -373,7 +339,7 @@ class IdentityController extends BaseController
     }
 
     #[Route(Method::POST, '{id}/remove')]
-    #[Route(Method::DELETE, '{id}/remove')]
+    #[Route(Method::DELETE, '{id}')]
     public function DeleteUser() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
@@ -381,24 +347,6 @@ class IdentityController extends BaseController
         // if current user doesn't have permission pivel/hydro2/manageusers/, return 404
         if (!IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value)) {
             return new Response(status: StatusCode::NotFound);
-        }
-
-        if (!isset($this->request->Args['id'])) {
-            // missing argument
-            // return response with code 400 (Bad Request)
-            return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'id',
-                            'description' => 'User ID',
-                            'message' => 'Argument is missing.',
-                        ],
-                    ],
-                ],
-                status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are missing.'
-            );
         }
 
         $user = User::LoadFromRandomId($this->request->Args['id']);
@@ -416,15 +364,58 @@ class IdentityController extends BaseController
     // TODO Implement UserChangePassword
     #[Route(Method::POST, '{id}/changepassword')]
     public function UserChangePassword() : Response {
+        // check for valid id
+        // check that either the existing password or a valid passwordreset token was provided
+        // insert new password record
+        // send notification email
         return new JsonResponse(
             status:StatusCode::InternalServerError,
             error_message:'Route exists but not implemented.',
         );
     }
 
-    // TODO Implement UserResetPassword
-    #[Route(Method::POST, '{id}/resetpassword')]
-    public function UserResetPassword() : Response {
+    // TODO Implement UserSendResetPassword
+    #[Route(Method::POST, '{id}/sendpasswordreset')]
+    public function UserSendResetPassword() : Response {
+        return new JsonResponse(
+            status:StatusCode::InternalServerError,
+            error_message:'Route exists but not implemented.',
+        );
+    }
+
+    // TODO Implement VerifyUser (someone would go to this URI from a link inside the email.
+    //  need to include the view they would see in the response, or redirect to a 'verified'
+    //  page instead)
+    #[Route(Method::GET, '~verifyuseremail/{id}')]
+    public function UserVerify() : Response {
+        if (!isset($this->request->Args['token'])) {
+            // missing argument
+            return new Response(
+                content:"This verification link is not valid.",
+            );
+        }
+
+        $user = User::LoadFromRandomId($this->request->Args['id']);
+
+        if ($user === null) {
+            return new Response(
+                content:"This verification link is not valid.",
+            );
+        }
+
+        if (!$user->ValidateEmailVerificationToken($this->request->Args['token'])) {
+            return new Response(
+                content:"This verification link is not valid.",
+            );
+        }
+
+        return new Response(
+            content:"Thanks, your email is verified.",
+        );
+    }
+
+    #[Route(Method::GET, '~resetpassword/{id}')]
+    public function UserResetPasswordView() : Response {
         return new JsonResponse(
             status:StatusCode::InternalServerError,
             error_message:'Route exists but not implemented.',

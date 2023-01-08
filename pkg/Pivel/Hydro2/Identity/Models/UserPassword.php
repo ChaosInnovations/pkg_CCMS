@@ -24,9 +24,9 @@ class UserPassword extends BaseObject
 
     #[TableColumn('password_hash', sqlType:Type::TINYTEXT)]
     public string $PasswordHash;
-    #[TableColumn('start')]
+    #[TableColumn('start')] // regardless of expire time, the password with the most recent start is the current one
     public ?DateTime $StartTime;
-    #[TableColumn('expire')]
+    #[TableColumn('expire')] // if within 5 days, prompt to change on login. if past, require change on login. if null, doesn't expire
     public ?DateTime $ExpireTime;
 
     private const PASSWORD_COST = 11;
