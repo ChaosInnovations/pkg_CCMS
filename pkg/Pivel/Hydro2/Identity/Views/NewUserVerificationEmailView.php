@@ -2,9 +2,9 @@
 
 namespace Package\Pivel\Hydro2\Identity\Views;
 
-use Package\Pivel\Hydro2\Core\Views\BaseView;
+use Package\Pivel\Hydro2\Core\Views\BaseEmailView;
 
-class NewUserVerificationEmailView extends BaseView
+class NewUserVerificationEmailView extends BaseEmailView
 {
     protected string $VerifyUrl;
     protected string $Name;

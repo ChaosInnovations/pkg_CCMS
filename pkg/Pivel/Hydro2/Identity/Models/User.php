@@ -70,7 +70,7 @@ class User extends BaseObject
         ?UserRole $role=null,
         ) {
         $this->Email = $email;
-        $this->EmailConfirmed = false;
+        $this->EmailVerified = false;
         $this->Name = $name;
         $this->NeedsReview = $needsReview;
         $this->Enabled = $enabled;
@@ -171,7 +171,7 @@ class User extends BaseObject
 
     public function Save() : bool {
         if ($this->RandomId === null) {
-            $this->RandomId = md5(uniqid($this->email, true));
+            $this->RandomId = md5(uniqid($this->Email, true));
         }
         if ($this->InsertedTime === null) {
             $this->InsertedTime = new DateTime(timezone:new DateTimeZone('UTC'));

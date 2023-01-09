@@ -166,10 +166,8 @@ class IdentityController extends BaseController
                 error_message: "Unable to send validation email."
             );
         }
-        $message = new EmailMessage();
         $view = new NewUserVerificationEmailView(IdentityService::GetEmailVerificationUrl($this->request, $user, true), $user->Name);
-        $message->SetHTMLBody($view);
-        //$message->SetAltBody();
+        $message = new EmailMessage($view);
         if (!$emailProfileProvider->SendEmail($message)) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
@@ -278,7 +276,7 @@ class IdentityController extends BaseController
         $email = $this->request->Args['email']??$user->Email;
         $emailChanged = $email !== $user->Email;
         $user->Email = $email;
-        $user->EmailConfirmed = $user->EmailConfirmed && (!$emailChanged);
+        $user->EmailVerified = $user->EmailVerified && (!$emailChanged);
         $user->Name = $this->request->Args['name']??$user->Name;
 
         // the following fields cannot be edited by self/without manageuser permissions:
