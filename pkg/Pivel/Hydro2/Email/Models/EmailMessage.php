@@ -2,23 +2,24 @@
 
 namespace Package\Pivel\Hydro2\Email\Models;
 
-use Package\Pivel\Hydro2\Core\Views\BaseView;
+use Package\Pivel\Hydro2\Core\Views\BaseEmailView;
 
 class EmailMessage
 {
     private ?string $htmlBody;
     private ?string $altBody;
 
-    public function __construct()
+    public function __construct(BaseEmailView $view)
     {
-        
-    }
-
-    public function SetHTMLBody(BaseView $view) : void {
         $this->htmlBody = $view->Render();
+        $this->altBody = $view->RenderPlaintext();
     }
 
-    public function SetAltBody(BaseView $view) : void {
-        $this->altBody = $view->Render();
+    public function SetHTMLBody(string $content) : void {
+        $this->htmlBody = $content;
+    }
+
+    public function SetAltBody(string $content) : void {
+        $this->altBody = $content;
     }
 }

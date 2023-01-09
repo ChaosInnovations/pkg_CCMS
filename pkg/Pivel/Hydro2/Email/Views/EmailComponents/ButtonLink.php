@@ -2,9 +2,9 @@
 
 namespace Package\Pivel\Hydro2\Email\Views\EmailComponents;
 
-use Package\Pivel\Hydro2\Core\Views\BaseView;
+use Package\Pivel\Hydro2\Core\Views\BaseEmailView;
 
-class ButtonLink extends BaseView
+class ButtonLink extends BaseEmailView
 {
     protected string $Url;
     protected string $Content;
