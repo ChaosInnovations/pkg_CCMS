@@ -5,6 +5,7 @@ namespace Package\Pivel\Hydro2\Database\Controllers;
 use Package\Pivel\Hydro2\Database\Extensions\Exceptions\HostNotFoundException;
 use Package\Pivel\Hydro2\Database\Extensions\Exceptions\InvalidUserException;
 use Package\Pivel\Hydro2\Database\Extensions\Exceptions\TableNotFoundException;
+use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
 use Package\Pivel\Hydro2\Database\Extensions\Where;
 use Package\Pivel\Hydro2\Database\Models\DatabaseConfigurationProfile;
 use Package\Pivel\Hydro2\Database\Models\TableColumn;
@@ -123,10 +124,14 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
         $stmt->execute();
     }
 
-    public function Select(string $tableName, array $columns, null|Where $where, $order, $limit) : array {
+    public function Select(string $tableName, array $columns, ?Where $where, ?OrderBy $order, ?int $limit) : array {
         $columnsString = implode(',',array_map(fn($col):string=>$col->columnName,$columns));
+        $query = 'SELECT '.$columnsString.' FROM '.$tableName;
+        $query .= ($where==null?'':' '.$where->GetParameterizedQueryString());
+        $query .= ($order==null?'':' '.$order->GetQueryString());
+        $query .= ($limit==null?'':' LIMIT '.$limit);
         try {
-            $stmt = $this->prepare("SELECT ".$columnsString." FROM ".$tableName.($where==null?"":" ".$where->GetParameterizedQueryString()));
+            $stmt = $this->prepare($query);
             $stmt->execute($where==null?[]:$where->GetParameters());
             return $stmt->fetchAll();
         } catch (PDOException $e) {

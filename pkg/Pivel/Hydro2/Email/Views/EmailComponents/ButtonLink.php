@@ -12,9 +12,9 @@ class ButtonLink extends BaseEmailView
     protected string $TextColor;
 
     public function __construct(string $url, string $content, string $color="#0000ff", string $textColor="#ffffff") {
-        $Url = $url;
-        $Content = $content;
-        $Color = $color;
-        $TextColor = $textColor;
+        $this->Url = $url;
+        $this->Content = $content;
+        $this->Color = $color;
+        $this->TextColor = $textColor;
     }
 }
