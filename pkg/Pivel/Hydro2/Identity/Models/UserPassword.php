@@ -3,11 +3,14 @@
 namespace Package\Pivel\Hydro2\Identity\Models;
 
 use DateTime;
+use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
 use Package\Pivel\Hydro2\Database\Extensions\TableName;
 use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
 use Package\Pivel\Hydro2\Database\Extensions\TablePrimaryKey;
 use Package\Pivel\Hydro2\Database\Extensions\TableForeignKey;
+use Package\Pivel\Hydro2\Database\Extensions\Where;
 use Package\Pivel\Hydro2\Database\Models\BaseObject;
+use Package\Pivel\Hydro2\Database\Models\Order;
 use Package\Pivel\Hydro2\Database\Models\ReferenceBehaviour;
 use Package\Pivel\Hydro2\Database\Models\Type;
 
@@ -41,6 +44,16 @@ class UserPassword extends BaseObject
         $this->SetPassword($password);
         $this->StartTime = $startTime;
         $this->ExpireTime = $expireTime;
+    }
+
+    public static function LoadCurrentFromUser(User $user) : ?self {
+        $table = self::getTable();
+        $results = $table->Select(null, (new Where())->Equal('user_id', $user->Id), (new OrderBy())->Column('start', Order::Descending), 1);
+        if (count($results) != 1) {
+            return null;
+        }
+        
+        return self::CastFromRow($results[0]);
     }
 
     public function Save() : bool {

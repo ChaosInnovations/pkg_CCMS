@@ -57,9 +57,6 @@ class User extends BaseObject
     #[ChildTable('hydro2_user_passwords')]
     /** @var UserPassword[] */
     public array $Passwords;
-    
-    // move this to IdentityService as a singleton
-    //public static User $currentUser = null;
 
     public function __construct(
         string $email='',
@@ -219,9 +216,13 @@ class User extends BaseObject
     {
         return $token === $this->EmailVerificationToken;
     }
+
+    public function GetCurrentPassword() : ?UserPassword
+    {
+        return UserPassword::LoadCurrentFromUser($this);
+    }
     
-    // Needs rewrite of email system first
-    // TODO re-implement after new email system
+    // TODO re-implement after new notification system
     /*public function notify($from, $what)
     {
         global $TEMPLATES;

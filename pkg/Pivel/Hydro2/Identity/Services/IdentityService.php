@@ -3,6 +3,9 @@
 namespace Package\Pivel\Hydro2\Identity\Services;
 
 use Package\Pivel\Hydro2\Core\Models\Request;
+use Package\Pivel\Hydro2\Core\Views\BaseEmailView;
+use Package\Pivel\Hydro2\Email\Models\EmailMessage;
+use Package\Pivel\Hydro2\Email\Services\EmailService;
 use Package\Pivel\Hydro2\Identity\Models\Session;
 use Package\Pivel\Hydro2\Identity\Models\User;
 use Package\Pivel\Hydro2\Identity\Models\UserRole;
@@ -13,6 +16,8 @@ class IdentityService
     public static function GetRequestUser(Request $request) : User {
         if (self::$requestUser === null) {
             $random_id = $request->getCookie('s_rid');
+            // TODO Validate that session details match request
+            // TODO Update last access time/ip information with session
             self::$requestUser = Session::LoadFromRandomId($random_id)->GetUser()??(new User(name:'Site Visitor',role:(new UserRole(name:'Site Visitor'))));
         }
 
@@ -31,5 +36,19 @@ class IdentityService
         $token = $user->GetEmailVerificationToken();
         $url = "{$request->baseUrl}/verifyuseremail/{$user->RandomId}?token={$token}";
         return $url;
+    }
+
+    public static function SendEmailToUser(User $user, BaseEmailView $emailView) : bool {
+        $emailProfileProvider = EmailService::GetOutboundEmailProviderInstance('noreply');
+        if ($emailProfileProvider === null) {
+            return false;
+        }
+
+        $emailMessage = new EmailMessage($emailView, [$user->Email]);
+        return !$emailProfileProvider->SendEmail($emailMessage);
+    }
+
+    public static function IsPasswordResetTokenValid(string $token, User $user) : bool {
+        return false;
     }
 }

@@ -26,7 +26,7 @@ class UserRole extends BaseObject
     #[TableColumn('max_session_length')]
     public int $MaxSessionLengthMinutes;
     #[TableColumn('max_password_age')]
-    public int $MaxPasswordAgeDays;
+    public ?int $MaxPasswordAgeDays;
     #[TableColumn('days_until_2fa_setup_required')]
     public int $DaysUntil2FASetupRequired;
     #[TableColumn('challenge_interal')]
@@ -34,7 +34,7 @@ class UserRole extends BaseObject
     #[TableColumn('max_2fa_attempts')]
     public int $Max2FAAttempts;
     /** @var Permission[] */
-    #[ChildTable('hydro2_user_roles')]
+    #[ChildTable('hydro2_user_role_permissions')]
     public array $Permissions;
 
     /** @param Permission[] $permissions */

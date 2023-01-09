@@ -74,7 +74,7 @@ class Session extends BaseObject
     }
 
     public function Save() : bool {
-        if ($this->UserRoleId === null) {
+        if ($this->UserId === null) {
             return false;
         }
         return $this->UpdateOrCreateEntry();

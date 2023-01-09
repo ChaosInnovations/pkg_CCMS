@@ -2,6 +2,9 @@
 
 namespace Package\Pivel\Hydro2\Identity\Controllers;
 
+use DateInterval;
+use DateTime;
+use DateTimeZone;
 use Package\Pivel\Hydro2\Core\Controllers\BaseController;
 use Package\Pivel\Hydro2\Core\Extensions\Route;
 use Package\Pivel\Hydro2\Core\Extensions\RoutePrefix;
@@ -14,10 +17,12 @@ use Package\Pivel\Hydro2\Email\Models\EmailMessage;
 use Package\Pivel\Hydro2\Email\Services\EmailService;
 use Package\Pivel\Hydro2\Identity\Extensions\Permissions;
 use Package\Pivel\Hydro2\Identity\Models\User;
+use Package\Pivel\Hydro2\Identity\Models\UserPassword;
 use Package\Pivel\Hydro2\Identity\Models\UserRole;
 use Package\Pivel\Hydro2\Identity\Services\IdentityService;
 use Package\Pivel\Hydro2\Identity\Views\EmailViews\NewEmailNotificationEmailView;
 use Package\Pivel\Hydro2\Identity\Views\EmailViews\NewUserVerificationEmailView;
+use Package\Pivel\Hydro2\Identity\Views\EmailViews\PasswordChangedNotificationEmailView;
 
 #[RoutePrefix('api/hydro2/core/identity/users')]
 class IdentityController extends BaseController
@@ -159,21 +164,15 @@ class IdentityController extends BaseController
             );
         }
 
-        $emailProfileProvider = EmailService::GetOutboundEmailProviderInstance('noreply');
-        if ($emailProfileProvider === null) {
-            return new JsonResponse(
-                status: StatusCode::InternalServerError,
-                error_message: "Unable to send validation email."
-            );
-        }
         $view = new NewUserVerificationEmailView(IdentityService::GetEmailVerificationUrl($this->request, $user, true), $user->Name);
-        $message = new EmailMessage($view, [$user->Email]);
-        if (!$emailProfileProvider->SendEmail($message)) {
+        if (!IdentityService::SendEmailToUser($user, $view)) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "Unable to send validation email."
             );
         }
+
+        // TODO need to send password reset email/create new password email since a new user won't have a password yet.
 
         return new JsonResponse(
             data: [
@@ -326,24 +325,9 @@ class IdentityController extends BaseController
         }
 
         if ($emailChanged) {
-            $emailProfileProvider = EmailService::GetOutboundEmailProviderInstance('noreply');
-            if ($emailProfileProvider === null) {
-                return new JsonResponse(
-                    status: StatusCode::InternalServerError,
-                    error_message: "Unable to send validation email."
-                );
-            }
             $newEmailView = new NewUserVerificationEmailView(IdentityService::GetEmailVerificationUrl($this->request, $user, true), $user->Name);
-            $newEmailMessage = new EmailMessage($newEmailView, [$user->Email]);
-            if (!$emailProfileProvider->SendEmail($newEmailMessage)) {
-                return new JsonResponse(
-                    status: StatusCode::InternalServerError,
-                    error_message: "Unable to send validation email."
-                );
-            }
             $oldEmailView = new NewEmailNotificationEmailView($user->Name, $oldEmail, $user->Email);
-            $oldEmailMessage = new EmailMessage($oldEmailView, [$oldEmail]);
-            if (!$emailProfileProvider->SendEmail($oldEmailMessage)) {
+            if (!(IdentityService::SendEmailToUser($user, $newEmailView) && IdentityService::SendEmailToUser(new User($oldEmail, $user->Name), $oldEmailView))) {
                 return new JsonResponse(
                     status: StatusCode::InternalServerError,
                     error_message: "Unable to send validation email."
@@ -384,17 +368,114 @@ class IdentityController extends BaseController
         return new JsonResponse(status:StatusCode::OK);
     }
 
-    // TODO Implement UserChangePassword
+    // TODO add 2FA for changing passwords if set up
     #[Route(Method::POST, '{id}/changepassword')]
     public function UserChangePassword() : Response {
-        // check for valid id
+        if (!DatabaseService::IsPrimaryConnected()) {
+            return new Response(status: StatusCode::NotFound);
+        }
+
+        $user = User::LoadFromRandomId($this->request->Args['id']);
+
+        if ($user === null) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'id',
+                            'description' => 'User ID.',
+                            'message' => 'This user doesn\'t exist.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
         // check that either the existing password or a valid passwordreset token was provided
-        // insert new password record
+        $password = $this->request->Args['password']??null;
+        $reset_token = $this->request->Args['reset_token']??null;
+        if (!($password === null || $reset_token === null)) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'password',
+                            'description' => 'User\'s current password',
+                            'message' => 'Either the user\'s current password or a valid reset token are required.',
+                        ],
+                        [
+                            'name' => 'reset_token',
+                            'description' => 'Password reset token.',
+                            'message' => 'Either the user\'s current password or a valid reset token are required.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are missing.'
+            );
+        }
+        $currentPassword = $user->GetCurrentPassword();
+        if (!(($currentPassword !== null && $currentPassword->ComparePassword($password)) || IdentityService::IsPasswordResetTokenValid($reset_token, $user))) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'password',
+                            'description' => 'User\'s current password',
+                            'message' => 'The provided password or reset token is incorrect.',
+                        ],
+                        [
+                            'name' => 'reset_token',
+                            'description' => 'Password reset token.',
+                            'message' => 'The provided password or reset token is incorrect.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
+
+        // check that the new password was provided.
+        if (!isset($this->request->Args['new_password'])) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'new_password',
+                            'description' => 'User\'s new password',
+                            'message' => 'The user\'s new password.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are missing.'
+            );
+        }
+
         // send notification email
-        return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
-        );
+        $emailView = new PasswordChangedNotificationEmailView($user->Name);
+        if (!IdentityService::SendEmailToUser($user, $emailView)) {
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "Unable to send notification email."
+            );
+        }
+
+        // insert new password record
+        $expiry = null;
+        if ($user->Role->MaxPasswordAgeDays !== null) {
+            $expiry = new DateTime(timezone:new DateTimeZone('UTC'));
+            $expiry->modify("+{$user->Role->MaxPasswordAgeDays} days");
+        }
+        $newPassword = new UserPassword($user->Id,$this->request->Args['new_password'],new DateTime(timezone:new DateTimeZone('UTC')),$expiry);
+        if (!$newPassword->Save()) {
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "There was a problem with the database."
+            );
+        }
     }
 
     // TODO Implement UserSendResetPassword
