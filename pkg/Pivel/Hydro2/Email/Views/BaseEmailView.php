@@ -30,4 +30,22 @@ class BaseEmailView extends BaseView
         $plaintext = ltrim($matches[0]);
         return $plaintext;
     }
+
+    /**
+     * Tries to get subject line from template's <title></title> tag, otherwise returns null.
+     */
+    public function GetSubject() : ?string {
+        $this->rc = new ReflectionClass($this);        
+        $this->properties = array_map(fn($a) => $a->name,$this->rc->getProperties());
+        $templatePath = str_replace('.php','.emailtemplate.html', $this->rc->getFileName());
+        $template = file_get_contents($templatePath);
+        $rendered = $this->ResolveTemplate($template);
+        $matches = [];
+        $rendered = preg_match("/(?<=<title>)[\s\S]*(?=<\/title>)/", $rendered, $matches); // remove plaintext section from HTML render
+        if (count($matches) !== 1) {
+            return null;
+        }
+        $subject = trim($matches[0]);
+        return $subject;
+    }
 }
