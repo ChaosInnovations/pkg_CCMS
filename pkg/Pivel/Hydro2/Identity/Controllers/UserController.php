@@ -16,7 +16,8 @@ use Package\Pivel\Hydro2\Identity\Extensions\Permissions;
 use Package\Pivel\Hydro2\Identity\Models\User;
 use Package\Pivel\Hydro2\Identity\Models\UserRole;
 use Package\Pivel\Hydro2\Identity\Services\IdentityService;
-use Package\Pivel\Hydro2\Identity\Views\NewUserVerificationEmailView;
+use Package\Pivel\Hydro2\Identity\Views\EmailViews\NewEmailNotificationEmailView;
+use Package\Pivel\Hydro2\Identity\Views\EmailViews\NewUserVerificationEmailView;
 
 #[RoutePrefix('api/hydro2/core/identity/users')]
 class IdentityController extends BaseController
@@ -158,7 +159,6 @@ class IdentityController extends BaseController
             );
         }
 
-        // TODO email validation
         $emailProfileProvider = EmailService::GetOutboundEmailProviderInstance('noreply');
         if ($emailProfileProvider === null) {
             return new JsonResponse(
@@ -167,7 +167,7 @@ class IdentityController extends BaseController
             );
         }
         $view = new NewUserVerificationEmailView(IdentityService::GetEmailVerificationUrl($this->request, $user, true), $user->Name);
-        $message = new EmailMessage($view);
+        $message = new EmailMessage($view, [$user->Email]);
         if (!$emailProfileProvider->SendEmail($message)) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
@@ -271,10 +271,9 @@ class IdentityController extends BaseController
             );
         }
 
-        // TODO email validation
-        // TODO send notfication to old email + send verification email to new address
         $email = $this->request->Args['email']??$user->Email;
         $emailChanged = $email !== $user->Email;
+        $oldEmail = $user->Email;
         $user->Email = $email;
         $user->EmailVerified = $user->EmailVerified && (!$emailChanged);
         $user->Name = $this->request->Args['name']??$user->Name;
@@ -324,6 +323,32 @@ class IdentityController extends BaseController
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database."
             );
+        }
+
+        if ($emailChanged) {
+            $emailProfileProvider = EmailService::GetOutboundEmailProviderInstance('noreply');
+            if ($emailProfileProvider === null) {
+                return new JsonResponse(
+                    status: StatusCode::InternalServerError,
+                    error_message: "Unable to send validation email."
+                );
+            }
+            $newEmailView = new NewUserVerificationEmailView(IdentityService::GetEmailVerificationUrl($this->request, $user, true), $user->Name);
+            $newEmailMessage = new EmailMessage($newEmailView, [$user->Email]);
+            if (!$emailProfileProvider->SendEmail($newEmailMessage)) {
+                return new JsonResponse(
+                    status: StatusCode::InternalServerError,
+                    error_message: "Unable to send validation email."
+                );
+            }
+            $oldEmailView = new NewEmailNotificationEmailView($user->Name, $oldEmail, $user->Email);
+            $oldEmailMessage = new EmailMessage($oldEmailView, [$oldEmail]);
+            if (!$emailProfileProvider->SendEmail($oldEmailMessage)) {
+                return new JsonResponse(
+                    status: StatusCode::InternalServerError,
+                    error_message: "Unable to send validation email."
+                );
+            }
         }
 
         return new JsonResponse(
