@@ -16,6 +16,7 @@ use Package\Pivel\Hydro2\Database\Services\DatabaseService;
 use Package\Pivel\Hydro2\Email\Models\EmailMessage;
 use Package\Pivel\Hydro2\Email\Services\EmailService;
 use Package\Pivel\Hydro2\Identity\Extensions\Permissions;
+use Package\Pivel\Hydro2\Identity\Models\PasswordResetToken;
 use Package\Pivel\Hydro2\Identity\Models\User;
 use Package\Pivel\Hydro2\Identity\Models\UserPassword;
 use Package\Pivel\Hydro2\Identity\Models\UserRole;
@@ -23,6 +24,7 @@ use Package\Pivel\Hydro2\Identity\Services\IdentityService;
 use Package\Pivel\Hydro2\Identity\Views\EmailViews\NewEmailNotificationEmailView;
 use Package\Pivel\Hydro2\Identity\Views\EmailViews\NewUserVerificationEmailView;
 use Package\Pivel\Hydro2\Identity\Views\EmailViews\PasswordChangedNotificationEmailView;
+use Package\Pivel\Hydro2\Identity\Views\EmailViews\PasswordResetEmailView;
 
 #[RoutePrefix('api/hydro2/core/identity/users')]
 class IdentityController extends BaseController
@@ -437,6 +439,8 @@ class IdentityController extends BaseController
             );
         }
 
+        // TODO if a reset token was used, invalidate it.
+
         // check that the new password was provided.
         if (!isset($this->request->Args['new_password'])) {
             return new JsonResponse(
@@ -478,18 +482,52 @@ class IdentityController extends BaseController
         }
     }
 
-    // TODO Implement UserSendResetPassword
     #[Route(Method::POST, '{id}/sendpasswordreset')]
     public function UserSendResetPassword() : Response {
-        return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
-        );
+        if (!DatabaseService::IsPrimaryConnected()) {
+            return new Response(status: StatusCode::NotFound);
+        }
+
+        $user = User::LoadFromRandomId($this->request->Args['id']);
+
+        if ($user === null) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'id',
+                            'description' => 'User ID.',
+                            'message' => 'This user doesn\'t exist.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
+
+        $token = new PasswordResetToken($user->Id);
+
+        // send reset email
+        $emailView = new PasswordResetEmailView(IdentityService::GetPasswordResetUrl($this->request, $user, $token), $user->Name, 10);
+        if (!IdentityService::SendEmailToUser($user, $emailView)) {
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "Unable to send password reset email."
+            );
+        }
+
+        if (!$token->Save()) {
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "There was a problem with the database."
+            );
+        }
+
+        return new JsonResponse(status:StatusCode::OK);
     }
 
-    // TODO Implement VerifyUser (someone would go to this URI from a link inside the email.
-    //  need to include the view they would see in the response, or redirect to a 'verified'
-    //  page instead)
+    // TODO proper HTML view
     #[Route(Method::GET, '~verifyuseremail/{id}')]
     public function UserVerify() : Response {
         if (!isset($this->request->Args['token'])) {
@@ -518,6 +556,7 @@ class IdentityController extends BaseController
         );
     }
 
+    // TODO resetpassword view w/ form + ajax call
     #[Route(Method::GET, '~resetpassword/{id}')]
     public function UserResetPasswordView() : Response {
         return new JsonResponse(

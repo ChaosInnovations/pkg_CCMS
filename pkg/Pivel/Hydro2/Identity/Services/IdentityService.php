@@ -6,6 +6,7 @@ use Package\Pivel\Hydro2\Core\Models\Request;
 use Package\Pivel\Hydro2\Core\Views\BaseEmailView;
 use Package\Pivel\Hydro2\Email\Models\EmailMessage;
 use Package\Pivel\Hydro2\Email\Services\EmailService;
+use Package\Pivel\Hydro2\Identity\Models\PasswordResetToken;
 use Package\Pivel\Hydro2\Identity\Models\Session;
 use Package\Pivel\Hydro2\Identity\Models\User;
 use Package\Pivel\Hydro2\Identity\Models\UserRole;
@@ -49,6 +50,24 @@ class IdentityService
     }
 
     public static function IsPasswordResetTokenValid(string $token, User $user) : bool {
-        return false;
+        $token_obj = PasswordResetToken::LoadFromToken($token);
+        if ($token_obj === null) {
+            return false;
+        }
+
+        if (!$token_obj->CompareToken($token)) {
+            return false;
+        }
+
+        if ($token_obj->UserId !== $user->Id) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public static function GetPasswordResetUrl(Request $request, User $user, PasswordResetToken $token) {
+        $url = "{$request->baseUrl}/resetpassword/{$user->RandomId}?token={$token->ResetToken}";
+        return $url;
     }
 }

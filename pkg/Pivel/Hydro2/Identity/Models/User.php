@@ -54,9 +54,6 @@ class User extends BaseObject
     #[ChildTable('hydro2_user_sessions')]
     /** @var Session[] */
     public array $Sessions;
-    #[ChildTable('hydro2_user_passwords')]
-    /** @var UserPassword[] */
-    public array $Passwords;
 
     public function __construct(
         string $email='',
