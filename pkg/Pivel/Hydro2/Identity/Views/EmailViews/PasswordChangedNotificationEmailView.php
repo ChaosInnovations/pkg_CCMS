@@ -2,7 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Identity\Views\EmailViews;
 
-use Package\Pivel\Hydro2\Core\Views\BaseEmailView;
+use Package\Pivel\Hydro2\Email\Views\BaseEmailView;
 
 class NewEmailNotificationEmailView extends BaseEmailView
 {
