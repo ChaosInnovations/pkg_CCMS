@@ -15,6 +15,7 @@ use Package\Pivel\Hydro2\Core\Models\Response;
 class IdentityController extends BaseController
 {
     #[Route(Method::POST, 'login')]
+    #[Route(Method::POST, '~login')]
     #[Route(Method::POST, '~api/login')]
     public function Login() : Response {
         return new JsonResponse(
@@ -38,6 +39,14 @@ class IdentityController extends BaseController
     #[Route(Method::POST, 'sessions/{sessionid}/expire')]
     #[Route(Method::DELETE, 'sessions/{sessionid}')]
     public function UserExpireSession() : Response {
+        return new JsonResponse(
+            status:StatusCode::InternalServerError,
+            error_message:'Route exists but not implemented.',
+        );
+    }
+
+    #[Route(Method::GET, '~login')]
+    public function GetLoginView() : Response {
         return new JsonResponse(
             status:StatusCode::InternalServerError,
             error_message:'Route exists but not implemented.',
