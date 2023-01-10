@@ -16,15 +16,49 @@ class OutboundEmailProfile extends BaseObject
     public ?int $Id;
     #[TableColumn('key')]
     public string $Key;
-    #[TableColumn('name')]
-    public string $Name;
+    #[TableColumn('label')]
+    public string $Label;
     #[TableColumn('type')]
     public string $Type;
+    #[TableColumn('sender_address')]
+    public string $SenderAddress;
+    #[TableColumn('sender_name')]
+    public string $SenderName;
+    #[TableColumn('require_auth')]
+    public bool $RequireAuth;
+    #[TableColumn('username')]
+    public ?string $Username;
+    #[TableColumn('password')]
+    public ?string $Password;
+    #[TableColumn('host')]
+    public string $Host;
+    #[TableColumn('port')]
+    public int $Port;
 
-    public function __construct(?int $id=null, string $name='', string $type='smtp') {
+    public function __construct(
+        ?int $id=null,
+        string $key='',
+        string $label='',
+        string $type='smtp',
+        string $senderAddress='',
+        string $senderName='',
+        bool $requireAuth=false,
+        ?string $username='',
+        ?string $password='',
+        string $host='',
+        int $port=465,
+    ) {
         $this->Id = $id;
-        $this->Name = $name;
+        $this->Key = $key;
+        $this->Label = $label;
         $this->Type = $type;
+        $this->SenderAddress = $senderAddress;
+        $this->SenderName = $senderName;
+        $this->RequireAuth = $requireAuth;
+        $this->Username = $username;
+        $this->Password = $password;
+        $this->Host = $host;
+        $this->Port = $port;
 
         parent::__construct();
     }
@@ -38,5 +72,13 @@ class OutboundEmailProfile extends BaseObject
         }
 
         return self::CastFromRow($results[0], className:get_called_class());
+    }
+
+    public function Save() : bool {
+        return $this->UpdateOrCreateEntry();
+    }
+
+    public function Delete() : bool {
+        return $this->DeleteEntry();
     }
 }

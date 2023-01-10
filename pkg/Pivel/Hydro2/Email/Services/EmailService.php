@@ -33,11 +33,11 @@ class EmailService
     ];
 
     public static function GetOutboundEmailProvider(OutboundEmailProfile $profile) : ?IOutboundEmailProvider {
-        if (!isset(self::$emailProviders[$profile->Key])) {
+        if (!isset(self::$emailProviders[$profile->Type])) {
             return null;
         }
 
-        $providerName = self::$emailProviders[$profile->Key];
+        $providerName = self::$emailProviders[$profile->Type];
         return new $providerName($profile);
     }
 

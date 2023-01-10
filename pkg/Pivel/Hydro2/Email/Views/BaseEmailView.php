@@ -1,7 +1,8 @@
 <?php
 
-namespace Package\Pivel\Hydro2\Core\Views;
+namespace Package\Pivel\Hydro2\Email\Views;
 
+use Package\Pivel\Hydro2\Core\Views\BaseView;
 use ReflectionClass;
 
 class BaseEmailView extends BaseView
