@@ -40,20 +40,20 @@ class OutboundEmailProfile extends BaseObject
         string $key='',
         string $label='',
         string $type='smtp',
-        string $senderAddress='',
-        string $senderName='',
+        ?EmailAddress $sender,
         bool $requireAuth=false,
         ?string $username='',
         ?string $password='',
         string $host='',
         int $port=465,
     ) {
+        $sender = $sender??new EmailAddress('', '');
         $this->Id = $id;
         $this->Key = $key;
         $this->Label = $label;
         $this->Type = $type;
-        $this->SenderAddress = $senderAddress;
-        $this->SenderName = $senderName;
+        $this->SenderAddress = $sender->Address;
+        $this->SenderName = $sender->Name;
         $this->RequireAuth = $requireAuth;
         $this->Username = $username;
         $this->Password = $password;
@@ -80,5 +80,9 @@ class OutboundEmailProfile extends BaseObject
 
     public function Delete() : bool {
         return $this->DeleteEntry();
+    }
+
+    public function GetSender() : EmailAddress {
+        return new EmailAddress($this->SenderAddress, $this->SenderName);
     }
 }

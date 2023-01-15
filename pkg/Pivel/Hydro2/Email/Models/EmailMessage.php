@@ -14,11 +14,28 @@ class EmailMessage
     private ?string $plaintextBody;
     private ?string $subject;
 
+    /**
+     * @var EmailAddress[]
+     */
     private array $toAddresses;
+    /**
+     * @var EmailAddress[]
+     */
     private array $ccAddresses;
+    /**
+     * @var EmailAddress[]
+     */
     private array $bccAddresses;
+    public ?EmailAddress $ReplyTo;
 
-    public function __construct(BaseEmailView $view, array $to, array $cc=[], array $bcc=[])
+    /**
+     * @param BaseEmailView $view
+     * @param EmailAddress[] $to
+     * @param EmailAddress[] $cc
+     * @param EmailAddress[] $bcc
+     * @param EmailAddress $replyTo
+     */
+    public function __construct(BaseEmailView $view, array $to, array $cc=[], array $bcc=[], ?EmailAddress $replyTo=null)
     {
         $this->htmlBody = $view->Render();
         $this->plaintextBody = $view->RenderPlaintext();
@@ -27,6 +44,8 @@ class EmailMessage
         $this->toAddresses = $to;
         $this->ccAddresses = $cc;
         $this->bccAddresses = $bcc;
+
+        $this->ReplyTo = $replyTo;
     }
 
     public function SetHTMLBody(string $content) : void {
@@ -58,6 +77,9 @@ class EmailMessage
         return $this->subject??'';
     }
 
+    /**
+     * @return EmailAddress[]
+     */
     public function GetAllRecipients() : array {
         return array_merge([$this->toAddresses, $this->ccAddresses, $this->bccAddresses]);
     }
