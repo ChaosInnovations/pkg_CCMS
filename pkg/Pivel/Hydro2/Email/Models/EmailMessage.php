@@ -54,6 +54,10 @@ class EmailMessage
         return self::EncodeString($this->plaintextBody, $encoding, $lineEnding);
     }
 
+    public function GetSubject() : string {
+        return $this->subject??'';
+    }
+
     public function GetAllRecipients() : array {
         return array_merge([$this->toAddresses, $this->ccAddresses, $this->bccAddresses]);
     }
