@@ -17,15 +17,15 @@ class EmailMessage
     /**
      * @var EmailAddress[]
      */
-    private array $toAddresses;
+    public array $To;
     /**
      * @var EmailAddress[]
      */
-    private array $ccAddresses;
+    public array $Cc;
     /**
      * @var EmailAddress[]
      */
-    private array $bccAddresses;
+    public array $Bcc;
     public ?EmailAddress $ReplyTo;
 
     /**
@@ -41,9 +41,9 @@ class EmailMessage
         $this->plaintextBody = $view->RenderPlaintext();
         $this->subject = $view->GetSubject();
 
-        $this->toAddresses = $to;
-        $this->ccAddresses = $cc;
-        $this->bccAddresses = $bcc;
+        $this->To = $to;
+        $this->Cc = $cc;
+        $this->Bcc = $bcc;
 
         $this->ReplyTo = $replyTo;
     }
@@ -81,7 +81,7 @@ class EmailMessage
      * @return EmailAddress[]
      */
     public function GetAllRecipients() : array {
-        return array_merge([$this->toAddresses, $this->ccAddresses, $this->bccAddresses]);
+        return array_merge([$this->To, $this->Cc, $this->Bcc]);
     }
 
     protected static function EncodeString(string $str, $encoding=Encoding::ENC_BINARY, string $lineEnding=self::LINE_ENDING) {

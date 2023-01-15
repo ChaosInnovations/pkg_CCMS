@@ -89,7 +89,7 @@ class SMTPProvider implements IOutboundEmailProvider
         
     }
 
-    protected static function CompileMessage(EmailMessage $message): string {
+    protected function CompileMessage(EmailMessage $message): string {
         $messageBodyParts = [];
 
         // generate multipart/alternative section with text/plain and text/html
@@ -133,25 +133,24 @@ class SMTPProvider implements IOutboundEmailProvider
         //  inside a multipart/mixed. If no attachments, don't encapsulate.
         $attachments = [];
 
-        // TODO generate headers.
-        // TODO subject line encoding?
-        // TODO Date field
-        // TODO From field
-        // TODO Reply-To field
-        // TODO To field
-        // TODO Cc field
         // TODO Bcc field, send multiple copies of message when Bcc is present with the Bcc
-        //   header of each copy containing that recipient.
+        //   header of each copy containing only that recipient.
         $headers = [
             'MIME-Version' => '1.0',
-            'Date' => '',
-            'From' => '',
-            'Reply-To' => '',
+            'Date' => date('D, j M Y H:i:s O'),
+            'From' => $this->profile->GetSender()->__toString(),
             'Subject' => $message->GetSubject(),
             'Thread-Topic' => $message->GetSubject(),
-            'To' => '',
-            'Cc' => '',
+            'To' => implode(', ', $message->To),
         ];
+
+        if ($message->ReplyTo !== null) {
+            $headers['Reply-To'] = $message->ReplyTo->__toString();
+        }
+
+        if (count($message->Cc) > 0) {
+            $headers['Cc'] = implode(', ', $message->Cc);
+        }
 
         if (count($attachments) > 0) {
             $compiledMessage = self::CompileMultipartMessage($headers, $messageBodyParts);
