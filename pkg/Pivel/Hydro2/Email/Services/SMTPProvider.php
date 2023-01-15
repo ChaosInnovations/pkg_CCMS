@@ -3,11 +3,15 @@
 namespace Package\Pivel\Hydro2\Email\Services;
 
 use Package\Pivel\Hydro2\Email\Models\EmailMessage;
+use Package\Pivel\Hydro2\Email\Models\Encoding;
 use Package\Pivel\Hydro2\Email\Models\OutboundEmailProfile;
 
 class SMTPProvider implements IOutboundEmailProvider
 {
     private OutboundEmailProfile $profile;
+
+    protected const LINE_ENDING = '\r\n';
+    protected const LINE_MAX_LENGTH = 76;
 
     public function __construct(OutboundEmailProfile $profile) {
         $this->profile = $profile;     
@@ -86,6 +90,77 @@ class SMTPProvider implements IOutboundEmailProvider
     }
 
     protected static function CompileMessage(EmailMessage $message): string {
+        $messageBodyParts = [];
+
+        // generate multipart/alternative section with text/plain and text/html
+        // When using EmailMessage->GetHTMLBody, EmailMessage will automatically convert inlined image
+        //  tags to attachments.
+        $hasHTML = $message->HasHTMLBody();
+        $hasPlaintext = $message->HasPlaintextBody();
+
+        $messageTextParts = [];
+
+        if ($hasPlaintext) {
+            $messageTextParts[] = self::CompileRFC822Message(
+                headers: [
+                    'Content-Type' => 'text/plain',
+                    'Content-Transfer-Encoding' => 'quoted-printable',
+                ],
+                body: $message->GetPlaintextBody(Encoding::ENC_QUOTEDPRINTABLE, self::LINE_ENDING),
+            );
+        }
+
+        if ($hasHTML) {
+            $messageTextParts[] = self::CompileRFC822Message(
+                headers: [
+                    'Content-Type' => 'text/html',
+                    'Content-Transfer-Encoding' => 'quoted-printable',
+                ],
+                body: $message->GetHTMLBody(Encoding::ENC_QUOTEDPRINTABLE, self::LINE_ENDING),
+            );
+        }
+
+        // if only plaintext or body and not both, then this can just be text/plain or text/html without
+        //  being encapsulated inside a multipart/alternative. If neither, skip this section
+        if (count($messageTextParts) === 1) {
+            $messageBodyParts[] = $messageTextParts[0];
+        } else if (count($messageTextParts) > 1) {
+            $messageBodyParts[] = self::CompileMultipartMessage([], $messageTextParts, self::MULTIPART_ALTERNATIVE);
+        }
+        
+
+        // TODO encapsulate the above-generated section and each EmailAttachment from EmailMessage->GetAttachments()
+        //  inside a multipart/mixed. If no attachments, don't encapsulate.
+        $attachments = [];
+
+        // TODO generate headers.
+        // TODO subject line encoding?
+        // TODO Date field
+        // TODO From field
+        // TODO Reply-To field
+        // TODO To field
+        // TODO Cc field
+        // TODO Bcc field, send multiple copies of message when Bcc is present with the Bcc
+        //   header of each copy containing that recipient.
+        $headers = [
+            'MIME-Version' => '1.0',
+            'Date' => '',
+            'From' => '',
+            'Reply-To' => '',
+            'Subject' => $message->GetSubject(),
+            'Thread-Topic' => $message->GetSubject(),
+            'To' => '',
+            'Cc' => '',
+        ];
+
+        if (count($attachments) > 0) {
+            $compiledMessage = self::CompileMultipartMessage($headers, $messageBodyParts);
+        } else {
+            $compiledHeaders = self::CompileHeaders($headers);
+            $compiledMessage = $compiledHeaders . self::LINE_ENDING . $messageBodyParts[0];
+        }
+
+        return $compiledMessage;
     }
 
     /**
