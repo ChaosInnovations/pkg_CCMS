@@ -225,13 +225,47 @@ class SMTPProvider implements IOutboundEmailProvider
     protected static function CompileHeaders(array $headers) {
         $compiledHeaders = '';
         foreach ($headers as $fieldName => $fieldValue) {
+            // field name cannot start/end with whitespace
+            $fieldName = trim($fieldName);
             $header = $fieldName.': '.$fieldValue;
             // Strip existing \r and \n from each header
             $header = str_replace(['\r', '\n'], '', $header);
-            // TODO: limit length/split into multi-line header if necessary.
+            $header = self::FoldHeader($header);
             // add to complied headers
             $compiledHeaders .= $header . self::LINE_ENDING;
         }
         return $compiledHeaders;
+    }
+
+    protected static function FoldHeader(string $unfoldedHeader, int $lineMaxLength=self::LINE_MAX_LENGTH) : string {
+        // whitespace characters can have a LINE_ENDING inserted before the whitespace.
+        // if remaining string is <= linemaxlength, add it to foldedHeader
+
+        $foldedHeader = '';
+        $firstChunk = true;
+        while (strlen($unfoldedHeader) > $lineMaxLength) {
+            // look backwards in first $lineMaxLength chars to find latest occuring ' ' character.
+            $pos = strrpos(substr($unfoldedHeader, 0, $lineMaxLength), ' ');
+            // intentionally match both false and 0
+            if (!$pos) {
+                // look forwards instead. Unfortunately will be longer than lineMaxLength,
+                //  but is the best we can do in this case.
+                $pos = strpos($unfoldedHeader, ' ', $lineMaxLength);
+            }
+            // if still no match or if only the last char matches,
+            //  exit loop and add remaining unfoldedHeader to folderHeader.
+            //  It's longer than lineMaxLength, but we couldn't find a place to fold it.
+            if (!$pos || $pos == strlen($unfoldedHeader)-1) {
+                break;
+            }
+            // append [' ' if not first chunk] . substr<0, x> . LINE_ENDING to $foldedHeader
+            $foldedHeader .= ($firstChunk?'':' ') . substr($unfoldedHeader, 0, $pos) . self::LINE_ENDING;
+            // $unfoldedHeader is now substr<x+2 (skip the whitespace), MAX>.
+            $unfoldedHeader = substr($unfoldedHeader, $pos+1);
+            $firstChunk = false;
+        }
+        $foldedHeader .= ($firstChunk?'':' ') . $unfoldedHeader;
+
+        return $unfoldedHeader;
     }
 }
