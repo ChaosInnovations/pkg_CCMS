@@ -2,6 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Email\Services;
 
+use Exception;
 use Package\Pivel\Hydro2\Email\Models\EmailMessage;
 use Package\Pivel\Hydro2\Email\Models\Encoding;
 use Package\Pivel\Hydro2\Email\Models\OutboundEmailProfile;
@@ -48,11 +49,31 @@ class SMTPProvider implements IOutboundEmailProvider
             $this->Quit();
             return false;
         }
+        // Upgrade to TLS if possible, requested, and not already connected with SSL.
+        if (
+            $this->profile->Secure == OutboundEmailProfile::SECURE_TLS_AUTO ||
+            $this->profile->Secure == OutboundEmailProfile::SECURE_TLS_REQUIRE
+        ) {
+            $tls = $this->StartTLS();
+            //  If unable to upgrade to TLS and profile->Secure is set to TLS_REQUIRE
+            //  then fail and return false
+            if (!$tls && $this->profile->Secure == OutboundEmailProfile::SECURE_TLS_REQUIRE) {
+                $this->Quit();
+                return false;
+            }
         // Upgrade to TLS if possible and not already connected with SSL.
         //  If unable to upgrade to TLS and profile->Secure is set to TLS_REQUIRE
         //  then fail and return false Try to switch to TLS?
         // Authenticate
         if (!$this->Authenticate()) {
+            // re-send EHLO/HELO after successful TLS negotiation
+            if (!$this->Hello()) {
+                $this->Quit();
+                return false;
+            }
+        }
+        // Authenticate if required by profile
+        if ($this->profile->RequireAuth && !$this->Authenticate()) {
             $this->Quit();
             return false;
         }
@@ -143,6 +164,37 @@ class SMTPProvider implements IOutboundEmailProvider
         return $this->SendEHLO() || $this->SendHELO();
     }
 
+    protected function StartTLS() : bool {
+        if (!$this->SendCommand('STARTTLS')) {
+            return false;
+        }
+
+        $reply = $this->ReadLines();
+
+        if ($this->lastResponseCode != 220) {
+            return false;
+        }
+
+        $crypto_method = STREAM_CRYPTO_METHOD_TLS_CLIENT;
+
+        if (defined('STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT')) {
+            $crypto_method |= STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT;
+            $crypto_method |= STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT;
+        }
+
+        if (defined('STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT')) {
+            $crypto_method |= STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT;
+        }
+
+        try {
+            $success = stream_socket_enable_crypto($this->connection, true, $crypto_method) === true;
+        } catch (Exception $e) {
+            return false;
+        }
+
+        return $success;
+    }
+
     // TODO implement
     protected function Authenticate() : bool {
         return false;
@@ -158,9 +210,19 @@ class SMTPProvider implements IOutboundEmailProvider
         return false;
     }
 
-    // TODO implement
     protected function Quit() : void {
-        
+        if ($this->IsConnected()) {
+            $this->SendCommand('QUIT');
+
+            $reply = $this->ReadLines();
+
+            fclose($this->connection);
+        }
+
+        $this->connection = false;
+        $this->extensions = [];
+        $this->greeting = null;
+        $this->lastResponseCode = -1;
     }
 
     protected function SendEHLO() : bool {
@@ -176,6 +238,7 @@ class SMTPProvider implements IOutboundEmailProvider
         }
         // parse response into $this->extensions
         // skip the first line which contains the server's hostname
+        $this->extensions = [];
         $lines = explode("\n", $reply);
         $firstLine = true;
         foreach ($lines as $line) {
