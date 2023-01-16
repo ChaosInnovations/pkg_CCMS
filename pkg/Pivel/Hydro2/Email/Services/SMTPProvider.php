@@ -195,9 +195,99 @@ class SMTPProvider implements IOutboundEmailProvider
         return $success;
     }
 
-    // TODO implement
     protected function Authenticate() : bool {
-        return false;
+        // does this SMTP server support AUTH?
+        if (!isset($this->extensions['AUTH']) || !is_array($this->extensions['AUTH'])) {
+            return false;
+        }
+
+        // find a supported SASL mechanism
+        // LOGIN is obsolete, but we still support it if it is the only available mechanism.
+        $selectedSaslMechanism = '';
+        foreach ([/*'CRAM-MD5', */'PLAIN', 'LOGIN'] as $sasl) {
+            if (in_array($sasl, $this->extensions['AUTH'])) {
+                $selectedSaslMechanism = $sasl;
+                break;
+            }
+        }
+
+        if ($selectedSaslMechanism == '') {
+            // no mechanisms were supported
+            return false;
+        }
+
+        switch ($selectedSaslMechanism) {
+            case 'CRAM-MD5':
+                // TODO implement CRAM-MD5 authentication
+                return false;
+                break;
+            case 'LOGIN':
+                if (!$this->SendCommand('AUTH', 'LOGIN')) {
+                    return false;
+                }
+                $reply = $this->ReadLines();
+                echo $reply; // TODO remove this
+                if ($this->lastResponseCode != 334) {
+                    return false;
+                }
+
+                if (!$this->SendCommand(base64_encode($this->profile->Username))) {
+                    return false;
+                }
+                $reply = $this->ReadLines();
+                echo $reply; // TODO remove this
+                if ($this->lastResponseCode != 334) {
+                    return false;
+                }
+
+                if (!$this->SendCommand(base64_encode($this->profile->Password))) {
+                    return false;
+                }
+                $reply = $this->ReadLines();
+                echo $reply; // TODO remove this
+                if ($this->lastResponseCode != 235) {
+                    return false;
+                }
+                break;
+            case 'PLAIN':
+                if (!$this->SendCommand('AUTH', 'PLAIN')) {
+                    return false;
+                }
+                $reply = $this->ReadLines();
+                echo $reply; // TODO remove this
+                if ($this->lastResponseCode != 334) {
+                    return false;
+                }
+                if (!$this->SendCommand(base64_encode("\0{$this->profile->Username}\0{$this->profile->Password}"))) {
+                    return false;
+                }
+                $reply = $this->ReadLines();
+                echo $reply; // TODO remove this
+                if ($this->lastResponseCode != 235) {
+                    return false;
+                }
+                break;
+            default:
+                // we haven't implemented this SASL mechanism.
+                return false;
+                break;
+        }
+        
+        return true;
+    }
+
+    protected function MailFrom() : bool {
+        // MAIL FROM:<address@domain.com>
+        if (!$this->SendCommand('MAIL', "FROM:<{$this->profile->GetSender()->Address}>")) {
+            return false;
+        }
+        $reply = $this->ReadLines();
+        echo $reply; // TODO remove this
+        if ($this->lastResponseCode != 250) {
+            return false;
+        }
+
+        return true;
     }
 
     // TODO implement
@@ -249,7 +339,7 @@ class SMTPProvider implements IOutboundEmailProvider
             // skip first 4 characters and remove whitespace
             $line = trim(substr($line, 4));
             $fields = explode(' ', $line);
-            $name = array_shift($fields);
+            $name = strtoupper(array_shift($fields));
             $value = true;
             if ($name == 'AUTH') {
                 $value = [];
