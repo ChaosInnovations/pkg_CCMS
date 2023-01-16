@@ -12,6 +12,19 @@ class SMTPProvider implements IOutboundEmailProvider
 
     protected const LINE_ENDING = '\r\n';
     protected const LINE_MAX_LENGTH = 76;
+    /**
+     * 5 minutes/300 seconds is the default per RFC 2821 Section 4.5.3.2
+     * 
+     * @see https://www.rfc-editor.org/rfc/rfc2821#section-4.5.3.2
+     */
+    protected const TIMEOUT = 300.0;
+
+    /**
+     * @var resource|bool
+     */
+    private $connection = false;
+    private ?string $greeting = null;
+    private int $lastResponseCode = -1;
 
     public function __construct(OutboundEmailProfile $profile) {
         $this->profile = $profile;     
@@ -43,7 +56,7 @@ class SMTPProvider implements IOutboundEmailProvider
             // send RCPT command
             // check whether recipient address was accepted
             //  if not, add to $bad_recipients
-            // TODO handle BCC
+            // TODO handle BCC, sending separate messages?
         }
         if (count($recipients) <= count($bad_recipients)) {
             // if all recipients were rejected, don't bother sending the message data.
@@ -55,8 +68,8 @@ class SMTPProvider implements IOutboundEmailProvider
         //  or $this->CompileMessage()?
         //  use the latter since other providers might have different format requirements.
         // send <CRLF>.<CRLF>
-        // TODO handle BCC
-        if (!$this->SendData(self::CompileMessage($message))) {
+        // TODO handle BCC, sending separate messages?
+        if (!$this->SendData($this->CompileMessage($message))) {
             return false;
         }
         // send QUIT
@@ -65,8 +78,50 @@ class SMTPProvider implements IOutboundEmailProvider
         return true;
     }
 
-    protected function Connect() : bool {
-        return false;
+    protected function Connect(float $timeout=self::TIMEOUT, $options=[]) : bool {
+        if ($this->IsConnected()) {
+            return false;
+        }
+
+        $host = $this->profile->Host;
+        $port = $this->profile->Port;
+
+        if ($this->profile->Secure == OutboundEmailProfile::SECURE_SSL) {
+            $host = 'ssl://' . $host;
+        }
+
+        $error_code = 0;
+        $error_message = '';
+
+        $socket_context = stream_context_create($options);
+
+        $this->connection = stream_socket_client(
+            $host . ':' . $port,
+            $error_code,
+            $error_message,
+            $timeout,
+            STREAM_CLIENT_CONNECT,
+            $socket_context
+        );
+
+        if (!$this->IsConnected()) {
+            return false;
+        }
+
+        if (substr(PHP_OS, 0, 3) != 'WIN') {
+            $scriptTimeout = ini_get('max_execution_time');
+            if ($scriptTimeout != 0 && $timeout > $scriptTimeout) {
+                set_time_limit($timeout);
+            }
+            stream_set_timeout($this->connection, $timeout, 0);
+        }
+
+        $this->greeting = $this->ReadLines();
+        return true;
+    }
+
+    protected function IsConnected() : bool {
+        return is_resource($this->connection);
     }
 
     protected function Hello() : bool {
@@ -87,6 +142,49 @@ class SMTPProvider implements IOutboundEmailProvider
 
     protected function Quit() : void {
         
+    }
+
+    protected function ReadLines(float $timeout=self::TIMEOUT) : string {
+        if (!$this->IsConnected()) {
+            return '';
+        }
+
+        $lines = '';
+        $end = $timeout > 0 ? time() + $timeout : 0;
+        while ($this->IsConnected()) {
+            $newLine = fgets($this->connection);
+            $lines .= $newLine;
+
+            // From RFC5321 Section 4.2.1:
+            // Multi-line SMTP replies are in the format
+            //  250-First line
+            //  250-Second line
+            //  250-234 Text beginning with numbers
+            //  250 The last line
+            // Where the first three characters form the response code,
+            // and the fourth character is a '-' for multi-line replies
+            // and a ' ' on the final line.
+            // Therefore, when we encounter a ' ' as the 4th character
+            // in $newLine, we know this was the last line.
+            // Additionally, while not permitted in the RFC, it is valid
+            // syntax for a reply to contain only the 3-digit response
+            // code with no message/text; therefore, if there is no 4th
+            // character or if the 4th character is '\r' or '\n', we can
+            // also know that this was the last line.
+            if (!isset($newLine[3]) || in_array($newLine[3], [' ', '\r', '\n'])) {
+                break;
+            }
+
+            // end if timed out or if we exceeded the allowed time.
+            if (stream_get_meta_data($this->connection)['timed_out'] || ($end !== 0 && time() > $end)) {
+                break;
+            }
+        }
+
+        // The first three characters are the response code.
+        $this->lastResponseCode = intval(substr($lines, 0, 3));
+
+        return $lines;
     }
 
     protected function CompileMessage(EmailMessage $message): string {
