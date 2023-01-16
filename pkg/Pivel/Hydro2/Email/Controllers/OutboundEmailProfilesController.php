@@ -2,6 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Email\Controllers;
 
+use Exception;
 use Package\Pivel\Hydro2\Core\Controllers\BaseController;
 use Package\Pivel\Hydro2\Core\Extensions\Route;
 use Package\Pivel\Hydro2\Core\Extensions\RoutePrefix;
@@ -9,6 +10,10 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
 use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
+use Package\Pivel\Hydro2\Email\Extensions\Exceptions\AuthenticationFailedException;
+use Package\Pivel\Hydro2\Email\Extensions\Exceptions\EmailHostNotFoundException;
+use Package\Pivel\Hydro2\Email\Extensions\Exceptions\NotAuthenticatedException;
+use Package\Pivel\Hydro2\Email\Extensions\Exceptions\TLSUnavailableException;
 use Package\Pivel\Hydro2\Email\Models\EmailAddress;
 use Package\Pivel\Hydro2\Email\Models\EmailMessage;
 use Package\Pivel\Hydro2\Email\Models\OutboundEmailProfile;
@@ -138,7 +143,7 @@ class OutboundEmailProfilesController extends BaseController
                 $this->request->Args['sender_address']??'',
                 $this->request->Args['sender_name']??''
             ),
-            requireAuth: $this->request->Args['require_auth']??false,
+            requireAuth: filter_var($this->request->Args['require_auth']??false, FILTER_VALIDATE_BOOL),
             username: $this->request->Args['username']??null,
             password: $this->request->Args['password']??null,
             host: $this->request->Args['host']??'localhost',
@@ -228,7 +233,7 @@ class OutboundEmailProfilesController extends BaseController
         $profile->Type = $this->request->Args['type']??'smtp';
         $profile->SenderAddress = $this->request->Args['sender_address']??'';
         $profile->SenderName = $this->request->Args['sender_name']??'';
-        $profile->RequireAuth = $this->request->Args['require_auth']??false;
+        $profile->RequireAuth = filter_var($this->request->Args['require_auth']??false, FILTER_VALIDATE_BOOL);
         $profile->Username = $this->request->Args['username']??null;
         // if new password not provided, keep the same one.
         $profile->Password = $this->request->Args['password']??$profile->Password;
@@ -330,7 +335,93 @@ class OutboundEmailProfilesController extends BaseController
         $emailView = new TestEmailView($this->request->Args['key']);
         $message = new EmailMessage($emailView, [new EmailAddress($this->request->Args['to'])]);
 
-        if (!$provider->SendEmail($message)) {
+        $result = false;
+        try {
+            $result = $provider->SendEmail($message, true);
+        } catch (EmailHostNotFoundException) {
+            $data = [
+                'outboundemailprofile_test_result' => false,
+                'outboundemailprofile_test_errors' => [
+                    [
+                        'name' => 'host',
+                        'description' => 'The email server host',
+                        'message' => 'Unable to connect to host.',
+                    ],
+                    [
+                        'name' => 'port',
+                        'description' => 'The email server port',
+                        'message' => 'Unable to connect to host.',
+                    ],
+                ],
+            ];
+            if ($profile->Secure == OutboundEmailProfile::SECURE_SSL) {
+                $data['outboundemailprofile_test_errors'][] = [
+                    'name' => 'secure',
+                    'description' => 'Whether to use SSL, TLS, or neither',
+                    'message' => 'Unable to connect to host via SSL.',
+                ];
+            }
+            return new JsonResponse(
+                data: $data,
+                status: StatusCode::OK,
+            );
+        } catch (TLSUnavailableException) {
+            return new JsonResponse(
+                data: [
+                    'outboundemailprofile_test_result' => false,
+                    'outboundemailprofile_test_errors' => [
+                        [
+                            'name' => 'secure',
+                            'description' => 'Whether to use SSL, TLS, or neither',
+                            'message' => 'The selected profile requires TLS, but TLS negotiation was unavailable or unsuccessful.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::OK,
+            );
+        } catch (AuthenticationFailedException) {
+            return new JsonResponse(
+                data: [
+                    'outboundemailprofile_test_result' => false,
+                    'outboundemailprofile_test_errors' => [
+                        [
+                            'name' => 'require_auth',
+                            'description' => 'Whether authentication is required',
+                            'message' => 'Authentication failed.',
+                        ],
+                        [
+                            'name' => 'username',
+                            'description' => 'The username to authenticate with',
+                            'message' => 'Authentication failed.',
+                        ],
+                        [
+                            'name' => 'password',
+                            'description' => 'The password to authenticate with',
+                            'message' => 'Authentication failed.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::OK,
+            );
+        } catch (NotAuthenticatedException) {
+            return new JsonResponse(
+                data: [
+                    'outboundemailprofile_test_result' => false,
+                    'outboundemailprofile_test_errors' => [
+                        [
+                            'name' => 'require_auth',
+                            'description' => 'Whether authentication is required',
+                            'message' => 'The email server requires authentication.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::OK,
+            );
+        } catch (Exception) {
+            $result = false;
+        }
+
+        if (!$result) {
             return new JsonResponse(
                 data: [
                     'outboundemailprofile_test_result' => false,

@@ -9,5 +9,5 @@ interface IOutboundEmailProvider
 {
     public function __construct(OutboundEmailProfile $profile);
     
-    public function SendEmail(EmailMessage $message) : bool;
+    public function SendEmail(EmailMessage $message, bool $throwExceptions=false) : bool;
 }

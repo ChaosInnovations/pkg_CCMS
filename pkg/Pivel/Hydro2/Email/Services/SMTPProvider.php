@@ -3,6 +3,10 @@
 namespace Package\Pivel\Hydro2\Email\Services;
 
 use Exception;
+use Package\Pivel\Hydro2\Email\Extensions\Exceptions\AuthenticationFailedException;
+use Package\Pivel\Hydro2\Email\Extensions\Exceptions\EmailHostNotFoundException;
+use Package\Pivel\Hydro2\Email\Extensions\Exceptions\NotAuthenticatedException;
+use Package\Pivel\Hydro2\Email\Extensions\Exceptions\TLSUnavailableException;
 use Package\Pivel\Hydro2\Email\Models\EmailAddress;
 use Package\Pivel\Hydro2\Email\Models\EmailMessage;
 use Package\Pivel\Hydro2\Email\Models\Encoding;
@@ -36,9 +40,13 @@ class SMTPProvider implements IOutboundEmailProvider
         $this->profile = $profile;     
     }
 
-    public function SendEmail(EmailMessage $message) : bool {
+    public function SendEmail(EmailMessage $message, bool $throwExceptions=false) : bool {
         // open socket and wait for greeting (will be stored in $this->greeting after Connect())
-        if (!$this->Connect()) {
+        if (!$this->Connect(30)) {
+            // either host or port or both are wrong, or SSL was selected and not supported
+            if ($throwExceptions) {
+                throw new EmailHostNotFoundException('Unable to connect to host.');
+            }
             return false;
         }
         // send EHLO/HELO
@@ -56,10 +64,11 @@ class SMTPProvider implements IOutboundEmailProvider
             //  then fail and return false
             if (!$tls && $this->profile->Secure == OutboundEmailProfile::SECURE_TLS_REQUIRE) {
                 $this->Quit();
+                if ($throwExceptions) {
+                    throw new TLSUnavailableException('Unable to negotiate TLS connection.');
+                }
                 return false;
             }
-            // TODO remove after testing
-            echo "Successfully negotiated TLS!\n";
             // re-send EHLO/HELO after successful TLS negotiation
             if (!$this->Hello()) {
                 $this->Quit();
@@ -68,12 +77,27 @@ class SMTPProvider implements IOutboundEmailProvider
         }
         // Authenticate if required by profile
         if ($this->profile->RequireAuth && !$this->Authenticate()) {
+            $c = $this->lastResponseCode;
             $this->Quit();
+            if ($c == 535) {
+                // authentication failure (wrong username or password)
+                if ($throwExceptions) {
+                    throw new AuthenticationFailedException('Unable to authenticate with the provided credentials.');
+                }
+                return false;
+            }
             return false;
         }
         // send MAIL FROM
         if (!$this->MailFrom()) {
+            $c = $this->lastResponseCode;
             $this->Quit();
+            if ($c == 454) {
+                // not authenticated
+                if ($throwExceptions) {
+                    throw new NotAuthenticatedException('Authentication is required for this email profile.');
+                }
+            }
             return false;
         }
         // send n RCPT commands
@@ -88,7 +112,14 @@ class SMTPProvider implements IOutboundEmailProvider
         }
         if (count($recipients) <= count($bad_recipients)) {
             // if all recipients were rejected, don't bother sending the message data.
+            $c = $this->lastResponseCode;
             $this->Quit();
+            if ($c == 454) {
+                // not authenticated
+                if ($throwExceptions) {
+                    throw new NotAuthenticatedException('Authentication is required for this email profile.');
+                }
+            }
             return false;
         }
         // send DATA command
@@ -126,14 +157,20 @@ class SMTPProvider implements IOutboundEmailProvider
 
         $socket_context = stream_context_create($options);
 
-        $this->connection = stream_socket_client(
-            $host . ':' . $port,
-            $error_code,
-            $error_message,
-            $timeout,
-            STREAM_CLIENT_CONNECT,
-            $socket_context
-        );
+        try {
+            set_error_handler(function() { /* ignore errors */ });
+            $this->connection = stream_socket_client(
+                $host . ':' . $port,
+                $error_code,
+                $error_message,
+                $timeout,
+                STREAM_CLIENT_CONNECT,
+                $socket_context
+            );
+            restore_error_handler();
+        } catch (Exception $e) {
+            return false;
+        }
 
         if (!$this->IsConnected()) {
             return false;
@@ -221,7 +258,6 @@ class SMTPProvider implements IOutboundEmailProvider
                     return false;
                 }
                 $reply = $this->ReadLines();
-                echo $reply; // TODO remove this
                 if ($this->lastResponseCode != 334) {
                     return false;
                 }
@@ -230,7 +266,6 @@ class SMTPProvider implements IOutboundEmailProvider
                     return false;
                 }
                 $reply = $this->ReadLines();
-                echo $reply; // TODO remove this
                 if ($this->lastResponseCode != 334) {
                     return false;
                 }
@@ -239,7 +274,6 @@ class SMTPProvider implements IOutboundEmailProvider
                     return false;
                 }
                 $reply = $this->ReadLines();
-                echo $reply; // TODO remove this
                 if ($this->lastResponseCode != 235) {
                     return false;
                 }
@@ -249,7 +283,6 @@ class SMTPProvider implements IOutboundEmailProvider
                     return false;
                 }
                 $reply = $this->ReadLines();
-                echo $reply; // TODO remove this
                 if ($this->lastResponseCode != 334) {
                     return false;
                 }
@@ -257,7 +290,6 @@ class SMTPProvider implements IOutboundEmailProvider
                     return false;
                 }
                 $reply = $this->ReadLines();
-                echo $reply; // TODO remove this
                 if ($this->lastResponseCode != 235) {
                     return false;
                 }
@@ -277,7 +309,6 @@ class SMTPProvider implements IOutboundEmailProvider
             return false;
         }
         $reply = $this->ReadLines();
-        echo $reply; // TODO remove this
         if ($this->lastResponseCode != 250) {
             return false;
         }
@@ -291,7 +322,6 @@ class SMTPProvider implements IOutboundEmailProvider
             return false;
         }
         $reply = $this->ReadLines();
-        echo $reply; // TODO remove this
         if ($this->lastResponseCode != 250 && $this->lastResponseCode != 251) {
             return false;
         }
@@ -299,7 +329,6 @@ class SMTPProvider implements IOutboundEmailProvider
         return true;
     }
 
-    // TODO implement
     protected function SendData(string $data) : bool {
         // data has already been processed by compileMessage so we don't need to
         //  worry about normalizing line endings, wrapping, or ensuring headers
@@ -310,7 +339,6 @@ class SMTPProvider implements IOutboundEmailProvider
         }
         // wait for 354
         $reply = $this->ReadLines();
-        echo $reply; // TODO remove this
         if ($this->lastResponseCode != 354) {
             return false;
         }
@@ -330,7 +358,6 @@ class SMTPProvider implements IOutboundEmailProvider
         }
         // wait for response (250 OK)
         $reply = $this->ReadLines();
-        echo $reply; // TODO remove this
         return $this->lastResponseCode == 250;
     }
 
@@ -413,8 +440,6 @@ class SMTPProvider implements IOutboundEmailProvider
         }
         $commandString .= self::LINE_ENDING;
 
-        // TODO remove this
-        echo $commandString;
         return fwrite($this->connection, $commandString) !== false;
     }
 
