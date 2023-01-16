@@ -34,6 +34,13 @@ class OutboundEmailProfile extends BaseObject
     public string $Host;
     #[TableColumn('port')]
     public int $Port;
+    #[TableColumn('secure')]
+    public string $Secure;
+
+    public const SECURE_NONE = '';
+    public const SECURE_TLS_REQUIRE = 'TLS_REQUIRE';
+    public const SECURE_TLS_AUTO = 'TLS_AUTO';
+    public const SECURE_SSL = 'SSL';
 
     public function __construct(
         ?int $id=null,
@@ -45,7 +52,8 @@ class OutboundEmailProfile extends BaseObject
         ?string $username='',
         ?string $password='',
         string $host='',
-        int $port=465,
+        int $port=25,
+        string $secure=self::SECURE_NONE,
     ) {
         $sender = $sender??new EmailAddress('', '');
         $this->Id = $id;
@@ -59,6 +67,7 @@ class OutboundEmailProfile extends BaseObject
         $this->Password = $password;
         $this->Host = $host;
         $this->Port = $port;
+        $this->Secure = $secure;
 
         parent::__construct();
     }
