@@ -47,7 +47,7 @@ class OutboundEmailProfile extends BaseObject
         string $key='',
         string $label='',
         string $type='smtp',
-        ?EmailAddress $sender,
+        ?EmailAddress $sender=null,
         bool $requireAuth=false,
         ?string $username='',
         ?string $password='',
@@ -81,6 +81,10 @@ class OutboundEmailProfile extends BaseObject
         }
 
         return self::CastFromRow($results[0], className:get_called_class());
+    }
+
+    public static function Blank() : self {
+        return new self();
     }
 
     public function Save() : bool {

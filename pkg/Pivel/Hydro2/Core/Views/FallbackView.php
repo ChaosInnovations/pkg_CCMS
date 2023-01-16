@@ -9,7 +9,7 @@ class FallbackView extends BaseView
     protected string $coreVersion;
 
     public function __construct() {
-        $v = Utilities::getPackageManifest()['CCMS']['version'];
+        $v = Utilities::getPackageManifest()['Pivel']['Hydro2']['version'];
         $this->coreVersion = join('.', $v);
     }
 }

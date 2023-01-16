@@ -1,6 +1,6 @@
 <?php
 
-namespace Package\Pivel\Hydro2\Database\Controllers;
+namespace Package\Pivel\Hydro2\Email\Controllers;
 
 use Package\Pivel\Hydro2\Core\Controllers\BaseController;
 use Package\Pivel\Hydro2\Core\Extensions\Route;
@@ -9,19 +9,18 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
 use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
-use Package\Pivel\Hydro2\Database\Models\DatabaseConfigurationProfile;
-use Package\Pivel\Hydro2\Database\Services\DatabaseService;
+use Package\Pivel\Hydro2\Email\Models\EmailAddress;
 use Package\Pivel\Hydro2\Email\Models\EmailMessage;
 use Package\Pivel\Hydro2\Email\Models\OutboundEmailProfile;
 use Package\Pivel\Hydro2\Email\Services\EmailService;
 use Package\Pivel\Hydro2\Email\Views\TestEmailView;
 
-#[RoutePrefix('api/hydro2/core/email/outboundprofiles')]
-class SettingsController extends BaseController
+#[RoutePrefix('api/hydro2/email/outboundprofiles')]
+class OutboundEmailProfilesController extends BaseController
 {
     // TODO replace with real permission check
     private function UserHasPermission(string $permission) : bool {
-        return false;
+        return true;
     }
 
     #[Route(Method::GET, '')]
@@ -34,6 +33,9 @@ class SettingsController extends BaseController
             );
         }
 
+        /**
+         * @var OutboundEmailProfile[]
+         */
         $profiles = OutboundEmailProfile::GetAll();
         $serializedProfiles = [];
         foreach ($profiles as $profile) {
@@ -41,6 +43,13 @@ class SettingsController extends BaseController
                 'key' => $profile->Key,
                 'label' => $profile->Label,
                 'type' => $profile->Type,
+                'sender' => $profile->GetSender()->__toString(),
+                'require_auth' => $profile->RequireAuth,
+                'username' => $profile->Username,
+                // don't provide password
+                'host' => $profile->Host,
+                'port' => $profile->Port,
+                'secure' => $profile->Secure,
             ];
         }
 
@@ -52,7 +61,7 @@ class SettingsController extends BaseController
         );
     }
 
-    #[Route(Method::POST, 'getproviders')]
+    #[Route(Method::GET, 'getproviders')]
     public function GetProviders() : Response
     {
         // if not logged in as admin, return 404
@@ -111,17 +120,30 @@ class SettingsController extends BaseController
             );
         }
         
+        $secure = $this->request->Args['secure']??OutboundEmailProfile::SECURE_NONE;
+        if (!in_array($secure, [
+            OutboundEmailProfile::SECURE_NONE,
+            OutboundEmailProfile::SECURE_SSL,
+            OutboundEmailProfile::SECURE_TLS_AUTO,
+            OutboundEmailProfile::SECURE_TLS_REQUIRE,
+        ])) {
+            $secure = OutboundEmailProfile::SECURE_NONE;
+        }
+
         $profile = new OutboundEmailProfile(
             key: $this->request->Args['key'],
             label: $this->request->Args['label']??'Unnamed Email Profile',
             type: $this->request->Args['type']??'smtp',
-            senderAddress: $this->request->Args['sender_address']??'',
-            senderName: $this->request->Args['sender_name']??'',
+            sender: new EmailAddress(
+                $this->request->Args['sender_address']??'',
+                $this->request->Args['sender_name']??''
+            ),
             requireAuth: $this->request->Args['require_auth']??false,
             username: $this->request->Args['username']??null,
             password: $this->request->Args['password']??null,
             host: $this->request->Args['host']??'localhost',
             port: $this->request->Args['port']??465,
+            secure: $secure,
         );
 
         if (!$profile->Save()) {
@@ -158,6 +180,13 @@ class SettingsController extends BaseController
                 'key' => $profile->Key,
                 'label' => $profile->Label,
                 'type' => $profile->Type,
+                'sender' => $profile->GetSender()->__toString(),
+                'require_auth' => $profile->RequireAuth,
+                'username' => $profile->Username,
+                // don't provide password
+                'host' => $profile->Host,
+                'port' => $profile->Port,
+                'secure' => $profile->Secure,
             ]
         ];
 
@@ -184,6 +213,16 @@ class SettingsController extends BaseController
                 key: $this->request->Args['key'],
             );
         }
+
+        $secure = $this->request->Args['secure']??OutboundEmailProfile::SECURE_NONE;
+        if (!in_array($secure, [
+            OutboundEmailProfile::SECURE_NONE,
+            OutboundEmailProfile::SECURE_SSL,
+            OutboundEmailProfile::SECURE_TLS_AUTO,
+            OutboundEmailProfile::SECURE_TLS_REQUIRE,
+        ])) {
+            $secure = OutboundEmailProfile::SECURE_NONE;
+        }
         
         $profile->Label = $this->request->Args['label']??'Unnamed Email Profile';
         $profile->Type = $this->request->Args['type']??'smtp';
@@ -191,9 +230,11 @@ class SettingsController extends BaseController
         $profile->SenderName = $this->request->Args['sender_name']??'';
         $profile->RequireAuth = $this->request->Args['require_auth']??false;
         $profile->Username = $this->request->Args['username']??null;
-        $profile->Password = $this->request->Args['password']??null;
+        // if new password not provided, keep the same one.
+        $profile->Password = $this->request->Args['password']??$profile->Password;
         $profile->Host = $this->request->Args['host']??'localhost';
         $profile->Port = $this->request->Args['port']??465;
+        $profile->Secure = $secure;
 
         if (!$profile->Save()) {
             return new JsonResponse(
@@ -206,7 +247,7 @@ class SettingsController extends BaseController
     }
 
     #[Route(Method::POST, '{key}/remove')]
-    #[Route(Method::DELETE, '{key}/remove')]
+    #[Route(Method::DELETE, '{key}')]
     public function DeleteProfile() : Response {
         if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
             return new Response(

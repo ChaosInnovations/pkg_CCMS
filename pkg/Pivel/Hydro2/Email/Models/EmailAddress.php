@@ -18,6 +18,9 @@ class EmailAddress
 
     public function __toString()
     {
-        return "\"{$this->Name}\" <{$this->Address}>";
+        if (empty($this->Address)) {
+            return '';
+        }
+        return (empty($this->Name)?'':"\"{$this->Name}\" ") . "<{$this->Address}>";
     }
 }
