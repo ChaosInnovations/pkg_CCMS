@@ -11,7 +11,7 @@ use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
 use Package\Pivel\Hydro2\Database\Models\TestObject;
 
-#[RoutePrefix('api/hydro2/core/database/testobjects')]
+#[RoutePrefix('api/hydro2/database/testobjects')]
 class TestObjectController extends BaseController
 {
     // These endpoints should only be enabled when running in debug/test mode,
@@ -21,7 +21,7 @@ class TestObjectController extends BaseController
         return true;
     }
 
-    #[Route(Method::GET, '~api/database/testobjects')]
+    #[Route(Method::GET, '~api/hydro2/database/testobjects')]
     public function GetListOfObjects() : Response {
         if (!$this->ServerInTestMode()) {
             return new Response(

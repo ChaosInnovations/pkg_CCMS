@@ -15,11 +15,13 @@
     "controllers": [
         "\\Package\\Pivel\\Hydro2\\Core\\Controllers\\FallbackController",
         "\\Package\\Pivel\\Hydro2\\Database\\Controllers\\SettingsController",
-        "\\Package\\Pivel\\Hydro2\\Database\\Controllers\\TestObjectController"
+        "\\Package\\Pivel\\Hydro2\\Database\\Controllers\\TestObjectController",
+        "\\Package\\Pivel\\Hydro2\\Email\\Controllers\\OutboundEmailProfilesController"
     ],
 
     "permissions": [
         {"key":"managedatabaseconnections","name":"Manage Database Connections","description":"Allow editing, adding, and deleting database connection profiles."},
-        {"key":"browsedatabases","name":"Browse Databases","description":"Allow browsing databases."}
+        {"key":"browsedatabases","name":"Browse Databases","description":"Allow browsing databases."},
+        {"key":"manageoutboundemailprofiles","name":"Manage Outbound Email Profiles","description":"Allow editing, adding, and deleting outbound email profiles."}
     ]
 }

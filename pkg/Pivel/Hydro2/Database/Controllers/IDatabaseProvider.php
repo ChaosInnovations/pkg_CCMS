@@ -2,6 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Database\Controllers;
 
+use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
 use Package\Pivel\Hydro2\Database\Extensions\Where;
 use Package\Pivel\Hydro2\Database\Models\DatabaseConfigurationProfile;
 use Package\Pivel\Hydro2\Database\Models\Type;
@@ -26,7 +27,7 @@ interface IDatabaseProvider
     //public function ReorderColumn(string $tableName, $column, $after=null);
 
     // Methods for manipulating table data
-    public function Select(string $tableName, array $columns, null|Where $where, $order, $limit) : array;
+    public function Select(string $tableName, array $columns, ?Where $where, ?OrderBy $order, ?int $limit) : array;
     public function Insert(string $tableName, array $data) : void;
     //public function Update(string $tableName, $data, $columns, $where, $order, $limit);
     public function InsertOrUpdate(string $tableName, array $data, ?string $primaryKeyName) : void;

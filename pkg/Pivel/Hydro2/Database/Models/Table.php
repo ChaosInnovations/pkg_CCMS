@@ -4,6 +4,7 @@ namespace Package\Pivel\Hydro2\Database\Models;
 
 use Package\Pivel\Hydro2\Database\Controllers\IDatabaseProvider;
 use Package\Pivel\Hydro2\Database\Extensions\Exceptions\TableNotFoundException;
+use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
 use Package\Pivel\Hydro2\Database\Extensions\Where;
 
 class Table
@@ -77,7 +78,7 @@ class Table
         return true;
     }
 
-    public function Select(array $columns=null, $where=null, $order=null, $limit=null) {
+    public function Select(array $columns=null, ?Where $where=null, ?OrderBy $order=null, ?int $limit=null) {
         if (!$this->IsConnected()) {
             return [];
         }

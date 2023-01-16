@@ -58,7 +58,10 @@ class Router
                         $route->path = substr($route->path, 1);
                     }
                     $path = trim($route->path, '/');
-                    $route_segments = explode('/', $path);
+                    $route_segments = [];
+                    if ($path != '' || !$use_prefix || count($route_prefix_segments) == 0) {
+                        $route_segments = explode('/', $path);
+                    }
                     $this->routes[] = [
                         'method' => $route->method,
                         'path' => ($use_prefix ? array_merge($route_prefix_segments, $route_segments) : $route_segments),

@@ -8,7 +8,9 @@ use ReflectionException;
 
 class BaseView
 {
-    private ReflectionClass $rc;
+    protected ReflectionClass $rc;
+    protected array $properties;
+
     public function Render() : string {
         // load template from View attribute? or just look for template with matching class name?
         $this->rc = new ReflectionClass($this);        
@@ -19,7 +21,7 @@ class BaseView
         return $rendered;
     }
 
-    private function ResolveTemplate(string $template) : string {
+    protected function ResolveTemplate(string $template) : string {
         // template placeholder format
         // {{name:space:class|arg1,"arg2",$vararg3}}
         // {{arg1}}
@@ -41,8 +43,8 @@ class BaseView
         return $template;
     }
 
-    private function EvaluatePlaceholder(string $placeholder) : string {
-        // {{name:space:class|arg1,"arg2",$vararg3}}
+    protected function EvaluatePlaceholder(string $placeholder) : string {
+        // {{name\space\class|arg1,"arg2",$vararg3}}
         // {{arg1}}
         
         // split by '|' max once. if 2 results, classstr is [0] and argsstr is [1] else argsstr is [0]
@@ -86,7 +88,7 @@ class BaseView
         // if there is a classstr which refers to a valid class that extends BaseView
         // -> instantiate the View object, render, and return result.
         try {
-            $class = new ReflectionClass(str_replace(':', '\\', $classstr));
+            $class = new ReflectionClass($classstr);
             $instance = $class->newInstance(...$args);
         } catch (ReflectionException) {
             // class doesn't exist, or if there are more that 0 args and the class does not have a public constructor

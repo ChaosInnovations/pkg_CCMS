@@ -12,7 +12,7 @@ use Package\Pivel\Hydro2\Core\Models\Response;
 use Package\Pivel\Hydro2\Database\Models\DatabaseConfigurationProfile;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
 
-#[RoutePrefix('api/hydro2/core/database/settings')]
+#[RoutePrefix('api/hydro2/database/settings')]
 class SettingsController extends BaseController
 {
     private function UserHasPermission(string $permission) : bool {
