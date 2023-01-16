@@ -10,7 +10,7 @@ class SMTPProvider implements IOutboundEmailProvider
 {
     private OutboundEmailProfile $profile;
 
-    protected const LINE_ENDING = '\r\n';
+    protected const LINE_ENDING = "\r\n";
     protected const LINE_MAX_LENGTH = 76;
     /**
      * 5 minutes/300 seconds is the default per RFC 2821 Section 4.5.3.2
@@ -25,28 +25,40 @@ class SMTPProvider implements IOutboundEmailProvider
     private $connection = false;
     private ?string $greeting = null;
     private int $lastResponseCode = -1;
+    /**
+     * @var mixed[]
+     */
+    private array $extensions = [];
 
     public function __construct(OutboundEmailProfile $profile) {
         $this->profile = $profile;     
     }
 
     public function SendEmail(EmailMessage $message) : bool {
-        // open socket
+        // TODO remove after testing
+        // $compiledMessage = $this->CompileMessage($message);
+        // echo $compiledMessage;
+
+        // open socket and wait for greeting (will be stored in $this->greeting after Connect())
         if (!$this->Connect()) {
             return false;
         }
-        // wait for greeting (will be stored in $this->greeting after Connect())
-        // Try to switch to TLS?
-        // send HELO/EHLO
+        // send EHLO/HELO
         if (!$this->Hello()) {
+            $this->Quit();
             return false;
         }
+        // Upgrade to TLS if possible and not already connected with SSL.
+        //  If unable to upgrade to TLS and profile->Secure is set to TLS_REQUIRE
+        //  then fail and return false Try to switch to TLS?
         // Authenticate
         if (!$this->Authenticate()) {
+            $this->Quit();
             return false;
         }
         // send MAIL FROM
         if (!$this->MailFrom()) {
+            $this->Quit();
             return false;
         }
         // send n RCPT commands
@@ -60,6 +72,7 @@ class SMTPProvider implements IOutboundEmailProvider
         }
         if (count($recipients) <= count($bad_recipients)) {
             // if all recipients were rejected, don't bother sending the message data.
+            $this->Quit();
             return false;
         }
         // send DATA command
@@ -69,7 +82,9 @@ class SMTPProvider implements IOutboundEmailProvider
         //  use the latter since other providers might have different format requirements.
         // send <CRLF>.<CRLF>
         // TODO handle BCC, sending separate messages?
-        if (!$this->SendData($this->CompileMessage($message))) {
+        $compiledMessage = $this->CompileMessage($message);
+        if (!$this->SendData($compiledMessage)) {
+            $this->Quit();
             return false;
         }
         // send QUIT
@@ -125,23 +140,95 @@ class SMTPProvider implements IOutboundEmailProvider
     }
 
     protected function Hello() : bool {
-        return false;
+        return $this->SendEHLO() || $this->SendHELO();
     }
 
+    // TODO implement
     protected function Authenticate() : bool {
         return false;
     }
 
+    // TODO implement
     protected function MailFrom() : bool {
         return false;
     }
 
+    // TODO implement
     protected function SendData(string $data) : bool {
         return false;
     }
 
+    // TODO implement
     protected function Quit() : void {
         
+    }
+
+    protected function SendEHLO() : bool {
+        // send EHLO command
+        if (!$this->SendCommand('EHLO', gethostname())) {
+            return false;
+        }
+        // get response
+        $reply = $this->ReadLines();
+        // if response code is not 250, return false
+        if ($this->lastResponseCode != 250) {
+            return false;
+        }
+        // parse response into $this->extensions
+        // skip the first line which contains the server's hostname
+        $lines = explode("\n", $reply);
+        $firstLine = true;
+        foreach ($lines as $line) {
+            if ($firstLine) {
+                $firstLine = false;
+                continue;
+            }
+            // skip first 4 characters and remove whitespace
+            $line = trim(substr($line, 4));
+            $fields = explode(' ', $line);
+            $name = array_shift($fields);
+            $value = true;
+            if ($name == 'AUTH') {
+                $value = [];
+                if (is_array($fields)) {
+                    $value = $fields;
+                }
+            } else if ($name == 'SIZE') {
+                $value = 0;
+                if (is_array($fields)) {
+                    $value = $fields[0];
+                }
+            }
+            $this->extensions[$name] = $value;
+        }
+        return true;
+    }
+
+    protected function SendHELO() : bool {
+        // send HELO command
+        if (!$this->SendCommand('HELO', gethostname())) {
+            return false;
+        }
+        // get response
+        $reply = $this->ReadLines();
+        // if response code is not 250, return false
+        return $this->lastResponseCode == 250;
+    }
+
+    protected function SendCommand(string $command, string $parameterString='') : bool {
+        if (!$this->IsConnected()) {
+            return false;
+        }
+
+        $commandString = $command;
+        if ($parameterString != '') {
+            $commandString .= ' ' . $parameterString;
+        }
+        $commandString .= self::LINE_ENDING;
+
+        // TODO remove this
+        // echo $commandString;
+        return fwrite($this->connection, $commandString) !== false;
     }
 
     protected function ReadLines(float $timeout=self::TIMEOUT) : string {
@@ -171,7 +258,7 @@ class SMTPProvider implements IOutboundEmailProvider
             // code with no message/text; therefore, if there is no 4th
             // character or if the 4th character is '\r' or '\n', we can
             // also know that this was the last line.
-            if (!isset($newLine[3]) || in_array($newLine[3], [' ', '\r', '\n'])) {
+            if (!isset($newLine[3]) || in_array($newLine[3], [' ', "\r", "\n"])) {
                 break;
             }
 
@@ -254,7 +341,7 @@ class SMTPProvider implements IOutboundEmailProvider
             $compiledMessage = self::CompileMultipartMessage($headers, $messageBodyParts);
         } else {
             $compiledHeaders = self::CompileHeaders($headers);
-            $compiledMessage = $compiledHeaders . self::LINE_ENDING . $messageBodyParts[0];
+            $compiledMessage = $compiledHeaders . $messageBodyParts[0];
         }
 
         return $compiledMessage;
@@ -326,7 +413,7 @@ class SMTPProvider implements IOutboundEmailProvider
             $fieldName = trim($fieldName);
             $header = $fieldName.': '.$fieldValue;
             // Strip existing \r and \n from each header
-            $header = str_replace(['\r', '\n'], '', $header);
+            $header = str_replace(["\r", "\n",], '', $header);
             $header = self::FoldHeader($header);
             // add to complied headers
             $compiledHeaders .= $header . self::LINE_ENDING;
@@ -337,6 +424,9 @@ class SMTPProvider implements IOutboundEmailProvider
     protected static function FoldHeader(string $unfoldedHeader, int $lineMaxLength=self::LINE_MAX_LENGTH) : string {
         // whitespace characters can have a LINE_ENDING inserted before the whitespace.
         // if remaining string is <= linemaxlength, add it to foldedHeader
+        // We shouldn't fold inside the field name, but we won't because there is no
+        //  whitespace inside a field name so it will not appear as an eligible place
+        //  to fold at.
 
         $foldedHeader = '';
         $firstChunk = true;

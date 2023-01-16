@@ -7,7 +7,7 @@ use Package\Pivel\Hydro2\Email\Views\BaseEmailView;
 
 class EmailMessage
 {
-    protected const LINE_ENDING = '\r\n';
+    protected const LINE_ENDING = "\r\n";
     protected const LINE_MAX_LENGTH = 76;
 
     private ?string $htmlBody;
@@ -105,15 +105,15 @@ class EmailMessage
     protected static function NormalizeLineEndings(string $str, string $lineEnding=self::LINE_ENDING) : string {
         // First, replace \r\n and \r with \n so that \r\n is not converted to [$lineEnding][$lineEnding]
         // str_replace processes each element of the search array in order.
-        $normalized_str = str_replace(['\r\n', '\r'], '\n', $str);
+        $normalized_str = str_replace(["\r\n", "\r"], "\n", $str);
 
         // Now, replace instances of \r, \n, and \r\n with $lineEnding.
         // Except, if $lineEnding == '\n', return right away since we already did this.
-        if ($lineEnding == '\n') {
+        if ($lineEnding == "\n") {
             return $normalized_str;
         }
 
-        $normalized_str = str_replace('\n', $lineEnding, $normalized_str);
+        $normalized_str = str_replace("\n", $lineEnding, $normalized_str);
 
         return $normalized_str;
     }
