@@ -3,6 +3,7 @@
 namespace Package\Pivel\Hydro2\Email\Services;
 
 use Exception;
+use Package\Pivel\Hydro2\Email\Models\EmailAddress;
 use Package\Pivel\Hydro2\Email\Models\EmailMessage;
 use Package\Pivel\Hydro2\Email\Models\Encoding;
 use Package\Pivel\Hydro2\Email\Models\OutboundEmailProfile;
@@ -36,10 +37,6 @@ class SMTPProvider implements IOutboundEmailProvider
     }
 
     public function SendEmail(EmailMessage $message) : bool {
-        // TODO remove after testing
-        // $compiledMessage = $this->CompileMessage($message);
-        // echo $compiledMessage;
-
         // open socket and wait for greeting (will be stored in $this->greeting after Connect())
         if (!$this->Connect()) {
             return false;
@@ -61,11 +58,8 @@ class SMTPProvider implements IOutboundEmailProvider
                 $this->Quit();
                 return false;
             }
-        // Upgrade to TLS if possible and not already connected with SSL.
-        //  If unable to upgrade to TLS and profile->Secure is set to TLS_REQUIRE
-        //  then fail and return false Try to switch to TLS?
-        // Authenticate
-        if (!$this->Authenticate()) {
+            // TODO remove after testing
+            echo "Successfully negotiated TLS!\n";
             // re-send EHLO/HELO after successful TLS negotiation
             if (!$this->Hello()) {
                 $this->Quit();
@@ -87,8 +81,9 @@ class SMTPProvider implements IOutboundEmailProvider
         $bad_recipients = [];
         foreach ($recipients as $recipient) {
             // send RCPT command
-            // check whether recipient address was accepted
-            //  if not, add to $bad_recipients
+            if (!$this->SendRCPT($recipient)) {
+                $bad_recipients[] = $recipient;
+            }
             // TODO handle BCC, sending separate messages?
         }
         if (count($recipients) <= count($bad_recipients)) {
@@ -290,14 +285,53 @@ class SMTPProvider implements IOutboundEmailProvider
         return true;
     }
 
-    // TODO implement
-    protected function MailFrom() : bool {
-        return false;
+    protected function SendRCPT(EmailAddress $recipient) : bool {
+        // RCPT TO:<address@domain.com>
+        if (!$this->SendCommand('RCPT', "TO:<{$recipient->Address}>")) {
+            return false;
+        }
+        $reply = $this->ReadLines();
+        echo $reply; // TODO remove this
+        if ($this->lastResponseCode != 250 && $this->lastResponseCode != 251) {
+            return false;
+        }
+
+        return true;
     }
 
     // TODO implement
     protected function SendData(string $data) : bool {
-        return false;
+        // data has already been processed by compileMessage so we don't need to
+        //  worry about normalizing line endings, wrapping, or ensuring headers
+        //  are present.
+        // DATA<CRLF>
+        if (!$this->SendCommand('DATA')) {
+            return false;
+        }
+        // wait for 354
+        $reply = $this->ReadLines();
+        echo $reply; // TODO remove this
+        if ($this->lastResponseCode != 354) {
+            return false;
+        }
+        // if a line starts with '.', add an additional '.' to the beginning of the line.
+        //  (without splitting lines, is equivalent to replacing '<CRLF>.' with '<CRLF>..')
+        str_replace(self::LINE_ENDING . '.', self::LINE_ENDING . '..', $data);
+        // if the data does not end with <CRLF>, then add a <CRLF>
+        if (substr($data, strlen($data)-strlen(self::LINE_ENDING)) != self::LINE_ENDING) {
+            $data .= self::LINE_ENDING;
+        }
+        // add the .<CRLF> terminator
+        $data .= '.' . self::LINE_ENDING;
+        // send $data
+        $result = fwrite($this->connection, $data);
+        if ($result === false) {
+            return false;
+        }
+        // wait for response (250 OK)
+        $reply = $this->ReadLines();
+        echo $reply; // TODO remove this
+        return $this->lastResponseCode == 250;
     }
 
     protected function Quit() : void {
@@ -380,7 +414,7 @@ class SMTPProvider implements IOutboundEmailProvider
         $commandString .= self::LINE_ENDING;
 
         // TODO remove this
-        // echo $commandString;
+        echo $commandString;
         return fwrite($this->connection, $commandString) !== false;
     }
 

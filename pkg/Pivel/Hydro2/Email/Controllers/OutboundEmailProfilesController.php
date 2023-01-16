@@ -328,7 +328,7 @@ class OutboundEmailProfilesController extends BaseController
         }
 
         $emailView = new TestEmailView($this->request->Args['key']);
-        $message = new EmailMessage($emailView, [$this->request->Args['to']]);
+        $message = new EmailMessage($emailView, [new EmailAddress($this->request->Args['to'])]);
 
         if (!$provider->SendEmail($message)) {
             return new JsonResponse(

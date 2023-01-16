@@ -81,7 +81,7 @@ class EmailMessage
      * @return EmailAddress[]
      */
     public function GetAllRecipients() : array {
-        return array_merge([$this->To, $this->Cc, $this->Bcc]);
+        return array_merge($this->To, $this->Cc, $this->Bcc);
     }
 
     protected static function EncodeString(string $str, $encoding=Encoding::ENC_BINARY, string $lineEnding=self::LINE_ENDING) {

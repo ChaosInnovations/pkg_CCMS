@@ -9,7 +9,7 @@ class EmailAddress
 
     public function __construct(
         string $address,
-        ?string $name,
+        ?string $name=null,
     )
     {
         $this->Address = $address;
