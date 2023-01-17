@@ -114,7 +114,7 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
 
         $constraintStructureString = implode(',',array_map(function($col) {
             return self::getConstraintSQL($col);
-        },array_filter($columns,fn(TableColumn $col)=>$col->primaryKey||$col->foreignKey)));
+        },array_filter($columns,fn(TableColumn $col)=>($col->primaryKey||$col->foreignKey)&&self::getConstraintSQL($col)!==null)));
 
         if ($constraintStructureString != '') {
             $columnStructureString .= ','.$constraintStructureString;

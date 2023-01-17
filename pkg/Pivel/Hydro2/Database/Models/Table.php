@@ -137,7 +137,7 @@ class Table
 
         foreach ($data as $key => $value) {
             if (is_subclass_of($this->columns[$key]->propertyType, BaseObject::class)) {
-                $data[$key] = $value->GetPrimaryKeyColumn();
+                $data[$key] = $value->GetPrimaryKeyValue();
             } else if ($this->columns[$key]->propertyType == 'DateTime') {
                 $data[$key] = $value->format('c');
             }

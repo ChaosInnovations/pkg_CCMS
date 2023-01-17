@@ -13,16 +13,21 @@ use Package\Pivel\Hydro2\Database\Models\TableColumn as ModelsTableColumn;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
 use ReflectionClass;
 
-class BaseObject
+abstract class BaseObject
 {
-    protected static ?Table $table = null;
+    /**
+     * Needs to be an array because static properties in a base class are shared between child/siblings
+     * 
+     * @var Table[]
+     */
+    protected static array $tables = [];
 
     protected static function getTable() : ?Table {
-        if (!self::$table instanceof Table) {
-            self::$table = new Table(self::getDbi(), self::getTableName(), self::getColumns());
+        if (!isset(self::$tables[get_called_class()]) || !self::$tables[get_called_class()] instanceof Table) {
+            self::$tables[get_called_class()] = new Table(self::getDbi(), self::getTableName(), self::getColumns());
         }
 
-        return self::$table;
+        return self::$tables[get_called_class()];
     }
 
     public function __construct()
@@ -49,7 +54,7 @@ class BaseObject
         //  --> in the existing migration methods, such a class could just manually run the queries to change the
         //       table name.
 
-        // should probably have the option to set a name manually via the [#TableStructue] attribute
+        // should probably have the option to set a name manually via the [#TableName] attribute
         $name = 't_' . md5(get_called_class());
 
         $class = new ReflectionClass(get_called_class());
@@ -117,8 +122,8 @@ class BaseObject
                 $fkOnUpdate = $fkAttr->onUpdate;
                 $fkOnDelete = $fkAttr->onDelete;
                 $foreignKey = true;
-                $foreignKeyTable = $fkAttr->foreignTableName??$foreignTable;
-                $foreignKeyColumnName = $fkAttr->foreignTableColumnName??$foreignKey;
+                $foreignKeyTable = $fkAttr->foreignTableName??$foreignTable->tableName;
+                $foreignKeyColumnName = $fkAttr->foreignTableColumnName??$foreignKeyColumnName;
             }
 
             $columns[$column_name] = new ModelsTableColumn(
@@ -165,7 +170,7 @@ class BaseObject
             $propertyName = $column->propertyName;
 
             $castValue = null;
-            if (is_subclass_of($phpType, self::class)) {
+            if ($value !== null && is_subclass_of($phpType, self::class)) {
                 // How to deal with objects that have circular foreign keys?
                 $castValue = $phpType::LoadFromId($value);
             } else if ($phpType == 'DateTime') {

@@ -15,8 +15,8 @@ class TableColumn
         public bool $autoIncrement,
         public bool $primaryKey,
         public bool $foreignKey = false,
-        public null|bool $foreignKeyTable = null,
-        public null|bool $foreignKeyColumnName = null,
+        public ?string $foreignKeyTable = null,
+        public ?string $foreignKeyColumnName = null,
         public ReferenceBehaviour $foreignKeyOnUpdate = ReferenceBehaviour::RESTRICT,
         public ReferenceBehaviour $foreignKeyOnDelete = ReferenceBehaviour::RESTRICT,
         ) {

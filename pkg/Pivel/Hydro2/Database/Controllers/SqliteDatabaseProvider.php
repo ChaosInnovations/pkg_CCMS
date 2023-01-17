@@ -70,7 +70,7 @@ class SqliteDatabaseProvider extends PDO implements IDatabaseProvider
 
         $constraintStructureString = implode(',',array_map(function($col) {
             return self::getConstraintSQL($col);
-        },array_filter($columns,fn(TableColumn $col)=>$col->primaryKey||$col->foreignKey)));
+        },array_filter($columns,fn(TableColumn $col)=>($col->primaryKey||$col->foreignKey)&&self::getConstraintSQL($col)!==null)));
 
         if ($constraintStructureString != '') {
             $columnStructureString .= ','.$constraintStructureString;
@@ -161,7 +161,7 @@ class SqliteDatabaseProvider extends PDO implements IDatabaseProvider
         }
 
         if ($col->foreignKey) {
-            $s = 'FOREIGN KEY ('.$col->columnName.') REFERENCES '.$col->foreignKeyTable.'.'.$col->foreignKeyColumnName;
+            $s = 'FOREIGN KEY ('.$col->columnName.') REFERENCES '.$col->foreignKeyTable.'('.$col->foreignKeyColumnName.')';
             $s .= ' ON UPDATE '.$col->foreignKeyOnUpdate->value.' ON DELETE '.$col->foreignKeyOnDelete->value;
             return $s;
         }

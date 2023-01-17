@@ -100,6 +100,7 @@ class BaseView
             return '';
         }
 
+        //return 'instance of ' . $classstr . ' with args ' . implode(', ', $args);
         return $instance->Render();
     }
 }

@@ -12,6 +12,7 @@ class Request
     protected array $cookies = [];
     protected bool $isHttps = false;
     protected string $hostname = 'localhost';
+    protected string $clientAddress = '';
     public Method $method;
     public string $baseUrl = '';
     /**
@@ -40,6 +41,7 @@ class Request
         } else {
             $this->isHttps = isset($server['HTTPS']) && $server['HTTPS'] != 'off';
             $this->hostname = $server["SERVER_NAME"];
+            $this->clientAddress = $server['REMOTE_ADDR'];
         }
 
         $this->baseUrl = "http" . ($this->isHttps ? "s" : "") . "://" . $this->hostname;
@@ -93,5 +95,9 @@ class Request
         }
         
         return $this->cookies[$key];
+    }
+
+    public function getClientAddress() : string {
+        return $this->clientAddress;
     }
 }
