@@ -1,6 +1,6 @@
 <?php
 
-namespace Package\Pivel\Hydro2\Identity\Extensions;
+namespace Package\Pivel\Hydro2\Identity\Models;
 
 enum Permissions : string
 {

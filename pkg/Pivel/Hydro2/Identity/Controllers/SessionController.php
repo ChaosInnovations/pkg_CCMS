@@ -12,7 +12,7 @@ use Package\Pivel\Hydro2\Core\Models\Response;
 
 // TODO Implement these routes
 #[RoutePrefix('api/hydro2/core/identity')]
-class IdentityController extends BaseController
+class SessionController extends BaseController
 {
     #[Route(Method::POST, 'login')]
     #[Route(Method::POST, '~login')]

@@ -14,9 +14,10 @@
     ],
 
     "controllers": [
-        "\\Package\\Pivel\\Hydro2\\Core\\Identity\\UserController",
-        "\\Package\\Pivel\\Hydro2\\Core\\Identity\\UserRoleController",
-        "\\Package\\Pivel\\Hydro2\\Core\\Identity\\SessionController"
+        "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\IdentityController",
+        "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\UserRoleController",
+        "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\UserRoleController",
+        "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\SessionController"
     ],
 
     "permissions": [

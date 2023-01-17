@@ -59,7 +59,7 @@ class Session extends BaseObject
         $this->LastIP = $lastIP;
     }
 
-    public static function LoadFromRandomId(int $randomId) : ?Session {
+    public static function LoadFromRandomId(string $randomId) : ?Session {
         // 1. need to run a query like:
         //     SELECT * FROM [tablename] WHERE [idcolumnname] = [id];
         $table = self::getTable();

@@ -15,8 +15,8 @@ use Package\Pivel\Hydro2\Core\Models\Response;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
 use Package\Pivel\Hydro2\Email\Models\EmailMessage;
 use Package\Pivel\Hydro2\Email\Services\EmailService;
-use Package\Pivel\Hydro2\Identity\Extensions\Permissions;
 use Package\Pivel\Hydro2\Identity\Models\PasswordResetToken;
+use Package\Pivel\Hydro2\Identity\Models\Permissions;
 use Package\Pivel\Hydro2\Identity\Models\User;
 use Package\Pivel\Hydro2\Identity\Models\UserPassword;
 use Package\Pivel\Hydro2\Identity\Models\UserRole;
@@ -26,7 +26,7 @@ use Package\Pivel\Hydro2\Identity\Views\EmailViews\NewUserVerificationEmailView;
 use Package\Pivel\Hydro2\Identity\Views\EmailViews\PasswordChangedNotificationEmailView;
 use Package\Pivel\Hydro2\Identity\Views\EmailViews\PasswordResetEmailView;
 
-#[RoutePrefix('api/hydro2/core/identity/users')]
+#[RoutePrefix('api/hydro2/identity/users')]
 class IdentityController extends BaseController
 {
     #[Route(Method::GET, '')]
@@ -49,15 +49,17 @@ class IdentityController extends BaseController
                 'random_id' => $user->RandomId,
                 'created' => $user->InsertedTime,
                 'email' => $user->Email,
+                'email_verified' => $user->EmailVerified,
                 'name' => $user->Name,
                 'needs_review' => $user->NeedsReview,
                 'enabled' => $user->Enabled,
                 'failed_login_attempts' => $user->FailedLoginAttempts,
-                'role' => [
+                'failed_2fa_attempts' => $user->Failed2FAAttempts,
+                'role' => ($user->Role == null ? null : [
                     'id' => $user->Role->Id,
                     'name' => $user->Role->Name,
                     'description' => $user->Role->Description,
-                ],
+                ]),
             ];
         }
 
@@ -134,6 +136,7 @@ class IdentityController extends BaseController
         } else {
             $role = IdentityService::GetDefaultUserRole();
         }
+        echo $role->Id;
 
         // check that there isn't already a User with this email
         if (User::LoadFromEmail($this->request->Args['email']) !== null) {
@@ -222,15 +225,17 @@ class IdentityController extends BaseController
             'random_id' => $user->RandomId,
             'created' => $user->InsertedTime,
             'email' => $user->Email,
+            'email_verified' => $user->EmailVerified,
             'name' => $user->Name,
             'needs_review' => $user->NeedsReview,
             'enabled' => $user->Enabled,
             'failed_login_attempts' => $user->FailedLoginAttempts,
-            'role' => [
+            'failed_2fa_attempts' => $user->Failed2FAAttempts,
+            'role' => ($user->Role == null ? null : [
                 'id' => $user->Role->Id,
                 'name' => $user->Role->Name,
                 'description' => $user->Role->Description,
-            ],
+            ]),
         ]];
 
         return new JsonResponse(
@@ -338,16 +343,11 @@ class IdentityController extends BaseController
         }
 
         return new JsonResponse(
-            data: [
-                'new_user' => [
-                    'id' => $user->RandomId,
-                ],
-            ],
             status:StatusCode::OK
         );
     }
 
-    #[Route(Method::POST, '{id}/remove')]
+    #[Route(Method::GET, '{id}/remove')]
     #[Route(Method::DELETE, '{id}')]
     public function DeleteUser() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {
@@ -482,7 +482,7 @@ class IdentityController extends BaseController
         }
     }
 
-    #[Route(Method::POST, '{id}/sendpasswordreset')]
+    #[Route(Method::GET, '{id}/sendpasswordreset')]
     public function UserSendResetPassword() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
@@ -548,6 +548,14 @@ class IdentityController extends BaseController
         if (!$user->ValidateEmailVerificationToken($this->request->Args['token'])) {
             return new Response(
                 content:"This verification link is not valid.",
+            );
+        }
+
+        $user->EmailVerified = true;
+
+        if (!$user->Save()) {
+            return new Response(
+                content:"This verification link is valid, but there was a problem with the database.",
             );
         }
 

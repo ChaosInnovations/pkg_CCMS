@@ -8,9 +8,9 @@ class PasswordResetEmailView extends BaseEmailView
 {
     protected string $ResetUrl;
     protected string $Name;
-    protected int $ValidForString;
+    protected string $ValidForString;
 
-    public function __construct(string $resetUrl, string $name, string $validForMinutes) {
+    public function __construct(string $resetUrl, string $name, int $validForMinutes) {
         $this->ResetUrl = $resetUrl;
         $this->Name = $name;
         $this->ValidForString = $validForMinutes.' minute'.($validForMinutes===1?'':'s');

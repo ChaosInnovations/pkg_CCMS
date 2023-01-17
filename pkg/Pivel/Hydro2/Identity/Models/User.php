@@ -42,7 +42,7 @@ class User extends BaseObject
     public string $Name;
     #[TableColumn('user_role_id')]
     #[TableForeignKey()]
-    public UserRole $Role;
+    public ?UserRole $Role;
     #[TableColumn('needs_review')]
     public bool $NeedsReview;
     #[TableColumn('enabled')]
@@ -61,6 +61,7 @@ class User extends BaseObject
         bool $needsReview=false,
         bool $enabled=false,
         int $failedLoginAttempts=0,
+        int $failed2FAAttempts=0,
         ?UserRole $role=null,
         ) {
         $this->Email = $email;
@@ -69,7 +70,8 @@ class User extends BaseObject
         $this->NeedsReview = $needsReview;
         $this->Enabled = $enabled;
         $this->FailedLoginAttempts = $failedLoginAttempts;
-        $this->Role = $role??(new UserRole());
+        $this->Failed2FAAttempts = $failed2FAAttempts;
+        $this->Role = $role;
         
         parent::__construct();
         /*
@@ -135,7 +137,7 @@ class User extends BaseObject
         */
     }
 
-    public static function LoadFromRandomId(int $randomId) : ?User {
+    public static function LoadFromRandomId(string $randomId) : ?User {
         // 1. need to run a query like:
         //     SELECT * FROM [tablename] WHERE [idcolumnname] = [id];
         $table = self::getTable();
@@ -163,6 +165,10 @@ class User extends BaseObject
         return self::CastFromRow($results[0]);
     }
 
+    public static function Blank() : self {
+        return new self();
+    }
+
     public function Save() : bool {
         if ($this->RandomId === null) {
             $this->RandomId = md5(uniqid($this->Email, true));
@@ -187,6 +193,7 @@ class User extends BaseObject
         }
 
         $this->Id = $results[0]['id'];
+        return true;
     }
 
     public function Delete() : bool {

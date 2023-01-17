@@ -52,10 +52,15 @@ class UserRole extends BaseObject
         $this->Description = $description;
         $this->MaxLoginAttempts = $maxLoginAttempts;
         $this->MaxSessionLengthMinutes = $maxSessionLengthMinutes;
+        $this->MaxPasswordAgeDays = null;
         $this->DaysUntil2FASetupRequired = $daysUntil2FASetupRequired;
         $this->ChallengeIntervalMinutes = $challengeIntervalMinutes;
         $this->Max2FAAttempts = $max2FAAttempts;
         $this->Permissions = $permissions;
+    }
+
+    public static function Blank() : self {
+        return new self();
     }
 
     public function Save() : bool {
@@ -84,6 +89,7 @@ class UserRole extends BaseObject
             }
         }
 
+        return true; // TODO remove after testing
         return false;
     }
 }

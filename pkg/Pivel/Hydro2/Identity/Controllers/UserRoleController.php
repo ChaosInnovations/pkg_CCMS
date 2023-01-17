@@ -12,7 +12,7 @@ use Package\Pivel\Hydro2\Core\Models\Response;
 
 // TODO Implement these routes
 #[RoutePrefix('api/hydro2/core/identity/userroles')]
-class IdentityController extends BaseController
+class UserRoleController extends BaseController
 {
     #[Route(Method::GET, '')]
     public function GetUserRoles() : Response {
