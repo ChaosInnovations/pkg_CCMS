@@ -18,6 +18,6 @@ class OrderBy
     }
 
     public function GetQueryString() : string {
-        return 'ORDERBY '.trim($this->queryString,',');
+        return 'ORDER BY '.trim($this->queryString,',');
     }
 }
