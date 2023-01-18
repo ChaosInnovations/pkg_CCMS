@@ -559,8 +559,16 @@ class IdentityController extends BaseController
             );
         }
 
+        // If the user has not yet set a password, generate password reset token.
+        // TODO include new password form in verification view
+        $userNeedsToCreatePassword = UserPassword::LoadCurrentFromUser($user) === null;
+        $PasswordResetToken = null;
+        if ($userNeedsToCreatePassword) {
+            $PasswordResetToken = new PasswordResetToken($user->Id, expireAfterMinutes: 60);
+        }
+
         return new Response(
-            content:"Thanks, your email is verified.",
+            content:"Thanks, your email is verified.".($userNeedsToCreatePassword?" Need to set a password using this verification token: {$PasswordResetToken}":''),
         );
     }
 
