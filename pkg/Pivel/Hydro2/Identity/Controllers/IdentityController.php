@@ -418,19 +418,14 @@ class IdentityController extends BaseController
             );
         }
         $currentPassword = $user->GetCurrentPassword();
-        if (!(($currentPassword !== null && $currentPassword->ComparePassword($password)) || IdentityService::IsPasswordResetTokenValid($reset_token, $user))) {
+        if ($password !== null && ($currentPassword == null || !($currentPassword->ComparePassword($password)))) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
                         [
                             'name' => 'password',
                             'description' => 'User\'s current password',
-                            'message' => 'The provided password or reset token is incorrect.',
-                        ],
-                        [
-                            'name' => 'reset_token',
-                            'description' => 'Password reset token.',
-                            'message' => 'The provided password or reset token is incorrect.',
+                            'message' => 'The provided password is incorrect.',
                         ],
                     ],
                 ],
@@ -438,8 +433,21 @@ class IdentityController extends BaseController
                 error_message: 'One or more arguments are invalid.'
             );
         }
-
-        // TODO if a reset token was used, invalidate it.
+        if ($reset_token !== null && !IdentityService::IsPasswordResetTokenValid($reset_token, $user)) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'reset_token',
+                            'description' => 'Password reset token.',
+                            'message' => 'The provided password reset token is incorrect, expired, or already used.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
 
         // check that the new password was provided.
         if (!isset($this->request->Args['new_password'])) {

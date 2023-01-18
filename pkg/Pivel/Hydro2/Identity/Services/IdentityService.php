@@ -87,6 +87,9 @@ class IdentityService
             return false;
         }
 
+        $token_obj->Used = true;
+        $token_obj->Save();
+
         return true;
     }
 

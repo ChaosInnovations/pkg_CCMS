@@ -30,6 +30,8 @@ class PasswordResetToken extends BaseObject
     public ?DateTime $StartTime;
     #[TableColumn('expire')]
     public ?DateTime $ExpireTime;
+    #[TableColumn('used')]
+    public bool $Used;
 
     public function __construct(
         ?int $userId = null,
@@ -40,6 +42,7 @@ class PasswordResetToken extends BaseObject
         $this->GenerateToken();
         $this->StartTime = $startTime??new DateTime(timezone:new DateTimeZone('UTC'));
         $this->ExpireTime = (clone $this->StartTime)->modify("+{$expireAfterMinutes} minutes");
+        $this->Used = false;
     }
 
     public static function LoadFromToken(string $token) : ?self {
@@ -75,6 +78,14 @@ class PasswordResetToken extends BaseObject
     }
 
     public function CompareToken(string $token) : bool {
+        if ($this->Used) {
+            return false;
+        }
+
+        if ($this->ExpireTime < new DateTime(timezone:new DateTimeZone('UTC'))) {
+            return false;
+        }
+        
         return $token === $this->ResetToken;
     }
 }
