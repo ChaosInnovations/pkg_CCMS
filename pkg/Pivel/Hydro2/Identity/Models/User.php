@@ -218,6 +218,10 @@ class User extends BaseObject
 
     public function ValidateEmailVerificationToken(string $token) : bool
     {
+        if ($this->EmailVerified) {
+            return false;
+        }
+        
         return $token === $this->EmailVerificationToken;
     }
 

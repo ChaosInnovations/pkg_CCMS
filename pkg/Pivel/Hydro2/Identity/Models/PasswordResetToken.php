@@ -55,6 +55,10 @@ class PasswordResetToken extends BaseObject
         return self::CastFromRow($results[0]);
     }
 
+    public static function Blank() : self {
+        return new self();
+    }
+
     public function Save() : bool {
         if ($this->UserId === null) {
             return false;

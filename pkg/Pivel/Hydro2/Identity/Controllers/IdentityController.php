@@ -488,6 +488,8 @@ class IdentityController extends BaseController
                 error_message: "There was a problem with the database."
             );
         }
+
+        return new JsonResponse(status: StatusCode::OK);
     }
 
     #[Route(Method::GET, '{id}/sendpasswordreset')]
@@ -515,6 +517,7 @@ class IdentityController extends BaseController
         }
 
         $token = new PasswordResetToken($user->Id);
+        $token->Save();
 
         // send reset email
         $emailView = new PasswordResetEmailView(IdentityService::GetPasswordResetUrl($this->request, $user, $token), $user->Name, 10);
@@ -573,10 +576,11 @@ class IdentityController extends BaseController
         $PasswordResetToken = null;
         if ($userNeedsToCreatePassword) {
             $PasswordResetToken = new PasswordResetToken($user->Id, expireAfterMinutes: 60);
+            $PasswordResetToken->Save();
         }
 
         return new Response(
-            content:"Thanks, your email is verified.".($userNeedsToCreatePassword?" Need to set a password using this verification token: {$PasswordResetToken}":''),
+            content:"Thanks, your email is verified.".($userNeedsToCreatePassword?" Need to set a password using this verification token: {$PasswordResetToken->ResetToken}":''),
         );
     }
 
