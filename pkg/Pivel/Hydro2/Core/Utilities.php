@@ -7,7 +7,7 @@ use \PDO;
 
 class Utilities
 {
-    public static $pkg_manifest = null;
+    private static $pkg_manifest = null;
     public static function getPackageManifest() : array {
         if (self::$pkg_manifest === null) {
             self::$pkg_manifest = [];
@@ -110,13 +110,5 @@ class Utilities
         }
 
         return self::$pkg_manifest;
-    }
-
-    public static function fillTemplate(string $template, array $vars)
-    {
-        foreach($vars as $k=>$v){
-            $template = str_replace('{'.$k.'}', $v, $template);
-        }
-        return $template;
     }
 }

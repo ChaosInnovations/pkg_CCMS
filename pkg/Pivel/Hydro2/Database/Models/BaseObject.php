@@ -4,6 +4,7 @@ namespace Package\Pivel\Hydro2\Database\Models;
 
 use DateTime;
 use Package\Pivel\Hydro2\Database\Controllers\IDatabaseProvider;
+use Package\Pivel\Hydro2\Database\Extensions\ChildTable;
 use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
 use Package\Pivel\Hydro2\Database\Extensions\TableForeignKey;
 use Package\Pivel\Hydro2\Database\Extensions\TableName;
@@ -11,6 +12,7 @@ use Package\Pivel\Hydro2\Database\Extensions\TablePrimaryKey;
 use Package\Pivel\Hydro2\Database\Extensions\Where;
 use Package\Pivel\Hydro2\Database\Models\TableColumn as ModelsTableColumn;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
+use Reflection;
 use ReflectionClass;
 
 abstract class BaseObject
@@ -33,6 +35,11 @@ abstract class BaseObject
     public function __construct()
     {
         
+    }
+
+    public static function Blank() {
+        $calledClass = get_called_class();
+        return new $calledClass();
     }
 
     private static function getDbi() : ?IDatabaseProvider {
@@ -182,6 +189,8 @@ abstract class BaseObject
             $object->SetProperty($propertyName, $castValue);
         }
 
+        $object->LoadChildTables();
+
         return $object;
     }
 
@@ -224,6 +233,60 @@ abstract class BaseObject
             return null;
         }
         return $this->{$pkColumn->propertyName};
+    }
+
+    protected function LoadChildTables() {
+        // get all properties with ChildTable attribute
+        $class = new ReflectionClass(get_called_class());
+
+        // for each property
+        foreach ($class->getProperties() as $property) {
+            $ct_attributes = $property->getAttributes(ChildTable::class);
+            if (count($ct_attributes) != 1) {
+                continue;
+            }
+            $propertyName = $property->getName();
+            /** @var ChildTable */
+            $childTable = $ct_attributes[0]->newInstance();
+            //   check that attribute->className is instance of BaseObject
+            if (!is_subclass_of($childTable->className, self::class)) {
+                continue;
+            }
+            $childTableColumnName = null;
+            //   on child table's class, find property with ForeignKey attribute that matches the same type as ourself or has same table name.
+            $childClass = new ReflectionClass($childTable->className);
+            foreach ($childClass->getProperties() as $childClassProperty) {
+                //    get the column name associated with that attribute
+                $fk_attributes = $childClassProperty->getAttributes(TableForeignKey::class);
+                if (count($fk_attributes) != 1) {
+                    continue;
+                }
+                $type = $childClassProperty->getType()->getName();
+                if (!(
+                    $type == get_called_class() ||
+                    $fk_attributes[0]->newInstance()->foreignTableName == $this::getTableName()
+                )) {
+                    continue;
+                }
+                $tc_attributes = $childClassProperty->getAttributes(TableColumn::class);
+                if (count($tc_attributes) != 1) {
+                    continue;
+                }
+                $childTableColumnName = $tc_attributes[0]->newInstance()->columnName;
+                break;
+            }
+            //    if there isn't one, set to [] and continue
+            if ($childTableColumnName === null) {
+                $this->$propertyName = [];
+                continue;
+            }
+            //   get child table attribute->className::getTable()
+            $table = $childTable->className::getTable();
+            //   results = $table->Select(null, where column=$this->GetPrimaryKeyValue())
+            $results = $table->Select(null, (new Where())->Equal($childTableColumnName, $this->GetPrimaryKeyValue()));
+            // set property = array_map(fn($row)=>attribute->className::CastFromRow($row), $results);
+            $this->$propertyName = array_map(fn($row)=>$childTable->className::CastFromRow($row), $results);
+        }
     }
 
     protected function UpdateOrCreateEntry() : bool {

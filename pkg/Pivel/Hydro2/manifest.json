@@ -1,5 +1,6 @@
 {
     "name":"Hydro2",
+    "vendor":"Pivel",
     "description":"Hydro2 Core framework",
     "version":[2, 0, 0, 9],
     "release_date":"2023-01-16",
@@ -17,8 +18,7 @@
         "\\Package\\Pivel\\Hydro2\\Database\\Controllers\\SettingsController",
         "\\Package\\Pivel\\Hydro2\\Database\\Controllers\\TestObjectController",
         "\\Package\\Pivel\\Hydro2\\Email\\Controllers\\OutboundEmailProfilesController",
-        "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\IdentityController",
-        "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\UserRoleController",
+        "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\UserController",
         "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\UserRoleController",
         "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\SessionController"
     ],
@@ -26,6 +26,13 @@
     "permissions": [
         {"key":"managedatabaseconnections","name":"Manage Database Connections","description":"Allow editing, adding, and deleting database connection profiles."},
         {"key":"browsedatabases","name":"Browse Databases","description":"Allow browsing databases."},
-        {"key":"manageoutboundemailprofiles","name":"Manage Outbound Email Profiles","description":"Allow editing, adding, and deleting outbound email profiles."}
+        {"key":"manageoutboundemailprofiles","name":"Manage Outbound Email Profiles","description":"Allow editing, adding, and deleting outbound email profiles."},
+        {"key":"viewusers","name":"View Users","description":"Allow viewing a list of other users."},
+        {"key":"manageusers","requires":["pivel/hydro2/viewusers"],"name":"Manage Users","description":"Allow editing/deleting other users."},
+        {"key":"createusers","requires":["pivel/hydro2/viewusers"],"name":"Create Users","description":"Allow creating new users."},
+        {"key":"createuserroles","name":"Create User Roles","description":"Allow creating new user roles."},
+        {"key":"manageuserroles","name":"Manage User Roles","description":"Allow editing/deleting user roles."},
+        {"key":"viewusersessions","requires":["pivel/hydro2/viewusers"],"name":"View User Sessions","description":"Allow viewing a list of user' sessions."},
+        {"key":"endusersessions","requires":["pivel/hydro2/viewusersessions"],"name":"End User Sessions","description":"Allow terminating a list of user' sessions."}
     ]
 }
