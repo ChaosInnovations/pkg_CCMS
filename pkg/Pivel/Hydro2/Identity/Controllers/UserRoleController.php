@@ -71,9 +71,54 @@ class UserRoleController extends BaseController
     #[Route(Method::POST, '')]
     #[Route(Method::POST, 'create')]
     public function CreateUserRole() : Response {
+        if (!DatabaseService::IsPrimaryConnected()) {
+            return new Response(status: StatusCode::NotFound);
+        }
+        if (!IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUserRoles->value)) {
+            return new Response(status: StatusCode::NotFound);
+        }
+
+        $userRole = new UserRole(
+            name: $this->request->Args['name']??'New Role',
+            description: $this->request->Args['description']??'',
+            maxLoginAttempts: $this->request->Args['max_login_attempts']??'',
+            maxSessionLengthMinutes: $this->request->Args['max_session_length_minutes']??43200,
+            daysUntil2FASetupRequired: $this->request->Args['days_until_2fa_setup_required']??3,
+            challengeIntervalMinutes: $this->request->Args['challenge_interval']??21600,
+            max2FAAttempts: $this->request->Args['max_2fa_attempts']??5,
+        );
+
+        $requestedPermissions = $this->request->Args['permissions']??[];
+        $availablePermissions = IdentityService::GetAvailablePermissions();
+
+        foreach ($requestedPermissions as $permission) {
+            if (!isset($availablePermissions[$permission])) {
+                return new JsonResponse(
+                    data: [
+                        'validation_errors' => [
+                            [
+                                'name' => 'permissions',
+                                'description' => 'User Role\'s permissions',
+                                'message' => "The permission '{$permission}' doesn\'t exist.",
+                            ],
+                        ],
+                    ],
+                    status: StatusCode::BadRequest,
+                    error_message: 'One or more arguments are invalid.'
+                );
+            }
+            $userRole->AddPermission($permission);
+        }
+
+        if (!$userRole->Save()) {
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "There was a problem with the database."
+            );
+        }
+
         return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
+            status:StatusCode::OK
         );
     }
 

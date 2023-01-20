@@ -37,7 +37,7 @@ class UserRole extends BaseObject
     #[ChildTable(UserPermission::class)]
     public array $Permissions;
 
-    /** @param Permission[] $permissions */
+    /** @param UserPermission[] $permissions */
     public function __construct(
         string $name='',
         ?string $description=null,
@@ -46,7 +46,6 @@ class UserRole extends BaseObject
         int $daysUntil2FASetupRequired=3,
         int $challengeIntervalMinutes=21600,
         int $max2FAAttempts=5,
-        array $permissions=[],
         ) {
         $this->Name = $name;
         $this->Description = $description;
@@ -56,7 +55,6 @@ class UserRole extends BaseObject
         $this->DaysUntil2FASetupRequired = $daysUntil2FASetupRequired;
         $this->ChallengeIntervalMinutes = $challengeIntervalMinutes;
         $this->Max2FAAttempts = $max2FAAttempts;
-        $this->Permissions = $permissions;
     }
 
     public function Save() : bool {
@@ -67,14 +65,29 @@ class UserRole extends BaseObject
         return $this->DeleteEntry();
     }
 
-    public function AddPermissionString(string $permissionString) : bool {
-        // should check if already has it
-        $permission = new UserPermission($this->GetPrimaryKeyValue(), $permissionString);
+    public function AddPermission(string $permissionKey) : bool {
+        if ($this->HasPermission($permissionKey)) {
+            return true; // say we added it. more permissive than refusing to add because it was already added previously.
+        }
+        $permission = new UserPermission($this->GetPrimaryKeyValue(), $permissionKey);
         if (!$permission->Save()) {
             return false;
         }
 
         $this->Permissions[] = $permission;
+        return true;
+    }
+
+    public function RemovePermission(string $permissionKey) : bool {
+        foreach ($this->Permissions as $idx => $permission) {
+            if ($permission->PermissionKey == $permissionKey) {
+                $permission->Delete();
+                unset($this->Permissions[$idx]);
+                $this->Permissions = array_values($this->Permissions);
+                return true;
+            }
+        }
+
         return true;
     }
 

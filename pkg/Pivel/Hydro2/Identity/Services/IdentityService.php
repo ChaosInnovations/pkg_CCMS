@@ -43,13 +43,13 @@ class IdentityService
         if ($role == null) {
             $role = new UserRole('Default','Default Role');
             $role->Id = 1;
-            $role->AddPermissionString(Permissions::ViewUsers->value);
-            $role->AddPermissionString(Permissions::ManageUsers->value);
-            $role->AddPermissionString(Permissions::CreateUsers->value);
-            $role->AddPermissionString(Permissions::CreateUserRoles->value);
-            $role->AddPermissionString(Permissions::ManageUserRoles->value);
-            $role->AddPermissionString(Permissions::ViewUserSessions->value);
-            $role->AddPermissionString(Permissions::EndUserSessions->value);
+            $role->AddPermission(Permissions::ViewUsers->value);
+            $role->AddPermission(Permissions::ManageUsers->value);
+            $role->AddPermission(Permissions::CreateUsers->value);
+            $role->AddPermission(Permissions::CreateUserRoles->value);
+            $role->AddPermission(Permissions::ManageUserRoles->value);
+            $role->AddPermission(Permissions::ViewUserSessions->value);
+            $role->AddPermission(Permissions::EndUserSessions->value);
             $role->Save();
         }
         return $role;
