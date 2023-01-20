@@ -2,7 +2,6 @@
 
 namespace Package\Pivel\Hydro2\Identity\Controllers;
 
-use DateInterval;
 use DateTime;
 use DateTimeZone;
 use Package\Pivel\Hydro2\Core\Controllers\BaseController;
@@ -13,8 +12,6 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
-use Package\Pivel\Hydro2\Email\Models\EmailMessage;
-use Package\Pivel\Hydro2\Email\Services\EmailService;
 use Package\Pivel\Hydro2\Identity\Models\PasswordResetToken;
 use Package\Pivel\Hydro2\Identity\Models\Permissions;
 use Package\Pivel\Hydro2\Identity\Models\User;
@@ -27,7 +24,7 @@ use Package\Pivel\Hydro2\Identity\Views\EmailViews\PasswordChangedNotificationEm
 use Package\Pivel\Hydro2\Identity\Views\EmailViews\PasswordResetEmailView;
 
 #[RoutePrefix('api/hydro2/identity/users')]
-class IdentityController extends BaseController
+class UserController extends BaseController
 {
     #[Route(Method::GET, '')]
     public function ListUsers() : Response {

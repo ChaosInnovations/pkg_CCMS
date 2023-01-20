@@ -14,7 +14,7 @@
     ],
 
     "controllers": [
-        "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\IdentityController",
+        "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\UserController",
         "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\UserRoleController",
         "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\UserRoleController",
         "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\SessionController"
