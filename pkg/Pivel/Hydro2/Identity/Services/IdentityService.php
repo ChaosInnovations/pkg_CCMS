@@ -5,11 +5,13 @@ namespace Package\Pivel\Hydro2\Identity\Services;
 use DateTime;
 use DateTimeZone;
 use Package\Pivel\Hydro2\Core\Models\Request;
+use Package\Pivel\Hydro2\Core\Utilities;
 use Package\Pivel\Hydro2\Email\Models\EmailAddress;
 use Package\Pivel\Hydro2\Email\Models\EmailMessage;
 use Package\Pivel\Hydro2\Email\Services\EmailService;
 use Package\Pivel\Hydro2\Email\Views\BaseEmailView;
 use Package\Pivel\Hydro2\Identity\Models\PasswordResetToken;
+use Package\Pivel\Hydro2\Identity\Models\Permission;
 use Package\Pivel\Hydro2\Identity\Models\Permissions;
 use Package\Pivel\Hydro2\Identity\Models\Session;
 use Package\Pivel\Hydro2\Identity\Models\User;
@@ -44,7 +46,6 @@ class IdentityService
             $role->AddPermissionString(Permissions::ViewUsers->value);
             $role->AddPermissionString(Permissions::ManageUsers->value);
             $role->AddPermissionString(Permissions::CreateUsers->value);
-            $role->AddPermissionString(Permissions::PasswordReset->value);
             $role->AddPermissionString(Permissions::CreateUserRoles->value);
             $role->AddPermissionString(Permissions::ManageUserRoles->value);
             $role->AddPermissionString(Permissions::ViewUserSessions->value);
@@ -96,5 +97,34 @@ class IdentityService
     public static function GetPasswordResetUrl(Request $request, User $user, PasswordResetToken $token) {
         $url = "{$request->baseUrl}/resetpassword/{$user->RandomId}?token={$token->ResetToken}";
         return $url;
+    }
+
+    /** @return Permission[] */
+    public static function GetAvailablePermissions() : array {
+        /** @var Permission[] $permissions */
+        $permissions = [];
+        $packageManifest = Utilities::getPackageManifest();
+        foreach ($packageManifest as $vendorName => $vendorPackages) {
+            foreach ($vendorPackages as $packageName => $package) {
+                if (!isset($package['permissions'])) {
+                    continue;
+                }
+
+                // pivel/hydro2/viewusers
+
+                foreach ($package['permissions'] as $permission) {
+                    $permissions[strtolower($vendorName . '/' . $packageName . '/' . $permission['key'])] = new Permission(
+                        strtolower($vendorName),
+                        strtolower($packageName),
+                        strtolower($permission['key']),
+                        $permission['name']??$permission['key'],
+                        $permission['description']??$permission['key'],
+                        $permission['requires']??[],
+                    );
+                }
+            }
+        }
+
+        return $permissions;
     }
 }

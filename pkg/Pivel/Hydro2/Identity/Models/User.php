@@ -51,9 +51,9 @@ class User extends BaseObject
     public int $FailedLoginAttempts;
     #[TableColumn('failed_2FA_attempts')]
     public int $Failed2FAAttempts;
-    #[ChildTable('hydro2_user_sessions')]
-    /** @var Session[] */
-    public array $Sessions;
+    //#[ChildTable('hydro2_user_sessions')]
+    ///** @var Session[] */
+    //public array $Sessions;
 
     public function __construct(
         string $email='',

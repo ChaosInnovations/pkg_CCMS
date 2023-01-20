@@ -9,7 +9,7 @@ use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
 use Package\Pivel\Hydro2\Database\Extensions\TableName;
 use Package\Pivel\Hydro2\Database\Extensions\TablePrimaryKey;
 use Package\Pivel\Hydro2\Database\Models\BaseObject;
-use Package\Pivel\Hydro2\Identity\Models\Permission;
+use Package\Pivel\Hydro2\Identity\Models\UserPermission;
 
 #[TableName('hydro2_user_roles')]
 class UserRole extends BaseObject
@@ -33,8 +33,8 @@ class UserRole extends BaseObject
     public int $ChallengeIntervalMinutes;
     #[TableColumn('max_2fa_attempts')]
     public int $Max2FAAttempts;
-    /** @var Permission[] */
-    #[ChildTable('hydro2_user_role_permissions')]
+    /** @var UserPermission[] */
+    #[ChildTable(UserPermission::class)]
     public array $Permissions;
 
     /** @param Permission[] $permissions */
@@ -73,7 +73,7 @@ class UserRole extends BaseObject
 
     public function AddPermissionString(string $permissionString) : bool {
         // should check if already has it
-        $permission = new Permission($this->GetPrimaryKeyValue(), $permissionString);
+        $permission = new UserPermission($this->GetPrimaryKeyValue(), $permissionString);
         if (!$permission->Save()) {
             return false;
         }
@@ -82,9 +82,9 @@ class UserRole extends BaseObject
         return true;
     }
 
-    public function HasPermission(string $permissionString) : bool {
+    public function HasPermission(string $permissionKey) : bool {
         foreach ($this->Permissions as $permission) {
-            if ($permission->PermissionString == $permissionString) {
+            if ($permission->PermissionKey == $permissionKey) {
                 return true;
             }
         }
