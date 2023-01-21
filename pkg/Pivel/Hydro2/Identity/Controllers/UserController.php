@@ -36,9 +36,17 @@ class UserController extends BaseController
             return new Response(status: StatusCode::NotFound);
         }
 
+        // TODO implement sorting/filtering better
         /** @var User[] */
-        $users = User::GetAll();
-
+        $users = [];
+        if (isset($this->request->Args['role_id']) && UserRole::LoadFromId($this->request->Args['role_id']) !== null) {
+            /** @var User[] */
+            $users = User::GetAllWithRole(UserRole::LoadFromId($this->request->Args['role_id']));
+        } else {
+            /** @var User[] */
+            $users = User::GetAll();
+        }
+        
         $userResults = [];
 
         foreach ($users as $user) {

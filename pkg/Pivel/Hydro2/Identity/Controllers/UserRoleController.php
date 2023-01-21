@@ -137,16 +137,6 @@ class UserRoleController extends BaseController
         );
     }
 
-    #[Route(Method::GET, '{id}/users')]
-    #[Route(Method::POST, '{id}/users')]
-    public function GetUsersWithRole() : Response {
-        return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
-        );
-    }
-
-    #[Route(Method::GET, '{id}/update')]
     #[Route(Method::POST, '{id}/update')]
     #[Route(Method::POST, '{id}')]
     public function UpdateUserRole() : Response {

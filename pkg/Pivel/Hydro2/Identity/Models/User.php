@@ -165,6 +165,13 @@ class User extends BaseObject
         return self::CastFromRow($results[0]);
     }
 
+    /** @return User[] */
+    public static function GetAllWithRole(UserRole $role) : array {
+        $table = self::getTable();
+        $results = $table->Select(null, (new Where())->Equal('user_role_id', $role->Id));
+        return array_map(fn($row)=>self::CastFromRow($row), $results);
+    }
+
     public static function Blank() : self {
         return new self();
     }
