@@ -185,11 +185,36 @@ class UserRoleController extends BaseController
         return new JsonResponse(status:StatusCode::OK);
     }
 
-    #[Route(Method::GET, '~api/hydro2/core/identity/permissions')]
+    #[Route(Method::GET, '~api/hydro2/identity/permissions')]
     public function GetPermissions() : Response {
+        if (!DatabaseService::IsPrimaryConnected()) {
+            return new Response(status: StatusCode::NotFound);
+        }
+        if (!(
+            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value) ||
+            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUserRoles->value)
+        )) {
+            return new Response(status: StatusCode::NotFound);
+        }
+
+        $permissions = IdentityService::GetAvailablePermissions();
+        $permissionResults = [];
+
+        foreach ($permissions as $permission) {
+            $permissionResults[] = [
+                'vendor' => $permission->Vendor,
+                'package' => $permission->Package,
+                'key' => $permission->Key,
+                'name' => $permission->Name,
+                'description' => $permission->Description,
+                'requires' => $permission->Requires,
+            ];
+        }
+
         return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
+            data:[
+                'permissions' => $permissionResults,
+            ],
         );
     }
 }

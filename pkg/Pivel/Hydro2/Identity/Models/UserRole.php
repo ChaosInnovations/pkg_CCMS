@@ -59,10 +59,6 @@ class UserRole extends BaseObject
         $this->Permissions = $permissions;
     }
 
-    public static function Blank() : self {
-        return new self();
-    }
-
     public function Save() : bool {
         return $this->UpdateOrCreateEntry();
     }

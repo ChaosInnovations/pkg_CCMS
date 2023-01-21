@@ -6,7 +6,7 @@ class Permission
 {
     public string $FullKey;
 
-    /** @var string[] $requires Full Keys of permissions required when this permission is granted */
+    /** @var string[] $Requires Full Keys of permissions required when this permission is granted */
     public function __construct(
         public string $Vendor,
         public string $Package,
@@ -16,6 +16,6 @@ class Permission
         public array $Requires=[],
     )
     {
-        $this->FullKey = $Vendor . '/' . $Package . '/' . $Key;
+        $this->FullKey = strtolower($Vendor . '/' . $Package . '/' . $Key);
     }
 }

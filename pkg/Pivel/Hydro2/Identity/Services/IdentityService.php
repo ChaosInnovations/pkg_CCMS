@@ -114,8 +114,8 @@ class IdentityService
 
                 foreach ($package['permissions'] as $permission) {
                     $permissions[strtolower($vendorName . '/' . $packageName . '/' . $permission['key'])] = new Permission(
-                        strtolower($vendorName),
-                        strtolower($packageName),
+                        $vendorName,
+                        $packageName,
                         strtolower($permission['key']),
                         $permission['name']??$permission['key'],
                         $permission['description']??$permission['key'],
