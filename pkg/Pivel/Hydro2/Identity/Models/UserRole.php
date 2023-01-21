@@ -8,6 +8,7 @@ use Package\Pivel\Hydro2\Database\Extensions\ChildTable;
 use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
 use Package\Pivel\Hydro2\Database\Extensions\TableName;
 use Package\Pivel\Hydro2\Database\Extensions\TablePrimaryKey;
+use Package\Pivel\Hydro2\Database\Extensions\Where;
 use Package\Pivel\Hydro2\Database\Models\BaseObject;
 use Package\Pivel\Hydro2\Identity\Models\UserPermission;
 
@@ -63,13 +64,20 @@ class UserRole extends BaseObject
     }
 
     public function Delete() : bool {
+        // remove permissions first
+        foreach ($this->Permissions as $idx => $permission) {
+            $permission->Delete();
+            unset($this->Permissions[$idx]);
+            $this->Permissions = array_values($this->Permissions);
+        }
         return $this->DeleteEntry();
     }
 
     public function AddPermission(string $permissionKey) : bool {
+        /* TODO add back after testing
         if ($this->HasPermission($permissionKey)) {
             return true; // say we added it. more permissive than refusing to add because it was already added previously.
-        }
+        }*/
         $permission = new UserPermission($this->GetPrimaryKeyValue(), $permissionKey);
         if (!$permission->Save()) {
             return false;
@@ -85,7 +93,9 @@ class UserRole extends BaseObject
                 $permission->Delete();
                 unset($this->Permissions[$idx]);
                 $this->Permissions = array_values($this->Permissions);
-                return true;
+                // don't break the loop. if there are somehow multiple instances
+                //  of the same permission for this role, we should remove all
+                //  of them.
             }
         }
 

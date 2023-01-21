@@ -187,19 +187,7 @@ class User extends BaseObject
         if (!$this->UpdateOrCreateEntry()) {
             return false;
         }
-
-        // if this was a new entry, update our record of Id
-        if ($this->Id !== null) {
-            return true;
-        }
-
-        $table = self::getTable();
-        $results = $table->Select(null, (new Where())->Equal('random_id', $this->RandomId));
-        if (count($results) != 1) {
-            return false;
-        }
-
-        $this->Id = $results[0]['id'];
+        
         return true;
     }
 

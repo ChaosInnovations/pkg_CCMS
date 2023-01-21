@@ -81,16 +81,17 @@ class UserRoleController extends BaseController
         $userRole = new UserRole(
             name: $this->request->Args['name']??'New Role',
             description: $this->request->Args['description']??'',
-            maxLoginAttempts: $this->request->Args['max_login_attempts']??'',
-            maxSessionLengthMinutes: $this->request->Args['max_session_length_minutes']??43200,
-            daysUntil2FASetupRequired: $this->request->Args['days_until_2fa_setup_required']??3,
-            challengeIntervalMinutes: $this->request->Args['challenge_interval']??21600,
-            max2FAAttempts: $this->request->Args['max_2fa_attempts']??5,
+            maxLoginAttempts: intval($this->request->Args['max_login_attempts']??5),
+            maxSessionLengthMinutes: intval($this->request->Args['max_session_length_minutes']??43200),
+            daysUntil2FASetupRequired: intval($this->request->Args['days_until_2fa_setup_required']??3),
+            challengeIntervalMinutes: intval($this->request->Args['challenge_interval']??21600),
+            max2FAAttempts: intval($this->request->Args['max_2fa_attempts']??5),
         );
 
         $requestedPermissions = $this->request->Args['permissions']??[];
         $availablePermissions = IdentityService::GetAvailablePermissions();
 
+        // validate permissions. can't add yet since we don't know that the new UserRole's ID will be.
         foreach ($requestedPermissions as $permission) {
             if (!isset($availablePermissions[$permission])) {
                 return new JsonResponse(
@@ -107,7 +108,6 @@ class UserRoleController extends BaseController
                     error_message: 'One or more arguments are invalid.'
                 );
             }
-            $userRole->AddPermission($permission);
         }
 
         if (!$userRole->Save()) {
@@ -115,6 +115,18 @@ class UserRoleController extends BaseController
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database."
             );
+        }
+
+        // now we can add the permission.
+
+        foreach ($requestedPermissions as $permission) {
+            echo $permission."\n";
+            if (!$userRole->AddPermission($permission)) {
+                return new JsonResponse(
+                    status: StatusCode::InternalServerError,
+                    error_message: 'The UserRole was generated, but there was a problem with the database while adding permissions.'
+                );
+            }
         }
 
         return new JsonResponse(
@@ -192,20 +204,37 @@ class UserRoleController extends BaseController
             return new Response(status: StatusCode::NotFound);
         }
 
-        $userRole = new UserRole(
-            name: $this->request->Args['name']??'New Role',
-            description: $this->request->Args['description']??'',
-            maxLoginAttempts: $this->request->Args['max_login_attempts']??'',
-            maxSessionLengthMinutes: $this->request->Args['max_session_length_minutes']??43200,
-            daysUntil2FASetupRequired: $this->request->Args['days_until_2fa_setup_required']??3,
-            challengeIntervalMinutes: $this->request->Args['challenge_interval']??21600,
-            max2FAAttempts: $this->request->Args['max_2fa_attempts']??5,
-        );
+        /** @var UserRole */
+        $userRole = UserRole::LoadFromId($this->request->Args['id']);
+
+        if ($userRole === null) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'id',
+                            'description' => 'User Role ID.',
+                            'message' => 'This user role doesn\'t exist.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
+
+        $userRole->Name = $this->request->Args['name']??$userRole->Name;
+        $userRole->Description = $this->request->Args['description']??$userRole->Description;
+        $userRole->MaxLoginAttempts = intval($this->request->Args['max_login_attempts']??$userRole->MaxLoginAttempts);
+        $userRole->MaxSessionLengthMinutes = intval($this->request->Args['max_session_length_minutes']??$userRole->MaxSessionLengthMinutes);
+        $userRole->DaysUntil2FASetupRequired = intval($this->request->Args['days_until_2fa_setup_required']??$userRole->DaysUntil2FASetupRequired);
+        $userRole->ChallengeIntervalMinutes = intval($this->request->Args['challenge_interval']??$userRole->ChallengeIntervalMinutes);
+        $userRole->Max2FAAttempts = intval($this->request->Args['max_2fa_attempts']??$userRole->Max2FAAttempts);
 
         $requestedPermissionKeys = $this->request->Args['permissions']??[];
         $availablePermissions = IdentityService::GetAvailablePermissions();
 
-        // add new permissions
+        // validate new permissions
         foreach ($requestedPermissionKeys as $permissionKey) {
             if (!isset($availablePermissions[$permissionKey])) {
                 return new JsonResponse(
@@ -222,15 +251,6 @@ class UserRoleController extends BaseController
                     error_message: 'One or more arguments are invalid.'
                 );
             }
-            $userRole->AddPermission($permissionKey);
-        }
-        // remove permissions
-        foreach ($userRole->Permissions as $permission) {
-            if (in_array($permission->PermissionKey, $requestedPermissionKeys)) {
-                continue;
-            }
-
-            $userRole->RemovePermission($permission->PermissionKey);
         }
 
         if (!$userRole->Save()) {
@@ -239,6 +259,30 @@ class UserRoleController extends BaseController
                 error_message: "There was a problem with the database."
             );
         }
+
+        // add new permissions
+        foreach ($requestedPermissionKeys as $permissionKey) {
+            if (!$userRole->AddPermission($permissionKey)) {
+                return new JsonResponse(
+                    status: StatusCode::InternalServerError,
+                    error_message: 'The UserRole was updated, but there was a problem with the database while adding permissions.'
+                );
+            }
+        }
+        // remove permissions
+        foreach ($userRole->Permissions as $permission) {
+            if (in_array($permission->PermissionKey, $requestedPermissionKeys)) {
+                continue;
+            }
+            if (!$userRole->RemovePermission($permission->PermissionKey)) {
+                return new JsonResponse(
+                    status: StatusCode::InternalServerError,
+                    error_message: 'The UserRole was updated, but there was a problem with the database while removing permissions.'
+                );
+            }
+        }
+
+        
 
         return new JsonResponse(
             status:StatusCode::OK
