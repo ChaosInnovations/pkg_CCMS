@@ -21,7 +21,6 @@ class UserRoleController extends BaseController
 {
     #[Route(Method::GET, '')]
     public function GetUserRoles() : Response {
-        // if current user doesn't have permission pivel/hydro2/viewusers/, return 404
         if (!DatabaseService::IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
@@ -79,9 +78,62 @@ class UserRoleController extends BaseController
 
     #[Route(Method::GET, '{id}')]
     public function GetUserRole() : Response {
+        // if current user doesn't have permission pivel/hydro2/viewusers/, return 404
+        if (!DatabaseService::IsPrimaryConnected()) {
+            return new Response(status: StatusCode::NotFound);
+        }
+        if (!(
+            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value) ||
+            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUsers->value) ||
+            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value)
+        )) {
+            return new Response(status: StatusCode::NotFound);
+        }
+
+        /** @var UserRole */
+        $userRole = UserRole::LoadFromId($this->request->Args['id']);
+
+        if ($userRole === null) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'id',
+                            'description' => 'User Role ID.',
+                            'message' => 'This user role doesn\'t exist.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
+
+        $permissions = IdentityService::GetAvailablePermissions();
+
+        $userRoleResults = [[
+            'id' => $userRole->Id,
+            'name' => $userRole->Name,
+            'description' => $userRole->Description,
+            'max_login_attempts' => $userRole->MaxLoginAttempts,
+            'max_session_length' => $userRole->MaxSessionLengthMinutes,
+            'max_password_age' => $userRole->MaxPasswordAgeDays,
+            'days_until_2fa_setup_required' => $userRole->DaysUntil2FASetupRequired,
+            'challenge_interval' => $userRole->ChallengeIntervalMinutes,
+            'max_2fa_attempts' => $userRole->Max2FAAttempts,
+            'permissions' => array_map(function ($p) use ($permissions) {
+                /** @var UserPermission $p */
+                return [
+                    'key' => $p->PermissionKey,
+                    'name' => (isset($permissions[$p->PermissionKey])?$permissions[$p->PermissionKey]->Name:'Unknown Permission'),
+                ];
+            }, $userRole->Permissions),
+        ]];
+
         return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
+            data:[
+                'user_roles' => $userRoleResults,
+            ],
         );
     }
 

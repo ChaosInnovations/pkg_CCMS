@@ -122,7 +122,7 @@ class UserController extends BaseController
                             [
                                 'name' => 'role_id',
                                 'description' => 'New User\'s Role.',
-                                'message' => 'This user role doesn\t exist.',
+                                'message' => 'This user role doesn\'t exist.',
                             ],
                         ],
                     ],
@@ -297,7 +297,7 @@ class UserController extends BaseController
                             [
                                 'name' => 'role_id',
                                 'description' => 'New User\'s Role.',
-                                'message' => 'This user role doesn\t exist.',
+                                'message' => 'This user role doesn\'t exist.',
                             ],
                         ],
                     ],
