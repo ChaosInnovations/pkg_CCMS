@@ -11,6 +11,7 @@ use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
 use Package\Pivel\Hydro2\Identity\Models\Permissions;
+use Package\Pivel\Hydro2\Identity\Models\User;
 use Package\Pivel\Hydro2\Identity\Models\UserPermission;
 use Package\Pivel\Hydro2\Identity\Models\UserRole;
 use Package\Pivel\Hydro2\Identity\Services\IdentityService;
@@ -78,7 +79,6 @@ class UserRoleController extends BaseController
 
     #[Route(Method::GET, '{id}')]
     public function GetUserRole() : Response {
-        // if current user doesn't have permission pivel/hydro2/viewusers/, return 404
         if (!DatabaseService::IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
@@ -147,13 +147,42 @@ class UserRoleController extends BaseController
     }
 
     #[Route(Method::GET, '{id}/remove')]
-    #[Route(Method::POST, '{id}/remove')]
     #[Route(Method::DELETE, '{id}')]
     public function DeleteUserRole() : Response {
-        return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
-        );
+        if (!DatabaseService::IsPrimaryConnected()) {
+            return new Response(status: StatusCode::NotFound);
+        }
+        if (!IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value)) {
+            return new Response(status: StatusCode::NotFound);
+        }
+
+        /** @var UserRole */
+        $userRole = UserRole::LoadFromId($this->request->Args['id']);
+
+        if ($userRole != null && count(User::GetAllWithRole($userRole)) != 0) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'id',
+                            'description' => 'User Role ID.',
+                            'message' => 'Cannot delete a role while there are users with this role.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.',
+            );
+        }
+
+        if ($userRole != null && !$userRole->Delete()) {
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "There was a problem with the database.",
+            );
+        }
+
+        return new JsonResponse(status:StatusCode::OK);
     }
 
     #[Route(Method::GET, '~api/hydro2/core/identity/permissions')]
