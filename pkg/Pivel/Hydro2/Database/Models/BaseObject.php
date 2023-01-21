@@ -297,7 +297,25 @@ abstract class BaseObject
             }
             $data[$column->columnName] = $this->{$column->propertyName};
         }
-        return self::getTable()->InsertOrUpdate($data);
+        $rowId = self::getTable()->InsertOrUpdate($data);
+        if ($rowId === false) {
+            return false;
+        }
+
+        $pkColumn = self::getTable()->GetPrimaryKeyColumn();
+        if ($pkColumn === null || $this->GetPrimaryKeyValue() !== null) {
+            return true;
+        }
+
+        // update our primary key value
+        $results = self::getTable()->Select([$pkColumn], (new Where())->Equal($pkColumn->columnName, $rowId));
+        if (count($results) != 1) {
+            return false;
+        }
+
+        $this->{$pkColumn->propertyName} = $results[0][$pkColumn->columnName];
+
+        return true;
     }
 
     protected function DeleteEntry() : bool {

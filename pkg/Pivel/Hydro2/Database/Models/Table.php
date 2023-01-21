@@ -78,7 +78,10 @@ class Table
         return true;
     }
 
-    public function Select(array $columns=null, ?Where $where=null, ?OrderBy $order=null, ?int $limit=null) {
+    /**
+     * @param ?TableColumn[] $columns
+     */
+    public function Select(?array $columns=null, ?Where $where=null, ?OrderBy $order=null, ?int $limit=null) {
         if (!$this->IsConnected()) {
             return [];
         }
@@ -99,7 +102,7 @@ class Table
         return $results;
     }
     
-    public function Insert(array $data) : bool {
+    public function Insert(array $data) : bool|int {
         /*[
             'column_name' => value,
             'column_name2' => value2,
@@ -117,20 +120,20 @@ class Table
         }
 
         try {
-            $this->dbp->Insert($this->tableName, $data);
+            $rowId = $this->dbp->Insert($this->tableName, $data);
         } catch (TableNotFoundException) {
             if (!$this->CreateTable()) {
                 return false;
             }
-            $this->dbp->Insert($this->tableName, $data);
+            $rowId = $this->dbp->Insert($this->tableName, $data);
         }
 
-        return true;
+        return $rowId;
     }
     
     //public function Update($data, $where, $order, $limit);
     
-    public function InsertOrUpdate($data) : bool {
+    public function InsertOrUpdate($data) : bool|int {
         if (!$this->IsConnected()) {
             return false;
         }
@@ -144,15 +147,15 @@ class Table
         }
 
         try {
-            $this->dbp->InsertOrUpdate($this->tableName, $data, $this->GetPrimaryKeyColumn()->columnName);
+            $rowId = $this->dbp->InsertOrUpdate($this->tableName, $data, $this->GetPrimaryKeyColumn()->columnName);
         } catch (TableNotFoundException) {
             if (!$this->CreateTable()) {
                 return false;
             }
-            $this->dbp->InsertOrUpdate($this->tableName, $data, $this->GetPrimaryKeyColumn()->columnName);
+            $rowId = $this->dbp->InsertOrUpdate($this->tableName, $data, $this->GetPrimaryKeyColumn()->columnName);
         }
 
-        return true;
+        return $rowId;
     }
 
     public function DeleteId(mixed $id) : bool {

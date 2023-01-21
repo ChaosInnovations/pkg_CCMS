@@ -100,7 +100,7 @@ class SqliteDatabaseProvider extends PDO implements IDatabaseProvider
         return [];
     }
 
-    public function Insert(string $tableName, array $data) : void {
+    public function Insert(string $tableName, array $data) : int {
         $columnsString = implode(',', array_keys($data));
         $valuePlaceholdersString = implode(',', array_map(fn($v):string=>':'.$v,array_keys($data)));
         try {
@@ -113,9 +113,11 @@ class SqliteDatabaseProvider extends PDO implements IDatabaseProvider
                 throw $e;
             }
         }
+
+        return intval(parent::lastInsertId());
     }
 
-    public function InsertOrUpdate(string $tableName, array $data, ?string $primaryKeyName) : void {
+    public function InsertOrUpdate(string $tableName, array $data, ?string $primaryKeyName) : int {
         $columnsString = implode(',', array_map(fn($k):string=>'`'.$k.'`',array_keys($data)));
         $valuePlaceholdersString = implode(',', array_map(fn($k):string=>':'.$k,array_keys($data)));
         $updateValuesPlaceholderString = implode(',', array_map(fn($k):string=>'`'.$k.'`=:'.$k,array_filter(array_keys($data),fn($k)=>$k!=$primaryKeyName)));
@@ -125,7 +127,7 @@ class SqliteDatabaseProvider extends PDO implements IDatabaseProvider
             if ($primaryKeyName !== null) {
                 $stmt = $this->prepare("UPDATE ".$tableName." SET ".$updateValuesPlaceholderString." WHERE `".$primaryKeyName."`=:".$primaryKeyName);
                 $stmt->execute($data);
-            }            
+            }
         } catch (PDOException $e) {
             if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 1 && str_contains($e->errorInfo[2], 'no such table')) {
                 throw new TableNotFoundException($e->getMessage(), 0);
@@ -133,6 +135,8 @@ class SqliteDatabaseProvider extends PDO implements IDatabaseProvider
                 throw $e;
             }
         }
+
+        return intval(parent::lastInsertId());
     }
 
     public function Delete(string $tableName, Where $where, $order, $limit) : void {

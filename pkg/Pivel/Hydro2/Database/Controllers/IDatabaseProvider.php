@@ -28,9 +28,10 @@ interface IDatabaseProvider
 
     // Methods for manipulating table data
     public function Select(string $tableName, array $columns, ?Where $where, ?OrderBy $order, ?int $limit) : array;
-    public function Insert(string $tableName, array $data) : void;
+    public function Insert(string $tableName, array $data) : int;
     //public function Update(string $tableName, $data, $columns, $where, $order, $limit);
-    public function InsertOrUpdate(string $tableName, array $data, ?string $primaryKeyName) : void;
+    /** @return int The ID of inserted/updated row. */
+    public function InsertOrUpdate(string $tableName, array $data, ?string $primaryKeyName) : int;
     public function Delete(string $tableName, Where $where, $order, $limit) : void;
 
     // Helper methods
