@@ -55,6 +55,7 @@ class UserRole extends BaseObject
         $this->DaysUntil2FASetupRequired = $daysUntil2FASetupRequired;
         $this->ChallengeIntervalMinutes = $challengeIntervalMinutes;
         $this->Max2FAAttempts = $max2FAAttempts;
+        $this->Permissions = [];
     }
 
     public function Save() : bool {
