@@ -184,11 +184,7 @@ class User extends BaseObject
             $this->InsertedTime = new DateTime(timezone:new DateTimeZone('UTC'));
         }
 
-        if (!$this->UpdateOrCreateEntry()) {
-            return false;
-        }
-        
-        return true;
+        return $this->UpdateOrCreateEntry();
     }
 
     public function Delete() : bool {
