@@ -9,6 +9,7 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
 use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
+use Package\Pivel\Hydro2\Identity\Views\LoginView;
 
 // TODO Implement these routes
 #[RoutePrefix('api/hydro2/core/identity')]
@@ -16,6 +17,7 @@ class SessionController extends BaseController
 {
     #[Route(Method::POST, 'login')]
     #[Route(Method::POST, '~login')]
+    #[Route(Method::POST, '~admin')]
     #[Route(Method::POST, '~api/login')]
     public function Login() : Response {
         return new JsonResponse(
@@ -46,10 +48,14 @@ class SessionController extends BaseController
     }
 
     #[Route(Method::GET, '~login')]
+    #[Route(Method::GET, '~admin')]
     public function GetLoginView() : Response {
-        return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
+        // TODO check if already logged in. If there is a ?next= arg, redirect to that path. Otherwise, redirect to ~loggedin
+        // TODO ~admin should be a separate route that also displays the admin panel and redirects here if not logged in.
+        $view = new LoginView();
+        return new Response(
+            content: $view->Render(),
+            status: StatusCode::OK
         );
     }
 }

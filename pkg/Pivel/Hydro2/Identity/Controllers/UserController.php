@@ -497,13 +497,17 @@ class UserController extends BaseController
         return new JsonResponse(status: StatusCode::OK);
     }
 
-    #[Route(Method::GET, '{id}/sendpasswordreset')]
+    #[Route(Method::POST, '{id}/sendpasswordreset')]
+    #[Route(Method::POST, 'sendpasswordreset')]
     public function UserSendResetPassword() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
 
-        $user = User::LoadFromRandomId($this->request->Args['id']);
+        $user = User::LoadFromRandomId($this->request->Args['id']??'');
+        if ($user === null) {
+            $user = User::LoadFromEmail($this->request->Args['email']??'');
+        }
 
         if ($user === null) {
             return new JsonResponse(
@@ -512,6 +516,12 @@ class UserController extends BaseController
                         [
                             'name' => 'id',
                             'description' => 'User ID.',
+                            'message' => 'This user doesn\'t exist.',
+                        ],
+                        
+                        [
+                            'name' => 'email',
+                            'description' => 'User\'s email address.',
                             'message' => 'This user doesn\'t exist.',
                         ],
                     ],

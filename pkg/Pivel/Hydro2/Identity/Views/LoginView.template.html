@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Login</title>
+        <script src="/web/assets/Pivel/Hydro2/hydro2-2.0.0.9.js"></script>
+        <style>
+            * {
+                box-sizing: border-box;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            .card {
+                background-color: #ffffff;
+            }
+
+            .card.multipage {
+                overflow: hidden;
+                width: 80%;
+                max-width: 500px;
+                min-height: 300px;
+                position: relative;
+            }
+
+            .card-page {
+                position: absolute;
+                left: 100%;
+                background-color: inherit;
+                padding: 2rem;
+                width: 100%;
+                transition: left 0.5s;
+            }
+
+            .card-page.hide-left {
+                position: absolute;
+                left: -100%;
+            }
+
+            .card-page.active {
+                position: relative;
+                left: 0;
+            }
+
+            .logincard {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .logincard-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: #eeffff;
+            }
+
+            .logincard > .card {
+                box-shadow: 1px 2px 3px 0 #aaaaaa;
+            }
+
+            .card-page > h2 {
+                margin-top: 0;
+            }
+
+            .form-field {
+                margin-bottom: 1rem;
+            }
+
+            .form-field > label {
+                display: inline-block;
+                padding-top: 0.375rem;
+                padding-bottom: 0.375rem;
+                line-height: 1.25;
+            }
+
+            .form-field input {
+                width: 100%;
+                height: 2.25rem;
+                line-height: 1.5;
+                border-radius: 0.25rem;
+                border: 1.5px solid #aaaaaa;
+                font-size: 1rem;
+                padding: 0.375rem 0.625rem
+            }
+
+            .form-field input.button {
+            }
+
+            .button {
+                cursor: pointer;
+            }
+
+            .input-group {
+                width: 100%;
+                height: 2.25rem;
+                line-height: 1.5;
+            }
+
+            .input-group > input {
+
+            }
+
+            .input-group:first-child {
+                
+            }
+
+            .input-group:last-child {
+                
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            <div id="logincard" class="logincard">
+                <div class="logincard-backdrop"></div>
+                <div class="card multipage">
+                    <div id="login" class="card-page hide-left active">
+                        <h2>Login</h2>
+                        <form id="loginform">
+                            <div class="form-field">
+                                <label for="loginform_email">Email Address</label>
+                                <input name="email" type="email" id="loginform_email" autocomplete="email" title="Email" placeholder="Email Address" />
+                            </div>
+                            <div class="form-field">
+                                <label for="loginform_password">Password</label>
+                                <input name="password" type="password" id="loginform_password" autocomplete="current-password" title="Password" placeholder="Password" />
+                            </div>
+                            <div class="form-field">
+                                <input class="button" type="submit" id="loginform_submit" title="Log in" value="Log In" />
+                            </div>
+                        </form>
+                        <p><a href="#" data-multipagecardtarget="resetpassword">Forgot password?</a></p>
+                    </div>
+                    <div id="changepassword" class="card-page">
+                        <h2>Password change required</h2>
+                        <p>Enter your email address below to send a link to reset your password.</p>
+                        <form id="changepasswordform">
+                            <div class="form-field">
+                                <label for="changepasswordform_currentpassword">Current Password</label>
+                                <input name="password" type="password" id="changepasswordform_currentpassword" autocomplete="current-password" title="Current password" placeholder="Current Password" />
+                            </div>
+                            <div class="form-field">
+                                <label for="changepasswordform_newpassword">New Password</label>
+                                <div class="input-group">
+                                    <input name="password" type="password" id="changepasswordform_newpassword" autocomplete="new-password" title="New password" placeholder="New Password" />
+                                    <button type="button" id="changepasswordform_newpassword_visibletoggle" title="Show Password">S</button>
+                                </div>
+                            </div>
+                            <div class="form-field">
+                                <input class="button" type="submit" id="changepasswordform_submit" title="Change password" value="Change Password" />
+                            </div>
+                        </form>
+                    </div>
+                    <div id="2fachallenge" class="card-page">
+                        <h2>Verification</h2>
+                        <p>Not implemented yet.</p>
+                    </div>
+                    <div id="resetpassword" class="card-page">
+                        <h2>Password reset</h2>
+                        <p>Enter your email address below to send a link to reset your password.</p>
+                        <form id="requestpasswordresetform">
+                            <div class="form-field">
+                                <label for="requestpasswordresetform_email">Email Address</label>
+                                <input name="email" type="email" id="requestpasswordresetform_email" autocomplete="email" title="Email" placeholder="Email Address" />
+                            </div>
+                            <div class="form-field">
+                                <input class="button" type="submit" id="requestpasswordresetform_submit" title="Send reset link" value="Send Reset Link" />
+                            </div>
+                        </form>
+                        <p><a href="#" data-multipagecardtarget="login">Go back</a></p>
+                    </div>
+                    <div id="resetlinksent" class="card-page">
+                        <h2>Password reset link sent</h2>
+                        <p>
+                            A password reset link has been sent to the provided email address. Please check your email and follow the
+                            instructions to finish resetting your password.
+                        </p>
+                        <p><a href="#" data-multipagecardtarget="login">Return to login</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            // TODO distribute view/component's definition code once when that view/componenet is provided
+            // TODO move MultiPageCard to separate view/component
+            class MultiPageCard {
+                _e;
+                _pages = [];
+                _pageIds = [];
+                _activePageId = null;
+                _pageTriggerNodes = [];
+                constructor(selector) {
+                    this._e = H.Nodes(selector);
+
+                    // find elements with data-multipagecardtarget set. Add onclick event handlers
+                    this._pageTriggerNodes = this._e.Nodes("[data-multipagecardtarget]");
+                    this._pageTriggerNodes.AddEventHandler("click", this._multiPageNavEventHandler.bind(this));
+                    window.addEventListener("hashchange", this._onLocationHashChanged.bind(this));
+                    // find elements with .card-page.
+                    // First element with .card-page.active is the active page
+                    this._pages = this._e.Nodes(".card-page");
+                    this._pages._nodeList.forEach(element => {
+                        this._pageIds.push(element.id);
+                        if (H.Nodes(element).HasClass("active") && this._activePageId == null) {
+                            this._activePageId = element.id;
+                        }
+                    });
+                    if (this._activePageId == null) {
+                        this._activePageId = this._pages._nodeList[0].id;
+                    }
+                    // if the page's fragment is set and one of our pages has a matching id, then NavigateTo(fragment).
+                    if (location.hash != "") {
+                        this.NavigateTo(location.hash.substring(1));
+                    }
+                }
+
+                _onLocationHashChanged(event) {
+                    this._e._nodeList[0].scrollTop = 0;
+                    this._e._nodeList[0].scrollLeft = 0;
+                    if (location.hash != "") {
+                        this.NavigateTo(location.hash.substring(1));
+                    }
+                }
+
+                _multiPageNavEventHandler(event) {
+                    this.NavigateTo(H.Nodes(event.target).Data("multipagecardtarget"));
+                }
+
+                NavigateTo(targetId) {
+                    if (!this._pageIds.includes(targetId)) {
+                        return;
+                    }
+                    // remove .active class from _activePage element
+                    this._pages.RemoveClass("active");
+                    // find target and add .active class
+                    this._e.Nodes("#"+targetId).AddClass("active");
+                    // TODO for some reason this doesn't actually set the hash.
+                    window.location.hash = "#"+targetId;
+                    this._activePageId = targetId;
+                }
+            }
+
+            class LoginCard extends MultiPageCard {
+                constructor(selector) {
+                    super(selector+">.card.multipage");
+
+                    this._e.Nodes("#loginform").AddEventHandler("submit", this._onLoginFormSubmit.bind(this));
+                    this._e.Nodes("#requestpasswordresetform").AddEventHandler("submit", this._onResetFormSubmit.bind(this));
+                    this._e.Nodes("#changepasswordform").AddEventHandler("submit", this._onChangePasswordFormSubmit.bind(this));
+                    // check whether we are connected via https. If not, display a warning to use
+                    //  https
+                }
+
+                _onLoginFormSubmit(event) {
+                    event.preventDefault();
+                    console.log("login clicked");
+                    this.SubmitLoginForm();
+                    return false;
+                }
+
+                _onResetFormSubmit(event) {
+                    event.preventDefault();
+                    this.SubmitResetForm();
+                    return false;
+                }
+
+                _onChangePasswordFormSubmit(event) {
+                    event.preventDefault();
+                    this.SubmitChangePasswordForm();
+                    return false;
+                }
+
+                SubmitLoginForm() {
+                    // disable submit button and change contents to spinner
+                    this._e.Nodes("#loginform_submit").Disable();
+                    // submit POST to ~login (this.$loginCallback)
+                    var request = new H.AjaxRequest("POST", "/api/hydro2/identity/login");
+                    request.SetJsonData({
+                        "email": this._e.Nodes("#loginform_email").Value(),
+                        "password": this._e.Nodes("#loginform_password").Value()
+                    });
+                    request.Send(this._submitLoginCallback.bind(this));
+                }
+
+                SubmitResetForm() {
+                    // disable submit button and change contents to spinner
+                    this._e.Nodes("#requestpasswordresetform_submit").Disable();
+                    var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/sendpasswordreset");
+                    request.SetJsonData({
+                        "email": this._e.Nodes("#requestpasswordresetform_email").Value()
+                    });
+                    request.Send(this._submitResetCallback.bind(this));
+                }
+
+                SubmitChangePasswordForm() {
+                    // disable submit button and change contents to spinner
+                    // session cookie should have already been set.
+                    this._e.Nodes("#changepasswordform_submit").Disable();
+                    var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/changepassword");
+                    request.SetJsonData({
+                        "password": this._e.Nodes("#changepasswordform_currentpassword").Value(),
+                        "new_password": this._e.Nodes("#changepasswordform_newpassword").Value()
+                    });
+                    request.Send(this._submitResetCallback.bind(this));
+                }
+
+                /**
+                 * @param {H.AjaxResponse} response
+                 */
+                _submitLoginCallback(response) {
+                    if (response.Status == H.StatusCode.OK) {
+                        // the session token and key should be saved in a cookie (httponly so we can't read it here)
+                        //  if 2FA challenge is required, display 2FA challenge screen
+                        this.NavigateTo("2fachallenge");
+                        //  if password change is required, display password change screen
+                        this.NavigateTo("changepassword");
+                        //  else refresh page
+                        location.reload();
+                        this._e.Nodes("#loginform_submit").Enable();
+                        return;
+                    }
+                    
+                    //  restore submit button
+                    this._e.Nodes("#loginform_submit").Enable();
+                }
+
+                /**
+                 * @param {H.AjaxResponse} response
+                 */
+                 _submitResetCallback(response) {
+                    if (response.Status == H.StatusCode.OK) {
+                        // switch to #resetlinksent
+                        this.NavigateTo("resetlinksent");
+                        this._e.Nodes("#requestpasswordresetform_submit").Enable();
+                        return;
+                    }
+                    
+                    //  restore submit button
+                    this._e.Nodes("#requestpasswordresetform_submit").Enable();
+                }
+
+                /**
+                 * @param {H.AjaxResponse} response
+                 */
+                 _submitChangePasswordCallback(response) {
+                    if (response.Status == H.StatusCode.OK) {
+                        location.reload();
+                        this._e.Nodes("#changepasswordform_submit").Enable();
+                        return;
+                    }
+                    
+                    //  restore submit button
+                    this._e.Nodes("#changepasswordform_submit").Enable();
+                }
+            }
+
+            var lc = new LoginCard("#logincard");
+        </script>
+    </body>
+</html>
