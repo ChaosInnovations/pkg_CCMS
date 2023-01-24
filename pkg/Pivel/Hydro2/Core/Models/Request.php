@@ -64,7 +64,7 @@ class Request
 
         if (isset($server['CONTENT_TYPE'])) {
             $contentType = $server['CONTENT_TYPE'];
-            if ($contentType == "application/json") {
+            if (strpos($contentType, "application/json") === 0) {
                 $bodyObject = json_decode($this->requestBody, true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($bodyObject)) {
                     $this->Args = array_merge($this->Args, $bodyObject);
