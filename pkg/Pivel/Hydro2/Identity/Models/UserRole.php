@@ -109,7 +109,6 @@ class UserRole extends BaseObject
             }
         }
 
-        return true; // TODO remove after testing
         return false;
     }
 }

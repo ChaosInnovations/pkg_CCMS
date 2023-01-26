@@ -3,6 +3,7 @@
 namespace Package\Pivel\Hydro2\Identity\Models;
 
 use DateTime;
+use DateTimeZone;
 use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
 use Package\Pivel\Hydro2\Database\Extensions\TableName;
 use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
@@ -78,6 +79,15 @@ class UserPassword extends BaseObject
         return User::LoadFromId($this->UserId);
     }
 
+    public function IsExpired() : bool {
+        if ($this->ExpireTime === null) {
+            return false;
+        }
+
+        $now = new DateTime(timezone: new DateTimeZone('UTC'));
+        return $now >= $this->ExpireTime;
+    }
+
     public function SetPassword(string $password) : void {
         $this->PasswordHash = password_hash($password, PASSWORD_DEFAULT, ['cost'=>self::PASSWORD_COST]);
     }
@@ -89,6 +99,7 @@ class UserPassword extends BaseObject
 
         if (password_needs_rehash($this->PasswordHash, PASSWORD_DEFAULT, ['cost'=>self::PASSWORD_COST])) {
             $this->SetPassword($password);
+            $this->Save();
         }
 
         return true;

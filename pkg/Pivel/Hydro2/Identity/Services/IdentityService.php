@@ -22,19 +22,23 @@ class IdentityService
     private static ?User $requestUser = null;
     public static function GetRequestUser(Request $request) : User {
         if (self::$requestUser === null) {
-            self::$requestUser = new User(name:'Site Visitor',role:(new UserRole(name:'Site Visitor')));
-            $random_id = $request->getCookie('s_rid');
-            // TODO Validate that session details match request
-            $session = Session::LoadFromRandomId($random_id);
-            if ($session != null) {
+            self::$requestUser = self::GetDefaultVisitorUser();
+            $session = self::GetRequestSession($request);
+            if ($session !== false) {
                 self::$requestUser = $session->GetUser();
-                $session->LastAccessTime = new DateTime(timezone:new DateTimeZone('UTC'));
-                $session->LastIP = $request->getClientAddress();
-                $session->Save();
             }
         }
 
         return self::$requestUser;
+    }
+
+    private static Session|false $requestSession = false;
+    public static function GetRequestSession(Request $request) : Session|false {
+        if (self::$requestSession === false) {
+            self::$requestSession = Session::LoadAndValidateFromRequest($request);
+        }
+
+        return self::$requestSession;
     }
 
     // TODO get this from some kind of settings/configuration
@@ -53,6 +57,10 @@ class IdentityService
             $role->Save();
         }
         return $role;
+    }
+
+    public static function GetDefaultVisitorUser() {
+        return new User(name:'Site Visitor',role:(new UserRole(name:'Site Visitor')));
     }
 
     public static function GetEmailVerificationUrl(Request $request, User $user, bool $regenerate=false) {
