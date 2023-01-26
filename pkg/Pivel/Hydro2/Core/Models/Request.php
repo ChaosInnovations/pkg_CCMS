@@ -21,6 +21,8 @@ class Request
      */
     public array $Args = [];
     public string $requestBody = '';
+
+    public string $UserAgent = '';
     
     public function __construct(array $server, array $cookies=[], array $post=[], array $get=[], string $sapi_name="apache2handler")
     {
@@ -71,6 +73,8 @@ class Request
                 }
             }
         }
+
+        $this->UserAgent = $_SERVER['HTTP_USER_AGENT'];
     }
     
     public function getEndpoint()
