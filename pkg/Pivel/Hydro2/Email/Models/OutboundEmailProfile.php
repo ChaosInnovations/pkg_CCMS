@@ -8,7 +8,7 @@ use Package\Pivel\Hydro2\Database\Extensions\TablePrimaryKey;
 use Package\Pivel\Hydro2\Database\Extensions\Where;
 use Package\Pivel\Hydro2\Database\Models\BaseObject;
 
-#[TableName('outbound_email_profiles')]
+#[TableName('hydro2_outbound_email_profiles')]
 class OutboundEmailProfile extends BaseObject
 {
     #[TableColumn('id', autoIncrement:true)]
