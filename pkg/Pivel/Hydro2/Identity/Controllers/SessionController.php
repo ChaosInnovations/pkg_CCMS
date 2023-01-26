@@ -19,7 +19,7 @@ use Package\Pivel\Hydro2\Identity\Views\EmailViews\NewUserVerificationEmailView;
 use Package\Pivel\Hydro2\Identity\Views\LoginView;
 
 // TODO Implement these routes
-#[RoutePrefix('api/hydro2/core/identity')]
+#[RoutePrefix('api/hydro2/identity')]
 class SessionController extends BaseController
 {
     #[Route(Method::POST, 'login')]
