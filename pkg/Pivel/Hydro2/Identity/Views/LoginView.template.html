@@ -139,6 +139,12 @@
                         </form>
                         <p><a href="#" data-multipagecardtarget="resetpassword">Forgot password?</a></p>
                     </div>
+                    <div id="alreadyloggedin" class="card-page">
+                        <h2>Already logged in</h2>
+                        <p>
+                            You are already logged in.
+                        </p>
+                    </div>
                     <div id="changepassword" class="card-page">
                         <h2>Password change required</h2>
                         <p>Enter your email address below to send a link to reset your password.</p>
@@ -159,7 +165,13 @@
                             </div>
                         </form>
                     </div>
-                    <div id="2fachallenge" class="card-page">
+                    <div id="changepasswordsuccess" class="card-page">
+                        <h2>Password changed</h2>
+                        <p>
+                            You are now logged in.
+                        </p>
+                    </div>
+                    <div id="mfachallenge" class="card-page">
                         <h2>Verification</h2>
                         <p>Not implemented yet.</p>
                     </div>
@@ -309,7 +321,7 @@
                         "password": this._e.Nodes("#changepasswordform_currentpassword").Value(),
                         "new_password": this._e.Nodes("#changepasswordform_newpassword").Value()
                     });
-                    request.Send(this._submitResetCallback.bind(this));
+                    request.Send(this._submitChangePasswordCallback.bind(this));
                 }
 
                 /**
@@ -319,7 +331,8 @@
                     if (response.Status == H.StatusCode.OK) {
                         // the session token and key should be saved in a cookie (httponly so we can't read it here)
                         //  if 2FA challenge is required, display 2FA challenge screen
-                        this.NavigateTo("2fachallenge");
+                        // TODO implement 2FA challenge
+                        //this.NavigateTo("mfachallenge");
                         //  if password change is required, display password change screen
                         this.NavigateTo("changepassword");
                         //  else refresh page
@@ -327,6 +340,9 @@
                         this._e.Nodes("#loginform_submit").Enable();
                         return;
                     }
+
+                    // display wrong email message, wrong password message, too many tries message, or account locked message
+                    // handle if already logged in
                     
                     //  restore submit button
                     this._e.Nodes("#loginform_submit").Enable();
@@ -352,6 +368,7 @@
                  */
                  _submitChangePasswordCallback(response) {
                     if (response.Status == H.StatusCode.OK) {
+                        this.NavigateTo("changepasswordsuccess");
                         location.reload();
                         this._e.Nodes("#changepasswordform_submit").Enable();
                         return;

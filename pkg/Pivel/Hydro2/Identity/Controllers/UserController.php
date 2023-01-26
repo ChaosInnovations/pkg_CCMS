@@ -377,12 +377,19 @@ class UserController extends BaseController
 
     // TODO add 2FA for changing passwords if set up
     #[Route(Method::POST, '{id}/changepassword')]
+    #[Route(Method::POST, 'changepassword')]
     public function UserChangePassword() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
 
-        $user = User::LoadFromRandomId($this->request->Args['id']);
+        $user = User::LoadFromRandomId($this->request->Args['id']??'');
+        if ($user === null) {
+            $user = User::LoadFromEmail($this->request->Args['email']??'');
+        }
+        if ($user === null) {
+            $user = IdentityService::GetRequestUser($this->request);
+        }
 
         if ($user === null) {
             return new JsonResponse(
@@ -393,12 +400,19 @@ class UserController extends BaseController
                             'description' => 'User ID.',
                             'message' => 'This user doesn\'t exist.',
                         ],
+                        
+                        [
+                            'name' => 'email',
+                            'description' => 'User\'s email address.',
+                            'message' => 'This user doesn\'t exist.',
+                        ],
                     ],
                 ],
                 status: StatusCode::BadRequest,
                 error_message: 'One or more arguments are invalid.'
             );
         }
+
         // check that either the existing password or a valid passwordreset token was provided
         $password = $this->request->Args['password']??null;
         $reset_token = $this->request->Args['reset_token']??null;
