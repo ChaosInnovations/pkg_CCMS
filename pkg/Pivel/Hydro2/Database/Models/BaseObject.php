@@ -98,6 +98,7 @@ abstract class BaseObject
             $ai = $tableColumn->autoIncrement;
             $sqlType = $tableColumn->sqlType;
             $phpType = $property->getType()->getName();
+            $phpTypeNullable = $property->getType()->allowsNull();
             $property_name = $property->getName();
             $foreignKey = false;
             $foreignKeyTable = null;
@@ -138,6 +139,7 @@ abstract class BaseObject
                 $property_name,
                 $sqlType,
                 $phpType,
+                $phpTypeNullable,
                 $ai,
                 $isPrimaryKey,
                 $foreignKey,
@@ -174,6 +176,7 @@ abstract class BaseObject
 
             $sqlType = $column->columnType;
             $phpType = $column->propertyType;
+            $phpTypeNullable = $column->propertyTypeNullable;
             $propertyName = $column->propertyName;
 
             $castValue = null;
@@ -181,7 +184,11 @@ abstract class BaseObject
                 // How to deal with objects that have circular foreign keys?
                 $castValue = $phpType::LoadFromId($value);
             } else if ($phpType == 'DateTime') {
-                $castValue = new DateTime($value.'+00:00');
+                if ($phpTypeNullable && $value == null) {
+                    $castValue = null;
+                } else {
+                    $castValue = new DateTime($value.'+00:00');
+                }
             } else {
                 $castValue = $value;
             }

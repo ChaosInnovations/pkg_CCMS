@@ -12,6 +12,7 @@ class TableColumn
         public string $propertyName,
         public Type $columnType,
         public string $propertyType,
+        public bool $propertyTypeNullable,
         public bool $autoIncrement,
         public bool $primaryKey,
         public bool $foreignKey = false,
