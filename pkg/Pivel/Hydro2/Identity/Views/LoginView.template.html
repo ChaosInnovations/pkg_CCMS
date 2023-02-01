@@ -119,9 +119,9 @@
     </head>
     <body>
         <div>
-            <div id="logincard" class="logincard">
+            <div>
                 <div class="logincard-backdrop"></div>
-                <div class="card multipage">
+                <div id="logincard" class="card multipage logincard" data-viewclass="LoginCard">
                     <div id="login" class="card-page hide-left active">
                         <h2>Login</h2>
                         <form id="loginform">
@@ -262,7 +262,7 @@
 
             class LoginCard extends MultiPageCard {
                 constructor(selector) {
-                    super(selector+">.card.multipage");
+                    super(selector+".card.multipage");
 
                     this._e.Nodes("#loginform").AddEventHandler("submit", this._onLoginFormSubmit.bind(this));
                     this._e.Nodes("#requestpasswordresetform").AddEventHandler("submit", this._onResetFormSubmit.bind(this));
