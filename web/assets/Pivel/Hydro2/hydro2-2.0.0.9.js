@@ -122,6 +122,39 @@ var H = {
             return values;
         }
 
+        Attribute(attributeName, newValue=null) {
+            var values = [];
+            this._nodeList.forEach(element => {
+                values.push(element.getAttribute(attributeName));
+                if (newValue != null) {
+                    element.setAttribute(attributeName, newValue);
+                }
+            });
+
+            if (values.length == 1) {
+                return values[0];
+            }
+
+            return values;
+        }
+
+        HTML(newHTML=null) {
+            var values = [];
+            this._nodeList.forEach(element => {
+                // TODO check if element.dataset contains key
+                values.push(element.innerHTML);
+                if (newHTML != null) {
+                    element.innerHTML = newHTML;
+                }
+            });
+
+            if (values.length == 1) {
+                return values[0];
+            }
+
+            return values;
+        }
+
         AddClass(className) {
             this._nodeList.forEach(element => {
                 element.classList.add(className);

@@ -1,0 +1,12 @@
+* {
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.card {
+    background-color: #ffffff;
+}
+
+.button {
+    cursor: pointer;
+}

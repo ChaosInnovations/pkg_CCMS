@@ -4,12 +4,14 @@ namespace Package\Pivel\Hydro2\Core\Views;
 
 use Package\Pivel\Hydro2\Core\Utilities;
 
-class FallbackView extends BaseView
+class FallbackView extends BaseWebView
 {
-    protected string $coreVersion;
+    
 
-    public function __construct() {
+    public function __construct(
+        protected ?string $CoreVersion=null,
+    ) {
         $v = Utilities::getPackageManifest()['Pivel']['Hydro2']['version'];
-        $this->coreVersion = join('.', $v);
+        $this->CoreVersion = join('.', $v);
     }
 }

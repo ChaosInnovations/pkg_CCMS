@@ -1,13 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>No packages loaded</title>
-    </head>
-    <body>
+{#parent}
+    {#arg Title}No packages loaded{#}
+    {#arg Body}
         <h1>CCMS Core</h1>
         <p>CCMS Core is working, but no packages are loaded.</p>
-        <p>Version: {{$coreVersion}}</p>
-    </body>
-</html>
+        <p>Version: {$CoreVersion$}</p>
+    {#}
+{#}
