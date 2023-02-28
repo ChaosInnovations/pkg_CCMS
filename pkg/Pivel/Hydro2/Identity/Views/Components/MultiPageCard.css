@@ -1,0 +1,29 @@
+.card.multipage {
+    overflow: hidden;
+    width: 80%;
+    max-width: 500px;
+    min-height: 300px;
+    position: relative;
+}
+
+.card-page {
+    position: absolute;
+    left: 100%;
+    background-color: inherit;
+    padding: 2rem;
+    width: 100%;
+    transition: left 0.5s;
+}
+
+.card-page.hide-left {
+    position: absolute;
+    left: -100%;
+}
+
+.card-page.active {
+    position: relative;
+    left: 0;
+}
+.card-page > h2 {
+    margin-top: 0;
+}

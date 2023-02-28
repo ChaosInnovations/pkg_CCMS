@@ -2,10 +2,11 @@
 
 namespace Package\Pivel\Hydro2\Identity\Views;
 
-use Package\Pivel\Hydro2\Core\Views\BaseView;
+use Package\Pivel\Hydro2\Core\Views\BaseWebView;
 
-class LoginView extends BaseView
+class LoginView extends BaseWebView
 {
     public function __construct() {
+        parent::__construct();
     }
 }
