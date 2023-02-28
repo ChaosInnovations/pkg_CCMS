@@ -24,7 +24,6 @@ class SessionController extends BaseController
 {
     #[Route(Method::POST, 'login')]
     #[Route(Method::POST, '~login')]
-    #[Route(Method::POST, '~admin')]
     #[Route(Method::POST, '~api/login')]
     public function Login() : Response {
         if (IdentityService::GetRequestSession($this->request) !== false) {
