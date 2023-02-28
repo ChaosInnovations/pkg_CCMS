@@ -5,15 +5,15 @@
     </head>
     <body>
         <div id="preview_text" style="display:none!important"></div>
-        <p>Hi {{$Name}},</p>
+        <p>Hi {$Name$},</p>
         <p>Please verify your email address.</p>
-        {{Package\Pivel\Hydro2\Email\Views\EmailComponents\ButtonLink|$VerifyUrl,"Verify"}}
-        <p>Alternatively, you can copy the following link into your browser: <a href="{{$VerifyUrl}}">{{$VerifyUrl}}</a></p>
+        {#view Package\Pivel\Hydro2\Email\Views\EmailComponents\ButtonLink(Url:$VerifyUrl,Content:"Verify")#}
+        <p>Alternatively, you can copy the following link into your browser: <a href="{$VerifyUrl$}">{$VerifyUrl$}</a></p>
     </body>
 </html>
 <plaintext>
-Hi {{$Name}},
+Hi {$Name$},
 
 Please verify your email address. Copy the following link into your browser:
-{{$VerifyUrl}}
+{$VerifyUrl$}
 </plaintext>
