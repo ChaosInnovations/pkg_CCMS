@@ -25,7 +25,10 @@ class IdentityService
             self::$requestUser = self::GetDefaultVisitorUser();
             $session = self::GetRequestSession($request);
             if ($session !== false) {
-                self::$requestUser = $session->GetUser();
+                $user = $session->GetUser();
+                if ($user !== null) {
+                    self::$requestUser = $user;
+                }
             }
         }
 

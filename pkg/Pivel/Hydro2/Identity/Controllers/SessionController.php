@@ -228,8 +228,7 @@ class SessionController extends BaseController
         // TODO ~admin should be a separate route that also displays the admin panel and redirects here if not logged in.
         $view = new LoginView();
         return new Response(
-            content: $view->Render(),
-            status: StatusCode::OK
+            content: $view->Render()
         );
     }
 }

@@ -22,6 +22,7 @@ use Package\Pivel\Hydro2\Identity\Views\EmailViews\NewEmailNotificationEmailView
 use Package\Pivel\Hydro2\Identity\Views\EmailViews\NewUserVerificationEmailView;
 use Package\Pivel\Hydro2\Identity\Views\EmailViews\PasswordChangedNotificationEmailView;
 use Package\Pivel\Hydro2\Identity\Views\EmailViews\PasswordResetEmailView;
+use Package\Pivel\Hydro2\Identity\Views\VerifyView;
 
 #[RoutePrefix('api/hydro2/identity/users')]
 class UserController extends BaseController
@@ -570,10 +571,11 @@ class UserController extends BaseController
     // TODO proper HTML view
     #[Route(Method::GET, '~verifyuseremail/{id}')]
     public function UserVerify() : Response {
+        $view = new VerifyView(false);
         if (!isset($this->request->Args['token'])) {
             // missing argument
             return new Response(
-                content:"This verification link is not valid.",
+                content:$view->Render(),
             );
         }
 
@@ -581,13 +583,13 @@ class UserController extends BaseController
 
         if ($user === null) {
             return new Response(
-                content:"This verification link is not valid.",
+                content:$view->Render(),
             );
         }
 
         if (!$user->ValidateEmailVerificationToken($this->request->Args['token'])) {
             return new Response(
-                content:"This verification link is not valid.",
+                content:$view->Render(),
             );
         }
 
@@ -595,6 +597,7 @@ class UserController extends BaseController
 
         if (!$user->Save()) {
             return new Response(
+                status:StatusCode::InternalServerError,
                 content:"This verification link is valid, but there was a problem with the database.",
             );
         }
@@ -602,14 +605,17 @@ class UserController extends BaseController
         // If the user has not yet set a password, generate password reset token.
         // TODO include new password form in verification view
         $userNeedsToCreatePassword = UserPassword::LoadCurrentFromUser($user) === null;
-        $PasswordResetToken = null;
         if ($userNeedsToCreatePassword) {
             $PasswordResetToken = new PasswordResetToken($user->Id, expireAfterMinutes: 60);
             $PasswordResetToken->Save();
+            $view->SetIsPasswordChangeRequired(true);
+            $view->SetPasswordResetToken($PasswordResetToken);
         }
 
+        $view->SetIsValid(true);
+
         return new Response(
-            content:"Thanks, your email is verified.".($userNeedsToCreatePassword?" Need to set a password using this verification token: {$PasswordResetToken->ResetToken}":''),
+            content:$view->Render(),
         );
     }
 
