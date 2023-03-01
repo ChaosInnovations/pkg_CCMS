@@ -26,6 +26,9 @@ class SqliteDatabaseProvider extends PDO implements IDatabaseProvider
                 "sqlite:" . $this->file
             );
             $this->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            // Sqlite disables foreign keys by default; they must be enabled in each session.
+            $stmt = $this->prepare("PRAGMA foreign_keys = ON;");
+            $stmt->execute();
         } catch(PDOException $e) {
             //if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 2002) {
             //    throw new HostNotFoundException($e->getMessage(), 0);
