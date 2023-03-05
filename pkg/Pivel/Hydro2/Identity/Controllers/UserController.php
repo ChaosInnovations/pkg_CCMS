@@ -576,6 +576,7 @@ class UserController extends BaseController
 
     // TODO proper HTML view
     #[Route(Method::GET, '~verifyuseremail/{id}')]
+    #[Route(Method::GET, '~verifyuseremail')]
     public function UserVerify() : Response {
         $view = new VerifyView(false);
         if (!isset($this->request->Args['token'])) {
@@ -585,7 +586,7 @@ class UserController extends BaseController
             );
         }
 
-        $user = User::LoadFromRandomId($this->request->Args['id']);
+        $user = User::LoadFromRandomId($this->request->Args['id']??'');
 
         if ($user === null) {
             return new Response(

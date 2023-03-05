@@ -27,10 +27,5 @@ class VerifyView extends BaseWebView
 
     public function SetIsValid(bool $IsValid) {
         $this->IsValid = $IsValid;
-        if ($this->IsValid) {
-            $this->Text = 'Thanks, your email is verified.'.($this->IsPasswordChangeRequired?" Need to set a password using this verification token: {$this->PasswordResetToken}":'');
-        } else {
-            $this->Text = 'This verification link is not valid.';
-        }
     }
 }
