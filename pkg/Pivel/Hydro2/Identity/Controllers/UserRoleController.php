@@ -16,7 +16,6 @@ use Package\Pivel\Hydro2\Identity\Models\UserPermission;
 use Package\Pivel\Hydro2\Identity\Models\UserRole;
 use Package\Pivel\Hydro2\Identity\Services\IdentityService;
 
-// TODO Implement these routes
 #[RoutePrefix('api/hydro2/identity/userroles')]
 class UserRoleController extends BaseController
 {

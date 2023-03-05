@@ -74,10 +74,9 @@ class UserRole extends BaseObject
     }
 
     public function AddPermission(string $permissionKey) : bool {
-        /* TODO add back after testing
         if ($this->HasPermission($permissionKey)) {
             return true; // say we added it. more permissive than refusing to add because it was already added previously.
-        }*/
+        }
         $permission = new UserPermission($this->GetPrimaryKeyValue(), $permissionKey);
         if (!$permission->Save()) {
             return false;

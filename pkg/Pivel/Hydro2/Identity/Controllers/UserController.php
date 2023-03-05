@@ -184,8 +184,6 @@ class UserController extends BaseController
             );
         }
 
-        // TODO need to send password reset email/create new password email since a new user won't have a password yet.
-
         return new JsonResponse(
             data: [
                 'new_user' => [
