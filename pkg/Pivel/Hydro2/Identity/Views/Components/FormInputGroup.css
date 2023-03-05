@@ -1,0 +1,29 @@
+.input-group {
+    width: 100%;
+    height: 2.25rem;
+    line-height: 1.5;
+    display: flex;
+}
+
+.input-group > input,
+.input-group > button {
+}
+
+
+.input-group > input.button,
+.input-group > button {
+    width: auto;
+}
+
+.input-group > input:not(:first-child),
+.input-group > button:not(:first-child) {
+    margin-left: -0.25rem;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.input-group > input:not(:last-child),
+.input-group > button:not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}

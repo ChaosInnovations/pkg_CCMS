@@ -1,7 +1,0 @@
-{senderName} sent a message to {recipientName}.
-
-Please log in to see and reply to {senderName}'s message.
-
-
-This mailbox is not monitored; please don't reply to this email.
-To stop receiving these emails, change your account's notification settings.
