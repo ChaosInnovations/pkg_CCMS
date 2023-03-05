@@ -196,5 +196,11 @@ var H = {
             // TODO how to handle when we have multiple nodes?
             return H.Nodes(selector, this._nodeList[0]);
         }
+
+        Parent() {
+            // returns next parent of this node
+            // TODO how to handle when we have multiple nodes?
+            return H.Nodes(this._nodeList[0].parentElement);
+        }
     }
 }
