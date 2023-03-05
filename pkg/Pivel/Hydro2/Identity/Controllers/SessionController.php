@@ -262,20 +262,97 @@ class SessionController extends BaseController
     #[Route(Method::POST, 'sessions/{sessionid}/expire')]
     #[Route(Method::DELETE, 'sessions/{sessionid}')]
     public function UserExpireSession() : Response {
+        if (!DatabaseService::IsPrimaryConnected()) {
+            return new Response(status: StatusCode::NotFound);
+        }
+        // need to have either viewusersessions permission or be requesting on own user's session
+        $session = Session::LoadFromRandomId($this->request->Args['sessionid']);
+        if (!(
+            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::EndUserSessions->value) ||
+            
+            (
+                $session !== null &&
+                IdentityService::GetRequestUser($this->request)->Id === $session->UserId
+            )
+        )) {
+            return new Response(status: StatusCode::NotFound);
+        }
+
+        if ($session === null) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'sessionid',
+                            'description' => "Session\'s random ID",
+                            'message' => "The session doesn\'t exist.",
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
+
+        $session->Expire();
+        if (!$session->Save()) {
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "There was a problem with the database."
+            );
+        }
+
         return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
+            data: [
+                'expire_session_result' => true,
+            ]
         );
     }
 
     #[Route(Method::GET, '~login')]
+    // TODO ~admin should be a separate route that also displays the admin panel and redirects here if not logged in.
     #[Route(Method::GET, '~admin')]
     public function GetLoginView() : Response {
-        // TODO check if already logged in. If there is a ?next= arg, redirect to that path. Otherwise, redirect to ~loggedin
-        // TODO ~admin should be a separate route that also displays the admin panel and redirects here if not logged in.
+        // check if already logged in. If there is a ?next= arg, redirect to that path. Otherwise, redirect to ~/
+        //  unless password change is required, then display the password change screen.
+        //  TODO if 2FA challenge is required, then display the 2FA challenge screen.
+        if (IdentityService::GetRequestSession($this->request) !== false) {
+            $userPassword = UserPassword::LoadCurrentFromUser(IdentityService::GetRequestUser($this->request));
+            if ($userPassword->IsExpired()) {
+                return new Response(
+                    status: StatusCode::Found,
+                    headers: [
+                        'Location' => '/login' . ($this->request->Args['next']?"?next={$this->request->Args['next']}":'') . '#changepassword',
+                    ],
+                );
+            }
+
+            return new Response(
+                status: StatusCode::Found,
+                headers: [
+                    'Location' => $this->request->Args['next']??'/',
+                ],
+            );
+        }
+
         $view = new LoginView();
         return new Response(
             content: $view->Render()
+        );
+    }
+
+    #[Route(Method::GET, '~logout')]
+    public function Logout() : Response {
+        if (IdentityService::GetRequestSession($this->request) !== false) {
+            IdentityService::GetRequestSession($this->request)->Expire();
+            IdentityService::GetRequestSession($this->request)->Save();
+        }
+
+        return new Response(
+            status: StatusCode::Found,
+            headers: [
+                'Location' => '/login',
+            ],
         );
     }
 }

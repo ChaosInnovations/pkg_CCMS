@@ -161,6 +161,11 @@ class Session extends BaseObject
         return true;
     }
 
+    public function Expire() : void {
+        $now = new DateTime(timezone:new DateTimeZone('UTC'));
+        $this->ExpireTime = $now;
+    }
+
     public function Is2FAValid() : bool {
         if ($this->Expire2FATime === null) {
             return true;

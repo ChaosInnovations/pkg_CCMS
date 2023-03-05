@@ -41,6 +41,10 @@ class IdentityService
             self::$requestSession = Session::LoadAndValidateFromRequest($request);
         }
 
+        if (self::$requestSession === false) {
+            setcookie('sridkey', '', time()-3600, '/');
+        }
+
         return self::$requestSession;
     }
 
