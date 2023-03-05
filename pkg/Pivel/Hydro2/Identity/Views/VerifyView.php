@@ -9,6 +9,7 @@ class VerifyView extends BaseWebView
 {
     protected string $Text = '';
     protected string $PasswordResetToken = '';
+    protected string $UserId = '';
 
     public function __construct(
         protected bool $IsValid,
@@ -27,5 +28,9 @@ class VerifyView extends BaseWebView
 
     public function SetIsValid(bool $IsValid) {
         $this->IsValid = $IsValid;
+    }
+
+    public function SetUserId(string $Id) {
+        $this->UserId = $Id;
     }
 }

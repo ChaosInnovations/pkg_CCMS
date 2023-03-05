@@ -19,6 +19,7 @@ class FormField extends BaseView
         protected ?string $AutoComplete=null,
         protected ?string $Title=null,
         protected ?string $Placeholder=null,
+        protected ?string $Value=null,
     ) {
         $this->IdPrefix ??= bin2hex(random_bytes(16));
         $this->Placeholder ??= $this->Title;

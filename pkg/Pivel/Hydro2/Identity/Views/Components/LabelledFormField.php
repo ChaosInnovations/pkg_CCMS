@@ -18,6 +18,7 @@ class LabelledFormField extends FormField
         protected ?string $Title=null,
         protected ?string $Label=null,
         protected ?string $Placeholder=null,
+        protected ?string $Value=null,
     ) {
         $this->IdPrefix ??= bin2hex(random_bytes(16));
     }

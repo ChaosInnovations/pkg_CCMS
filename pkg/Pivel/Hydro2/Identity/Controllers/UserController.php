@@ -593,6 +593,8 @@ class UserController extends BaseController
                 content:$view->Render(),
             );
         }
+        
+        $view->SetUserId($this->request->Args['id']);
 
         if (!$user->ValidateEmailVerificationToken($this->request->Args['token'])) {
             return new Response(
@@ -610,8 +612,7 @@ class UserController extends BaseController
         }
 
         // If the user has not yet set a password, generate password reset token.
-        // TODO include new password form in verification view
-        $userNeedsToCreatePassword = UserPassword::LoadCurrentFromUser($user) === null;
+        $userNeedsToCreatePassword = (UserPassword::LoadCurrentFromUser($user) === null);
         if ($userNeedsToCreatePassword) {
             $PasswordResetToken = new PasswordResetToken($user->Id, expireAfterMinutes: 60);
             $PasswordResetToken->Save();
