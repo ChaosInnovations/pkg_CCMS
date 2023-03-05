@@ -2,7 +2,7 @@
     {#arg Head}
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Email Verification</title>
+        <title>Email Verified</title>
         <!--
         <style>
             .logincard-backdrop {
@@ -17,7 +17,15 @@
         -->
     {#}
     {#arg Body}
-        {$Text$}
+        {#if $IsValid}
+            Thanks, your email is verified.
+            {#if $IsPasswordChangeRequired}
+                Need to set a password using this verification token:
+                {$PasswordResetToken$}
+            {#}
+        {#}{#else}
+            This verification link is not valid.
+        {#}
         <!--
         <div>
             <div>
