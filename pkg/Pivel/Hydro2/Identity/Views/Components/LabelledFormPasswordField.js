@@ -4,7 +4,7 @@ class LabelledFormPasswordField {
     toggle = null;
     constructor(id) {
         this.id = id;
-        this._e = H.Nodes(id);
+        this._e = H.Nodes(id).Parent();
 
         this.input = this._e.Nodes(id);
         this.toggle = this._e.Nodes(id+"_visibletoggle");
@@ -14,7 +14,6 @@ class LabelledFormPasswordField {
 
     _onVisibleToggleClick(event) {
         event.preventDefault(); // if we are in a form, don't let the form be submitted.
-        console.log("visbility toggle clicked");
         // check current state of password field (type==password|text)
         if (this.input.Attribute("type") == "password") {
             this.ShowPassword();
@@ -29,7 +28,7 @@ class LabelledFormPasswordField {
         this.input.Attribute("type", "text");
         // change button title & content to indicate that clicking the button will hide the password
         this.toggle.Attribute("title", "Hide Password");
-        this.toggle.HTML("H");
+        this.toggle.HTML("Hide");
     }
 
     HidePassword() {
@@ -37,6 +36,6 @@ class LabelledFormPasswordField {
         this.input.Attribute("type", "password");
         // change button title & content to indicate that clicking the button will show the password
         this.toggle.Attribute("title", "Show Password");
-        this.toggle.HTML("S");
+        this.toggle.HTML("Show");
     }
 }
