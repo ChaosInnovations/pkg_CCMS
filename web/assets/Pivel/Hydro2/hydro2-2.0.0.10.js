@@ -2,10 +2,28 @@ var H = {
     AjaxResponse: class {
         Status;
         ResponseText;
+        ResponseObject;
+        ErrorMessage=null;
+        ErrorCode=null;
+        Data=null;
 
         constructor(statusCode, responseText) {
             this.Status = statusCode;
             this.ResponseText = responseText;
+            try {
+                this.ResponseObject = JSON.parse(responseText);
+                if ("message" in this.ResponseObject) {
+                    this.ErrorMessage = this.ResponseObject["message"];
+                }
+                if ("code" in this.ResponseObject) {
+                    this.ErrorCode = this.ResponseObject["code"];
+                }
+                if ("data" in this.ResponseObject) {
+                    this.Data = this.ResponseObject["data"];
+                }
+            } catch {
+                this.ResponseObject = null;
+            }
         }
     },
 
@@ -58,6 +76,8 @@ var H = {
     // TODO add remaining status codes
     StatusCode: {
         OK: 200,
+        BadRequest: 400,
+        InternalServerError: 500,
     },
 
     Nodes: function(selector, parent=null) {
