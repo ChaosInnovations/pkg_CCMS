@@ -1,12 +1,8 @@
-class LabelledFormPasswordField {
-    id = '';
-    input = null;
+class LabelledFormPasswordField extends FormField {
     toggle = null;
     constructor(id) {
-        this.id = id;
-        this._e = H.Nodes(id).Parent();
+        super(H.Nodes(id).Parent());
 
-        this.input = this._e.Nodes(id);
         this.toggle = this._e.Nodes(id+"_visibletoggle");
 
         this.toggle.AddEventHandler("click", this._onVisibleToggleClick.bind(this));

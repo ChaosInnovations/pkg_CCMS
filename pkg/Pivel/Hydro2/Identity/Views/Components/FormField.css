@@ -26,3 +26,33 @@
     background-color: #dddddd;
     box-shadow: inset 1px 1px 1px 0px #777777;
 }
+
+.form-field .feedback {
+    display: none;
+    font-size: 0.9rem;
+    margin-top: 0.2rem;
+}
+
+.form-field.show-feedback .feedback {
+    display: block;
+}
+
+.form-field.show-feedback input {
+    z-index: 1;
+}
+
+.form-field.valid input {
+    border-color: #007700;
+}
+
+.form-field.invalid input {
+    border-color: #cc0000;
+}
+
+.form-field.valid .feedback {
+    color: #007700;
+}
+
+.form-field.invalid .feedback {
+    color: #cc0000;
+}

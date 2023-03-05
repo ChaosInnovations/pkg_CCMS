@@ -2,10 +2,12 @@
 
 namespace Package\Pivel\Hydro2\Identity\Views\Components;
 
+use Package\Pivel\Hydro2\Core\Extensions\RequireScript;
 use Package\Pivel\Hydro2\Core\Extensions\RequireStyle;
 use Package\Pivel\Hydro2\Core\Views\BaseView;
 
 #[RequireStyle('FormField.css')]
+#[RequireScript('FormField.js')]
 class FormField extends BaseView
 {
 
