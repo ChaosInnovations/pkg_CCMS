@@ -56,6 +56,7 @@ class BaseView
         //  there is an error with this template. Replace the current tag recording buffer with some
         //  text indicating the error.
         $debug = false;
+        //$debug = true;
 
         $contentArgs = [];
 
@@ -67,6 +68,7 @@ class BaseView
         $tagContentStartingPos = -1;
         $tagContent = '';
         $tagContentArgs = [];
+        $lastIfEvaluation = false;
         $cursor = 0;
         while ($cursor <= (strlen($template) - 1)) {
             // find next tag
@@ -126,12 +128,6 @@ class BaseView
                 $tagContent = substr($template, $tagContentStartingPos, $tagContentLength);
                 // trim whitespace
                 $tagContent = trim($tagContent);
-                // resolve any child tags in the current content before we process.
-                if ($debug) {echo "resolving tag content<br />\n<blockquote>";}
-                $r = $this->ResolveTemplate($tagContent);
-                if ($debug) {echo "</blockquote>done<br />\n";}
-                $tagContent = $r['content'];
-                $tagContentArgs = $r['args'];
             }
 
             // what kind of tag is this?
@@ -148,14 +144,12 @@ class BaseView
                 echo "args: {$tagArgs}<br />\n";
             }
 
-            
-
-
             // valid tag types:
             //  section
             //  view
             //  arg
             //  parent
+            //  if/else
             //  {$[section name]$}
             //  {$[section name]} ... {$}
             //  {$[section name][]} ... {$}
@@ -189,12 +183,27 @@ class BaseView
             //
             //  {#parent} ... {#}
             //   Works the same way as {#view} but with this view's parent class.
+            //
+            //  {#if $arg} ... {#}
+            //   If there is a matching $arg property and it is truthy, evaluate and replace with the contents
+            //  {#else} ... {#}
+            //   If there a previous #if evaluation and it evaluated to false, evaluate and replace with the contents and clear the previous #3
+            //    evaluation. If there is not a previous #if evaluation, evaluate and replace with the contents anyways.
+            //   
 
             switch ($tagType) {
                 case 'arg':
                     // $tagArgs will be [arg name] or [arg name][]
                     $argName = rtrim($tagArgs, '[]');
                     $isArray = strlen($argName) < strlen($tagArgs); // did we have to trim []?
+
+                    // resolve any child tags in the current content before we process.
+                    if ($debug) {echo "resolving tag content<br />\n<blockquote>";}
+                    $r = $this->ResolveTemplate($tagContent);
+                    if ($debug) {echo "</blockquote>done<br />\n";}
+                    $tagContent = $r['content'];
+                    $tagContentArgs = $r['args'];
+
                     if ($isArray) {
                         $contentArgs[$argName] ??= [];
                         $contentArgs[$argName][] = $tagContent;
@@ -208,7 +217,8 @@ class BaseView
                     // $tagArgs will be [section name] or [section name][]
                     $sectionName = rtrim($tagArgs, '[]');
                     $isArray = strlen($sectionName) < strlen($tagArgs); // did we have to trim []?
-                    $sectionValue = $tagContent;
+                    
+                    $sectionValue = '';
                     if (in_array($sectionName, $this->properties) && $this->$sectionName !== null) {
                         $sectionValue = $this->$sectionName;
                         if ($isArray && is_array($sectionValue)) {
@@ -230,6 +240,15 @@ class BaseView
                                 $this->viewClassesUsed = array_merge($this->viewClassesUsed, $this->$sectionName->GetViewClassesUsed());
                             }
                         }
+                    } else {
+                        // resolve any child tags in the current content before we process.
+                        if ($debug) {echo "resolving tag content<br />\n<blockquote>";}
+                        $r = $this->ResolveTemplate($tagContent);
+                        if ($debug) {echo "</blockquote>done<br />\n";}
+                        $tagContent = $r['content'];
+                        $tagContentArgs = $r['args'];
+
+                        $sectionValue = $tagContent;
                     }
                     if ($debug) {echo "value: {$sectionValue}\n<br />";}
 
@@ -322,6 +341,14 @@ class BaseView
                         // TODO try to cast to float > int > bool > string
                         $viewArgs[$newKey] = $argString;
                     }
+
+                    // resolve any child tags in the current content before we process.
+                    if ($debug) {echo "resolving tag content<br />\n<blockquote>";}
+                    $r = $this->ResolveTemplate($tagContent);
+                    if ($debug) {echo "</blockquote>done<br />\n";}
+                    $tagContent = $r['content'];
+                    $tagContentArgs = $r['args'];
+
                     $viewArgs = array_merge($viewArgs, $tagContentArgs);
                     if ($debug) {
                         echo "view args:";
@@ -350,6 +377,56 @@ class BaseView
 
                     $result = $instance->Render(isOuter:false);
                     $this->viewClassesUsed = array_merge($this->viewClassesUsed, $instance->GetViewClassesUsed());
+                    $template = substr_replace($template, $result, $tagStartingPos, ($cursor-$tagStartingPos));
+                    $cursor = $tagStartingPos + strlen($result);
+                    break;
+
+                case 'if':
+                    $argName = rtrim($tagArgs, '[]');
+
+                    if ($debug) {echo "if {$argName}:<br />\n";}
+
+                    if (str_starts_with($argName, '$')) {
+                        $argName = substr($argName, 1);
+                    }
+                    
+                    $lastIfEvaluation = false;
+                    if (in_array($argName, $this->properties) && $this->$argName !== null) {
+                        $lastIfEvaluation = (bool)$this->$argName;
+                        if ($debug) {echo "if evaluated to: ".($lastIfEvaluation?'true':'false')."<br />\n";}
+                    } else {
+                        if ($debug) {
+                            echo "{$argName} not in object.<br />\n";
+                            var_dump($this->properties);
+                        }
+                    }
+                    
+                    $result = '';
+                    if ($lastIfEvaluation) {
+                        // resolve any child tags in the current content before we process.
+                        if ($debug) {echo "resolving tag content<br />\n<blockquote>";}
+                        $r = $this->ResolveTemplate($tagContent);
+                        if ($debug) {echo "</blockquote>done<br />\n";}
+                        $result = $r['content'];
+                        $tagContentArgs = $r['args'];
+                    }
+                    
+                    $template = substr_replace($template, $result, $tagStartingPos, ($cursor-$tagStartingPos));
+                    $cursor = $tagStartingPos + strlen($result);
+                    break;
+
+                case 'else':
+                    $result = '';
+                    if (!$lastIfEvaluation) {
+                        // resolve any child tags in the current content before we process.
+                        if ($debug) {echo "resolving tag content<br />\n<blockquote>";}
+                        $r = $this->ResolveTemplate($tagContent);
+                        if ($debug) {echo "</blockquote>done<br />\n";}
+                        $result = $r['content'];
+                        $tagContentArgs = $r['args'];
+                    }
+                    $lastIfEvaluation = false;
+                    
                     $template = substr_replace($template, $result, $tagStartingPos, ($cursor-$tagStartingPos));
                     $cursor = $tagStartingPos + strlen($result);
                     break;
