@@ -49,7 +49,6 @@ class MultiPageCard {
         this._pages.RemoveClass("active");
         // find target and add .active class
         this._e.Nodes("#"+targetId).AddClass("active");
-        // TODO for some reason this doesn't actually set the hash.
         window.location.hash = "#"+targetId;
         this._activePageId = targetId;
     }

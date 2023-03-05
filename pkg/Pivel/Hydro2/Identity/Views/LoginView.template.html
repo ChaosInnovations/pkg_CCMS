@@ -23,6 +23,10 @@
         </div>
         <script>
             var lc = new LoginCard("#logincard_id");
+            var defaultPage = "{$DefaultPage$}";
+            if (defaultPage != "") {
+                lc.NavigateTo(defaultPage);
+            }
         </script>
     {#}
 {#}

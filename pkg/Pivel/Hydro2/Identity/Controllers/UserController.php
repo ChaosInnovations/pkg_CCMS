@@ -96,7 +96,7 @@ class UserController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'email',
-                            'description' => 'New User\'s email address.',
+                            'description' => "New User's email address.",
                             'message' => 'Argument is missing.',
                         ],
                     ],
@@ -111,7 +111,7 @@ class UserController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'name',
-                            'description' => 'New User\'s name.',
+                            'description' => "New User's name.",
                             'message' => 'Argument is missing.',
                         ],
                     ],
@@ -130,8 +130,8 @@ class UserController extends BaseController
                         'validation_errors' => [
                             [
                                 'name' => 'role_id',
-                                'description' => 'New User\'s Role.',
-                                'message' => 'This user role doesn\'t exist.',
+                                'description' => "New User's Role.",
+                                'message' => "This user role doesn't exist.",
                             ],
                         ],
                     ],
@@ -151,7 +151,7 @@ class UserController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'email',
-                            'description' => 'New User\'s name.',
+                            'description' => "New User's name.",
                             'message' => 'A user already exists with this email.',
                         ],
                     ],
@@ -218,7 +218,7 @@ class UserController extends BaseController
                         [
                             'name' => 'id',
                             'description' => 'User ID.',
-                            'message' => 'This user doesn\'t exist.',
+                            'message' => "This user doesn't exist.",
                         ],
                     ],
                 ],
@@ -274,7 +274,7 @@ class UserController extends BaseController
                         [
                             'name' => 'id',
                             'description' => 'User ID.',
-                            'message' => 'This user doesn\'t exist.',
+                            'message' => "This user doesn't exist.",
                         ],
                     ],
                 ],
@@ -305,8 +305,8 @@ class UserController extends BaseController
                         'validation_errors' => [
                             [
                                 'name' => 'role_id',
-                                'description' => 'New User\'s Role.',
-                                'message' => 'This user role doesn\'t exist.',
+                                'description' => "New User's Role.",
+                                'message' => "This user role doesn't exist.",
                             ],
                         ],
                     ],
@@ -381,7 +381,10 @@ class UserController extends BaseController
     #[Route(Method::POST, 'changepassword')]
     public function UserChangePassword() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {
-            return new Response(status: StatusCode::NotFound);
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "There was a problem with the database."
+            );
         }
 
         $user = User::LoadFromRandomId($this->request->Args['id']??'');
@@ -399,13 +402,13 @@ class UserController extends BaseController
                         [
                             'name' => 'id',
                             'description' => 'User ID.',
-                            'message' => 'This user doesn\'t exist.',
+                            'message' => "This user doesn't exist.",
                         ],
                         
                         [
                             'name' => 'email',
-                            'description' => 'User\'s email address.',
-                            'message' => 'This user doesn\'t exist.',
+                            'description' => "User's email address.",
+                            'message' => "This user doesn't exist.",
                         ],
                     ],
                 ],
@@ -423,13 +426,13 @@ class UserController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'password',
-                            'description' => 'User\'s current password',
-                            'message' => 'Either the user\'s current password or a valid reset token are required.',
+                            'description' => "User's current password",
+                            'message' => "Either the user's current password or a valid reset token are required.",
                         ],
                         [
                             'name' => 'reset_token',
                             'description' => 'Password reset token.',
-                            'message' => 'Either the user\'s current password or a valid reset token are required.',
+                            'message' => "Either the user's current password or a valid reset token are required.",
                         ],
                     ],
                 ],
@@ -444,7 +447,7 @@ class UserController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'password',
-                            'description' => 'User\'s current password',
+                            'description' => "User's current password",
                             'message' => 'The provided password is incorrect.',
                         ],
                     ],
@@ -476,8 +479,8 @@ class UserController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'new_password',
-                            'description' => 'User\'s new password',
-                            'message' => 'The user\'s new password.',
+                            'description' => "User's new password",
+                            'message' => "The user's new password.",
                         ],
                     ],
                 ],
@@ -516,7 +519,10 @@ class UserController extends BaseController
     #[Route(Method::POST, 'sendpasswordreset')]
     public function UserSendResetPassword() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {
-            return new Response(status: StatusCode::NotFound);
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "There was a problem with the database."
+            );
         }
 
         $user = User::LoadFromRandomId($this->request->Args['id']??'');
@@ -531,13 +537,13 @@ class UserController extends BaseController
                         [
                             'name' => 'id',
                             'description' => 'User ID.',
-                            'message' => 'This user doesn\'t exist.',
+                            'message' => "This user doesn't exist.",
                         ],
                         
                         [
                             'name' => 'email',
-                            'description' => 'User\'s email address.',
-                            'message' => 'This user doesn\'t exist.',
+                            'description' => "User's email address.",
+                            'message' => "This user doesn't exist.",
                         ],
                     ],
                 ],

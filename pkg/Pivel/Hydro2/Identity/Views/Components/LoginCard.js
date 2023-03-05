@@ -1,12 +1,19 @@
 class LoginCard extends MultiPageCard {
     id = '';
+    login_email = null;
+    login_password = null;
+    change_current = null;
+    change_new = null;
+    reset_email = null;
     constructor(id) {
         super(id+"_multipagecard");
         this.id = id;
 
-        new LabelledFormPasswordField(id+"_loginform_password");
-        new LabelledFormPasswordField(id+"_changepasswordform_current-password");
-        new LabelledFormPasswordField(id+"_changepasswordform_new-password");
+        this.login_email = new FormField(id+"_loginform_email");
+        this.login_password = new LabelledFormPasswordField(id+"_loginform_password");
+        this.change_current = new LabelledFormPasswordField(id+"_changepasswordform_current-password");
+        this.change_new = new LabelledFormPasswordField(id+"_changepasswordform_new-password");
+        this.reset_email = new FormField(id+"_requestresetpasswordform_email");
 
         this._e.Nodes(id+"_loginform").AddEventHandler("submit", this._onLoginFormSubmit.bind(this));
         this._e.Nodes(id+"_requestresetpasswordform").AddEventHandler("submit", this._onResetFormSubmit.bind(this));
@@ -37,6 +44,8 @@ class LoginCard extends MultiPageCard {
     SubmitLoginForm() {
         // disable submit button and change contents to spinner
         this._e.Nodes(this.id+"_loginform_submit").Disable();
+        this.login_email.HideValidation();
+        this.login_password.HideValidation();
         // submit POST to ~login (this.$loginCallback)
         var request = new H.AjaxRequest("POST", "/api/hydro2/identity/login");
         request.SetJsonData({
@@ -62,8 +71,8 @@ class LoginCard extends MultiPageCard {
         this._e.Nodes(this.id+"_changepasswordform_submit").Disable();
         var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/changepassword");
         request.SetJsonData({
-            "password": this._e.Nodes(this.id+"_changepasswordform_currentpassword").Value(),
-            "new_password": this._e.Nodes(this.id+"_changepasswordform_newpassword").Value()
+            "password": this._e.Nodes(this.id+"_changepasswordform_current-password").Value(),
+            "new_password": this._e.Nodes(this.id+"_changepasswordform_new-password").Value()
         });
         request.Send(this._submitChangePasswordCallback.bind(this));
     }
@@ -78,15 +87,49 @@ class LoginCard extends MultiPageCard {
             // TODO implement 2FA challenge
             //this.NavigateTo("mfachallenge");
             //  if password change is required, display password change screen
-            this.NavigateTo("changepassword");
-            //  else refresh page
-            location.reload();
+            //'login_result' => [
+            //    'authenticated' => true,
+            //    'challenge_required' => ($user->Role->ChallengeIntervalMinutes>0),
+            //    'password_change_required' => $userPassword->IsExpired(),
+            //],
+            if (response.Data["login_result"]["authenticated"]) {
+                if (response.Data["login_result"]["password_change_required"]) {
+                    this.NavigateTo("changepassword");
+                } else {
+                    // else refresh page. since logged in now, server should redirect to ?next arg
+                    window.location.hash = "";
+                    location.reload();
+                }
+            }
+            
             this._e.Nodes(this.id+"_loginform_submit").Enable();
             return;
         }
 
         // display wrong email message, wrong password message, too many tries message, or account locked message
         // handle if already logged in
+        // /response.Message
+        if (response.Status == H.StatusCode.InternalServerError) {
+            this.login_email.SetValidation(false, "There was a problem with the server.");
+        } else if (response.Data["validation_errors"][0]["message"] == "Already logged in.") {
+            this.login_email.SetValidation(false, "Already logged in.");
+            // Refresh page. since logged in now, server should redirect to ?next arg
+            window.location.hash = "";
+            location.reload();
+        } else if (response.Data["validation_errors"][0]["message"] == "The provided password is incorrect.") {
+            this.login_password.SetValidation(false, "Incorrect password.");
+        } else if (response.Data["validation_errors"][0]["message"] == "The provided email address does not match an account.") {
+            this.login_email.SetValidation(false, "Incorrect email.");
+        } else if (response.Data["validation_errors"][0]["message"] == "This account is locked due to too many failed login attempts.") {
+            this.login_email.SetValidation(false, "This account is locked due to too many failed login attempts.");
+        } else if (response.Data["validation_errors"][0]["message"] == "This account is locked.") {
+            this.login_email.SetValidation(false, "This account is locked.");
+        } else if (response.Data["validation_errors"][0]["message"] == "Account creation is incomplete. A validation email has been re-sent to your email address.") {
+            this.login_email.SetValidation(false, "Account creation is incomplete. A validation email has been re-sent to your email address.");
+        } else {
+            console.log(response);
+            this.login_email.SetValidation(false, "There was an unknown error.");
+        }
         
         //  restore submit button
         this._e.Nodes(this.id+"_loginform_submit").Enable();
@@ -102,6 +145,16 @@ class LoginCard extends MultiPageCard {
             this._e.Nodes(this.id+"_requestresetpasswordform_submit").Enable();
             return;
         }
+
+        // display feedback message
+        if (response.Status == H.StatusCode.InternalServerError) {
+            this.reset_email.SetValidation(false, "There was a problem with the server.");
+        } else if (response.Data["validation_errors"][0]["message"] == "This user doesn't exist.") {
+            this.reset_email.SetValidation(false, "The provided email address does not match an account.");
+        } else {
+            console.log(response);
+            this.reset_email.SetValidation(false, "There was an unknown error.");
+        }
         
         //  restore submit button
         this._e.Nodes(this.id+"_requestresetpasswordform_submit").Enable();
@@ -113,9 +166,20 @@ class LoginCard extends MultiPageCard {
      _submitChangePasswordCallback(response) {
         if (response.Status == H.StatusCode.OK) {
             this.NavigateTo("changepasswordsuccess");
+            window.location.hash = "";
             location.reload();
             this._e.Nodes(this.id+"_changepasswordform_submit").Enable();
             return;
+        }
+
+        // display feedback message
+        if (response.Status == H.StatusCode.InternalServerError) {
+            this.change_current.SetValidation(false, "There was a problem with the server.");
+        } else if (response.Data["validation_errors"][0]["message"] == "The provided password is incorrect.") {
+            this.change_current.SetValidation(false, "Incorrect password. Please enter your current password.");
+        } else {
+            console.log(response);
+            this.change_current.SetValidation(false, "There was an unknown error.");
         }
         
         //  restore submit button

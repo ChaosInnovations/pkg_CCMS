@@ -34,7 +34,7 @@ class SessionController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'email',
-                            'description' => 'User\'s email address',
+                            'description' => "User's email address",
                             'message' => 'Already logged in.',
                         ],
                     ],
@@ -50,8 +50,8 @@ class SessionController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'email',
-                            'description' => 'User\'s email address',
-                            'message' => 'The user\'s email address is required.',
+                            'description' => "User's email address",
+                            'message' => "The user's email address is required.",
                         ],
                     ],
                 ],
@@ -66,8 +66,8 @@ class SessionController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'password',
-                            'description' => 'User\'s current password',
-                            'message' => 'The user\'s current password is required.',
+                            'description' => "User's current password",
+                            'message' => "The user's current password is required.",
                         ],
                     ],
                 ],
@@ -83,8 +83,27 @@ class SessionController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'email',
-                            'description' => 'User\'s email address',
+                            'description' => "User's email address",
                             'message' => 'The provided email address does not match an account.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
+
+        if (
+            ($user->Role->MaxLoginAttempts > 0 && $user->FailedLoginAttempts >= $user->Role->MaxLoginAttempts) ||
+            ($user->Role->Max2FAAttempts > 0 && $user->Failed2FAAttempts >= $user->Role->Max2FAAttempts)
+            ) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'email',
+                            'description' => "User's email address",
+                            'message' => 'This account is locked due to too many failed login attempts.',
                         ],
                     ],
                 ],
@@ -104,7 +123,7 @@ class SessionController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'password',
-                            'description' => 'User\'s current password',
+                            'description' => "User's current password",
                             'message' => 'Account creation is incomplete. A validation email has been re-sent to your email address.',
                         ],
                     ],
@@ -115,12 +134,14 @@ class SessionController extends BaseController
         }
 
         if (!$userPassword->ComparePassword($this->request->Args['password'])) {
+            $user->FailedLoginAttempts++;
+            $user->Save();
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
                         [
                             'name' => 'password',
-                            'description' => 'User\'s current password',
+                            'description' => "User's current password",
                             'message' => 'The provided password is incorrect.',
                         ],
                     ],
@@ -136,27 +157,8 @@ class SessionController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'email',
-                            'description' => 'User\'s email address',
+                            'description' => "User's email address",
                             'message' => 'This account is locked.',
-                        ],
-                    ],
-                ],
-                status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
-            );
-        }
-
-        if (
-            ($user->Role->MaxLoginAttempts > 0 && $user->FailedLoginAttempts >= $user->Role->MaxLoginAttempts) ||
-            ($user->Role->Max2FAAttempts > 0 && $user->Failed2FAAttempts >= $user->Role->Max2FAAttempts)
-            ) {
-            return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'email',
-                            'description' => 'User\'s email address',
-                            'message' => 'This account is locked due to too many failed login attempts.',
                         ],
                     ],
                 ],
@@ -222,8 +224,8 @@ class SessionController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'id',
-                            'description' => "User\'s random ID",
-                            'message' => "The user doesn\'t exist.",
+                            'description' => "User's random ID",
+                            'message' => "The user doesn't exist.",
                         ],
                     ],
                 ],
@@ -284,8 +286,8 @@ class SessionController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'sessionid',
-                            'description' => "Session\'s random ID",
-                            'message' => "The session doesn\'t exist.",
+                            'description' => "Session's random ID",
+                            'message' => "The session doesn't exist.",
                         ],
                     ],
                 ],
@@ -318,24 +320,20 @@ class SessionController extends BaseController
         //  TODO if 2FA challenge is required, then display the 2FA challenge screen.
         if (IdentityService::GetRequestSession($this->request) !== false) {
             $userPassword = UserPassword::LoadCurrentFromUser(IdentityService::GetRequestUser($this->request));
-            if ($userPassword->IsExpired()) {
+            if (!$userPassword->IsExpired()) {
                 return new Response(
                     status: StatusCode::Found,
                     headers: [
-                        'Location' => '/login' . ($this->request->Args['next']?"?next={$this->request->Args['next']}":'') . '#changepassword',
+                        'Location' => $this->request->Args['next']??'/',
                     ],
                 );
             }
-
-            return new Response(
-                status: StatusCode::Found,
-                headers: [
-                    'Location' => $this->request->Args['next']??'/',
-                ],
-            );
         }
 
         $view = new LoginView();
+        if (IdentityService::GetRequestSession($this->request) !== false && $userPassword->IsExpired()) {
+            $view->DefaultPage = 'changepassword';
+        }
         return new Response(
             content: $view->Render()
         );
