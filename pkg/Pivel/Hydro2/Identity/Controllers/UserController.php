@@ -22,6 +22,7 @@ use Package\Pivel\Hydro2\Identity\Views\EmailViews\NewEmailNotificationEmailView
 use Package\Pivel\Hydro2\Identity\Views\EmailViews\NewUserVerificationEmailView;
 use Package\Pivel\Hydro2\Identity\Views\EmailViews\PasswordChangedNotificationEmailView;
 use Package\Pivel\Hydro2\Identity\Views\EmailViews\PasswordResetEmailView;
+use Package\Pivel\Hydro2\Identity\Views\ResetView;
 use Package\Pivel\Hydro2\Identity\Views\VerifyView;
 
 #[RoutePrefix('api/hydro2/identity/users')]
@@ -574,7 +575,6 @@ class UserController extends BaseController
         return new JsonResponse(status:StatusCode::OK);
     }
 
-    // TODO proper HTML view
     #[Route(Method::GET, '~verifyuseremail/{id}')]
     #[Route(Method::GET, '~verifyuseremail')]
     public function UserVerify() : Response {
@@ -627,12 +627,44 @@ class UserController extends BaseController
         );
     }
 
-    // TODO resetpassword view w/ form + ajax call
     #[Route(Method::GET, '~resetpassword/{id}')]
+    #[Route(Method::GET, '~resetpassword')]
     public function UserResetPasswordView() : Response {
-        return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
+        $view = new ResetView(false);
+        if (!isset($this->request->Args['token'])) {
+            // missing argument
+            return new Response(
+                content:$view->Render(),
+            );
+        }
+
+        $user = User::LoadFromRandomId($this->request->Args['id']??'');
+        if ($user === null) {
+            return new Response(
+                content:$view->Render(),
+            );
+        }
+        
+        $view->SetUserId($this->request->Args['id']);
+
+        $resetToken = PasswordResetToken::LoadFromToken($this->request->Args['token']??'');
+        if ($resetToken === null) {
+            return new Response(
+                content:$view->Render(),
+            );
+        }
+
+        if (!$resetToken->CompareToken($this->request->Args['token']??'') || $resetToken->UserId !== $user->Id) {
+            return new Response(
+                content:$view->Render(),
+            );
+        }
+
+        $view->SetPasswordResetToken($resetToken);
+        $view->SetIsValid(true);
+
+        return new Response(
+            content:$view->Render(),
         );
     }
 }

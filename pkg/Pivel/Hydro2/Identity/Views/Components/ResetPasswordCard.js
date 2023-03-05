@@ -44,7 +44,7 @@ class ResetPasswordCard extends MultiPageCard {
         if (response.Status == H.StatusCode.InternalServerError) {
             this.reset_new.SetValidation(false, "There was a problem with the server.");
         } else if (response.Data["validation_errors"][0]["message"] == "The provided password reset token is incorrect, expired, or already used.") {
-            this.reset_new.SetValidation(false, "Unable to change password. Invalid password reset token.");
+            this.reset_new.SetValidation(false, "Unable to change password. Invalid, expired, or already used password reset token.");
         } else {
             console.log(response);
             this.reset_new.SetValidation(false, "There was an unknown error.");
