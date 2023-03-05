@@ -11,6 +11,8 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
 use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
+use Package\Pivel\Hydro2\Database\Services\DatabaseService;
+use Package\Pivel\Hydro2\Identity\Models\Permissions;
 use Package\Pivel\Hydro2\Identity\Models\Session;
 use Package\Pivel\Hydro2\Identity\Models\User;
 use Package\Pivel\Hydro2\Identity\Models\UserPassword;
@@ -202,9 +204,54 @@ class SessionController extends BaseController
 
     #[Route(Method::GET, 'users/{id}/sessions')]
     public function UserGetSessions() : Response {
+        if (!DatabaseService::IsPrimaryConnected()) {
+            return new Response(status: StatusCode::NotFound);
+        }
+        // need to have either viewusersessions permission or be requestion own user's sessions
+        if (!(
+            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ViewUserSessions->value) ||
+            IdentityService::GetRequestUser($this->request)->RandomId === $this->request->Args['id']
+        )) {
+            return new Response(status: StatusCode::NotFound);
+        }
+
+        $user = User::LoadFromRandomId($this->request->Args['id']);
+        if ($user === null) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'id',
+                            'description' => "User\'s random ID",
+                            'message' => "The user doesn\'t exist.",
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
+
+        $currentSessionId = IdentityService::GetRequestSession($this->request)->RandomId;
+        $sessionsResults = [];
+        $sessions = Session::GetAllByUser($user);
+        foreach ($sessions as $s) {
+            $sessionsResults[] = [
+                'random_id' => $s->RandomId,
+                'browser' => $s->Browser,
+                'start' => $s->StartTime,
+                'expire' => $s->ExpireTime,
+                'last_access' => $s->LastAccessTime,
+                'start_ip' => $s->StartIP,
+                'last_ip' => $s->LastIP,
+                'is_this_session' => $s->RandomId === $currentSessionId,
+            ];
+        }
+
         return new JsonResponse(
-            status:StatusCode::InternalServerError,
-            error_message:'Route exists but not implemented.',
+            data: [
+                'sessions' => $sessionsResults,
+            ],
         );
     }
 

@@ -72,6 +72,18 @@ class Session extends BaseObject
         $this->LastIP = $lastIP;
     }
 
+    /**
+     * @return Session[]
+     */
+    public static function GetAllByUser(User $user) : array {
+        $results = self::getTable()->Select(null, (new Where())->Equal('user_id', $user->Id));
+        $sessions = [];
+        foreach ($results as $result) {
+            $sessions[] = self::CastFromRow($result);
+        }
+        return $sessions;
+    }
+
     public static function LoadFromRandomId(string $randomId) : ?Session {
         $table = self::getTable();
         $results = $table->Select(null, (new Where())->Equal('random_id', $randomId));
