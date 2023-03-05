@@ -67,6 +67,10 @@ var H = {
     DOMNodes: class {
         _nodeList = [];
         constructor(selector, parent=null) {
+            if (selector instanceof H.DOMNodes) {
+                this._nodeList = selector._nodeList;
+                return;
+            }
             if (selector instanceof HTMLElement || selector instanceof Document) {
                 this._nodeList = [selector];
                 return;
