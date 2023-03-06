@@ -311,8 +311,6 @@ class SessionController extends BaseController
     }
 
     #[Route(Method::GET, '~login')]
-    // TODO ~admin should be a separate route that also displays the admin panel and redirects here if not logged in.
-    #[Route(Method::GET, '~admin')]
     public function GetLoginView() : Response {
         // check if already logged in. If there is a ?next= arg, redirect to that path. Otherwise, redirect to ~/
         //  unless password change is required, then display the password change screen.

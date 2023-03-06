@@ -1,0 +1,62 @@
+{#parent}
+    {#arg Head}
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Admin Panel</title>
+        <style>
+        </style>
+    {#}
+    {#arg Body}
+        <div class="master-detail">
+            <div class="master-nav collapsible-left">
+                <button type="button" title="Show/hide navigation">S/H</button>
+                <nav>
+                    <h1>Hydro2</h1>
+                    <ul>
+                        <li class="expandable">
+                            <a href="#" data-masterdetailtarget="hydro2">Hydro2</a>
+                            <ul>
+                                <li class="expandable">
+                                    <a href="#" data-masterdetailtarget="hydro2/config">Configuration</a>
+                                    <ul>
+                                        <li><a href="#" data-masterdetailtarget="hydro2/config/dbconnect">Database Connections</a></li>
+                                        <li><a href="#" data-masterdetailtarget="hydro2/config/dbbrowse">Database Browser</a></li>
+                                        <li><a href="#" data-masterdetailtarget="hydro2/config/email">Outbound Email Profiles</a></li>
+                                    </ul>
+                                </li>
+                                <li class="expandable">
+                                    <a href="#" data-masterdetailtarget="hydro2/identity">Users &amp; Security</a>
+                                    <ul>
+                                        <li><a href="#" data-masterdetailtarget="hydro2/identity/roles">User Roles</a></li>
+                                        <li><a href="#" data-masterdetailtarget="hydro2/identity/users">Users</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li><a href="#" data-masterdetailtarget="facade">Facade</a></li>
+                    </ul>
+                </nav>
+            </div>
+            <div class="master-content">
+                <div class="page active" data-page="hydro2">
+                    \\Package\\Pivel\\Hydro2\\Core\\Views\\AdminPanels\\About
+                </div>
+                <div class="page" data-page="hydro2/config/dbconnect">
+                    \\Package\\Pivel\\Hydro2\\Database\\Views\\AdminPanels\\ConnectionProfiles; Requires pivel/hydro2/managedatabaseconnections
+                </div>
+                <div class="page" data-page="hydro2/config/dbbrowse">
+                    \\Package\\Pivel\\Hydro2\\Database\\Views\\AdminPanels\\DatabaseBrowser; Requires pivel/hydro2/browsedatabases
+                </div>
+                <div class="page" data-page="hydro2/config/email">
+                    \\Package\\Pivel\\Hydro2\\Email\\Views\\AdminPanels\\OutboundProfiles; Requires pivel/hydro2/manageoutboundemailprofiles
+                </div>
+                <div class="page" data-page="hydro2/identity/roles">
+                    \\Package\\Pivel\\Hydro2\\Identity\\Views\\AdminPanels\\UserRoles; Requires pivel/hydro2/createuserroles or pivel/hydro2/manageuserroles
+                </div>
+                <div class="page" data-page="hydro2/identity/users">
+                    \\Package\\Pivel\\Hydro2\\Identity\\Views\\AdminPanels\\Users; Requires pivel/hydro2/viewusers
+                </div>
+            </div>
+        </div>
+    {#}
+{#}
