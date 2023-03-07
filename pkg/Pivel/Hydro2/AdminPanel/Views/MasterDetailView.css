@@ -1,0 +1,111 @@
+.master-detail {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+}
+
+.master-detail .page {
+    display: none;
+}
+
+.master-detail .page.active {
+    display: block;
+}
+
+.master-detail .master-nav>nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.master-detail nav a {
+    color: white;
+    text-decoration: none;
+    width: 100%;
+    display: inline-block;
+    padding: 0.3rem 0.5rem;
+    overflow: hidden;
+}
+
+.master-detail nav a.active {
+    border-right: 0.25rem solid #ffffff;
+}
+
+.master-detail nav li.expandable>a::after {
+    display: inline-block;
+    margin-left: 0.5rem;
+    content: "";
+    border-left: 2px solid white;
+    width: 6px;
+    height: 6px;
+    border-bottom: 2px solid white;
+    transform: translateY(-3px) rotate(45deg);
+    vertical-align: middle;
+    transition: transform 0.5s;
+}
+
+.master-detail nav li.expandable.expanded>a::after {
+    transform: translateY(-3px) rotate(-45deg);
+}
+
+.master-detail nav li.expandable>ul {
+    padding-left: 1rem;
+    height: 0;
+    overflow: hidden;
+    transition: height 0.5s;
+}
+
+.master-detail nav li.expandable.expanded>ul {
+    height: auto;
+}
+
+.master-detail nav a:hover {
+    background-color: #2f2f2f;
+}
+
+.master-detail nav>h1 {
+    margin-top: 0;
+}
+
+.master-detail nav {
+    padding: 0.5rem;
+    overflow-x: hidden;
+}
+
+.master-detail .collapsible-left>.collapse-control {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    width: 2.5rem;
+    height: 2.5rem;
+    background: #222222cc;
+    border: none;
+    cursor: pointer;
+    color: white;
+}
+
+.master-detail .collapsible-left {
+    transition: width 0.5s;
+}
+
+.master-detail .collapsible-left.collapsed {
+    width: 0;
+}
+
+.master-detail .master-nav {
+    position: relative;
+    height: 100%;
+    width: 250px;
+    background-color: #222222;
+    color: white;
+    flex-shrink: 0;
+    flex-grow: 0;
+}
+
+.master-detail .master-content {
+    width: 100%;
+    overflow-x: hidden;
+}

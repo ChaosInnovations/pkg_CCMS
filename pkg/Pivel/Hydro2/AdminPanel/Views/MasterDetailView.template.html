@@ -1,0 +1,15 @@
+<div class="page active" data-page="{$Key$}">
+    {$Content$}
+</div>
+<div id="{$Id$}" class="master-detail">
+    <div class="master-nav collapsible-left">
+        <button class="collapse-control" type="button" title="Show/hide navigation">S/H</button>
+        <nav>
+            <h1>{$Title$}</h1>
+            {$NavList$}
+        </nav>
+    </div>
+    <div class="master-content">
+        {$ContentPages[]$}
+    </div>
+</div>
