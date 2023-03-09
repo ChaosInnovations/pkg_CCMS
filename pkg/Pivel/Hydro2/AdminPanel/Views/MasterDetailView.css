@@ -9,6 +9,7 @@
 
 .master-detail .page {
     display: none;
+    padding: 1rem;
 }
 
 .master-detail .page.active {

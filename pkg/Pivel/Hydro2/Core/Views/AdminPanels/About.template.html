@@ -1,0 +1,29 @@
+{#parent}
+    {#arg Content}
+        <h2>About Hydro2</h2>
+        <p>Hydro2 is an open source dynamic web framework built with PHP.</p>
+        <p><a href="{$AboutWebsite$}" title="Hydro2 website">Learn more...</a></p>
+        <h3>General Information</h3>
+        <dl class="inline">
+            <dt>Hydro2 Version</dt><dd>{$Version$} (released on {$ReleaseDate$})</dd>
+            <dt>PHP Version</dt><dd>{$PHPVersion$}</dd>
+            <dt>Web Server</dt><dd>{$WebServer$}</dd>
+            <dt>Installation Date</dt><dd>{$InstallDate$}</dd>
+        </dl>
+        <h3>Installed Packages</h3>
+        <p>There {#if $NumPackagesPlural}are{#}{#else}is{#} {$NumPackages$} package{#if $NumPackagesPlural}s{#} installed:</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Vendor</th>
+                    <th>Package</th>
+                    <th>Version</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {$PackageTableRows[]$}
+            </tbody>
+        </table>
+    {#}
+{#}

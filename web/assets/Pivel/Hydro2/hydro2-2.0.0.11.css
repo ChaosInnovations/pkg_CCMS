@@ -10,3 +10,38 @@
 .button {
     cursor: pointer;
 }
+
+dl.inline {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    justify-items: stretch;
+    grid-column-gap: 0.5rem;
+}
+
+dl.inline>dt {
+    grid-column: 1;
+    justify-self: end;
+}
+
+dt {
+    font-weight: 600;
+}
+
+dl.inline>dd {
+    grid-column: 2;
+    margin: 0;
+}
+
+table {
+    width: 100%;
+    border-spacing: 0;
+}
+
+table th {
+    text-align: start;
+    border-bottom: 1px solid #777777;
+}
+
+table>tbody>tr:nth-child(2n) {
+    background-color: #eeeeee;
+}
