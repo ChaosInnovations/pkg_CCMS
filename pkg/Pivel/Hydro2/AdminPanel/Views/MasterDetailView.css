@@ -42,13 +42,13 @@
     width: 6px;
     height: 6px;
     border-bottom: 2px solid white;
-    transform: translateY(-3px) rotate(45deg);
+    transform: translateY(-3px) rotate(-45deg);
     vertical-align: middle;
     transition: transform 0.5s;
 }
 
 .master-detail nav li.expandable.expanded>a::after {
-    transform: translateY(-3px) rotate(-45deg);
+    transform: translateY(-3px) rotate(45deg);
 }
 
 .master-detail nav li.expandable>ul {

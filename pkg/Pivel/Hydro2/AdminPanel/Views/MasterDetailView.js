@@ -95,7 +95,23 @@ class MasterDetail {
         this._pageTriggerNodes.RemoveClass("active");
         // find trigger node(s) with a matching data-masterdetailtarget and addClass("active")
         this._e.Nodes("[data-masterdetailtarget=\"" + pageKey + "\"]").AddClass("active");
-        // TODO expand parent trigger node(s)
+        // expand parent trigger node(s)
+        var k = pageKey;
+        while (k.includes("/")) {
+            // do this first so we don't expand the orginal node.
+            k = k.substring(0, k.lastIndexOf("/"));
+            this._e.Nodes("[data-masterdetailtarget=\"" + k + "\"]").Parent()
+            var li = this._e.Nodes("[data-masterdetailtarget=\"" + k + "\"]").Parent();
+            var ul = H.Nodes(li.Nodes("ul")._nodeList[0]);
+            var height = ul._nodeList[0].scrollHeight;
+            li.AddClass("expanded");
+            ul._nodeList[0].style.height = ""+height+"px";
+            setTimeout(function(){
+                ul._nodeList[0].style.height = "";
+            },500);
+        }
+        
+        // add to history/back button
         history.pushState({key:pageKey}, "", "/"+this._baseEndpoint+"/"+pageKey);
     }
 }
