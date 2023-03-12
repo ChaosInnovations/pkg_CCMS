@@ -27,7 +27,7 @@ interface IDatabaseProvider
     //public function ReorderColumn(string $tableName, $column, $after=null);
 
     // Methods for manipulating table data
-    public function Select(string $tableName, array $columns, ?Where $where, ?OrderBy $order, ?int $limit) : array;
+    public function Select(string $tableName, array $columns, ?Where $where, ?OrderBy $order, ?int $limit, ?int $offset) : array;
     public function Insert(string $tableName, array $data) : int;
     //public function Update(string $tableName, $data, $columns, $where, $order, $limit);
     /** @return int The ID of inserted/updated row. */
