@@ -2,6 +2,8 @@
 
 namespace Package\Pivel\Hydro2\Database\Models;
 
+use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
+
 class DatabaseConfigurationProfile
 {
     public function __construct(
@@ -18,7 +20,7 @@ class DatabaseConfigurationProfile
     /**
      * @return DatabaseConfigurationProfile[]
      */
-    public static function GetAll() : array {
+    public static function GetAll(?OrderBy $order=null, ?int $limit=null, ?int $offset=null) : array {
         if (!file_exists(dirname(__FILE__, 2) . '/config.json')) {
             $defaultConfig = new DatabaseConfigurationProfile('primary', 'sqlite', 'default.sqlite3', null, null, null);
             $defaultConfig->Save();
@@ -31,7 +33,7 @@ class DatabaseConfigurationProfile
             return [];
         }
 
-        return array_map(function($k) use ($config) : DatabaseConfigurationProfile {
+        $results = array_map(function($k) use ($config) : DatabaseConfigurationProfile {
             return new self(
                 $k,
                 $config[$k]['driver'],
@@ -41,6 +43,50 @@ class DatabaseConfigurationProfile
                 $config[$k]['databaseschema']??null,
             );
         }, array_keys($config));
+
+        // sort by multiple layers from OrderBy object
+        if ($order != null) {
+            $orderKeys = [];
+            $orderDirs = [];
+            foreach ($order->orders as $o) {
+                switch ($o['column']) {
+                    case 'driver':
+                        $orderKeys[] = 'Driver';
+                        break;
+                    case 'host':
+                        $orderKeys[] = 'Host';
+                        break;
+                    case 'username':
+                        $orderKeys[] = 'Username';
+                        break;
+                    case 'database':
+                        $orderKeys[] = 'DatabaseSchema';
+                        break;
+                    default:
+                        $orderKeys[] = 'Key';
+                        break;
+                }
+                $orderDirs[] = ($o['order']==Order::Ascending?1:-1);
+            }
+            usort($results, function(DatabaseConfigurationProfile $a, DatabaseConfigurationProfile $b) use ($orderKeys, $orderDirs) {
+                $res = 0;
+                foreach ($orderKeys as $i => $key) {
+                    $res = $a->$key <=> $b->$key;
+                    $res *= $orderDirs[$i];
+                    if ($res != 0) {
+                        break;
+                    }
+                }
+                return $res;
+            });
+        }
+
+        if ($limit !== null) {
+            // truncate results according to limit/offset
+            $results = array_splice($results, $offset??0, $limit);
+        }
+
+        return $results;
     }
 
     public static function LoadFromKey(string $key) : ?self {
@@ -75,7 +121,7 @@ class DatabaseConfigurationProfile
         if (file_exists(dirname(__FILE__, 2) . '/config.json')) {
             $raw_config = file_get_contents(dirname(__FILE__, 2) . '/config.json');
             /** @var array[] */
-            $cconfig = json_decode($raw_config, true);
+            $config = json_decode($raw_config, true);
             if (json_last_error() != JSON_ERROR_NONE) {
                 $config = [];
             }

@@ -140,7 +140,7 @@ class DatabaseService
         return $dbp->GetDatabases();
     }
 
-    public static function CreateDatabase(string $driver, string $host, ?string $username, ?string $password, string $database) : bool {
+    public static function CreateDatabase(string $driver, string $host, ?string $username, ?string $password, ?string $database) : bool {
         $dbp = self::GetDatabaseProvider(new DatabaseConfigurationProfile('', $driver, $host, $username, $password));
         if (!($dbp instanceof IDatabaseProvider)) {
             return false;
@@ -155,8 +155,13 @@ class DatabaseService
             return false;
         }
 
-        if (!$dbp->CanCreateDatabases()) {
+        if (!$dbp->CanCreateDatabases($username)) {
             return false;
+        }
+
+        if ($database === null) {
+            // might be a sqlite db, be permissive and pretend that we created the database.
+            return true;
         }
 
         return $dbp->CreateDatabase($database);
