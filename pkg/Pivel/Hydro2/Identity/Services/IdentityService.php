@@ -75,6 +75,7 @@ class IdentityService
             $user->GenerateEmailVerificationToken();
         }
         $token = $user->GetEmailVerificationToken();
+        echo 'Base URL: "'.$request->baseUrl.'"';
         $url = "{$request->baseUrl}/verifyuseremail/{$user->RandomId}?token={$token}";
         return $url;
     }

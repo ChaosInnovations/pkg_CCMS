@@ -1,0 +1,156 @@
+{#parent}
+    {#arg Content}
+        <h2>Database Connections</h2>
+        <style>
+            table.sortable th.sortable {
+                
+            }
+
+            table.sortable th.sortable:hover {
+                background-color: #eeeeee;
+                cursor: pointer;
+            }
+
+            table.sortable th.sortable.sorted::after {
+                content: "";
+                height: 4px;
+                display: inline-block;
+                margin-left: 0.25rem;
+                position: relative;
+            }
+
+            table.sortable th.sortable.sorted.asc::after {
+                /*^*/
+                border-bottom: 4px solid #000000;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                top: -4px;
+            }
+
+            table.sortable th.sortable.sorted.desc::after {
+                /*v*/
+                border-top: 4px solid #000000;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                top: 4px
+            }
+        </style>
+        <table id="db_connections_table" class="sortable">
+            <thead>
+                <tr>
+                    <th class="sortable sorted asc" data-property="key">Name</th>
+                    <th class="sortable" data-property="driver">Driver</th>
+                    <th class="sortable" data-property="host">Host/Path</th>
+                    <th class="sortable" data-property="username">Username</th>
+                    <th class="sortable" data-property="database">Schema Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <script>
+            class SortableTable {
+                _e;
+                _apiEndpoint;
+                _apiResponseKey;
+                _loader;
+                _headers;
+                _columns = [];
+                _sortedBy = null;
+                _sortDir = 0; // 0=asc,1=desc
+                _data = [];
+                constructor(selector, apiEndpoint, apiResponseKey) {
+                    this._e = H.Nodes(selector+".sortable");
+                    this._apiEndpoint = apiEndpoint;
+                    this._apiResponseKey = apiResponseKey;
+
+                    // find columns
+                    this._headers = this._e.Nodes("th.sortable[data-property]");
+                    this._columns = this._headers.Data("property");
+                    this._sortedBy = this._columns[0];
+                    this._sortDir = 0;
+
+                    // add sort event handlers
+                    this._headers.AddEventHandler("click", this._sortHeaderClick.bind(this));
+                }
+
+                _sortHeaderClick(event) {
+                    var header = H.Nodes(event.target);
+                    var wasSortedBy = this._sortedBy;
+                    var newSortedBy = header.Data("property");
+                    var newSortDir = wasSortedBy == newSortedBy ? this._sortDir ^ 1 : 0; // XOR: 0^1 = 1, 1^1 = 0
+
+                    this.SetSortBy(newSortedBy, newSortDir);
+                }
+
+                SetSortBy(sortBy, sortDir, reload=true) {
+                    this._sortedBy = sortBy;
+                    this._sortDir = sortDir;
+
+                    // remove .sorted, .asc, and .desc classes from headers
+                    this._headers.RemoveClass("sorted");
+                    this._headers.RemoveClass("asc");
+                    this._headers.RemoveClass("desc");
+
+                    // add .sorted and .asc|.desc class to correct header
+                    var header = this._e.Nodes("th.sortable[data-property=\""+this._sortedBy+"\"]");
+                    header.AddClass("sorted");
+                    header.AddClass(this._sortDir === 0 ? "asc" : "desc");
+
+                    if (reload) {
+                        this.Load();
+                    }
+                }
+
+                Load() {
+                    // TODO display spinner/loading indicator
+                    this._e.Nodes("tbody").HTML("");
+                    var request = new H.AjaxRequest("GET", this._apiEndpoint);
+                    request.Send(this._dataLoadedCallback.bind(this));
+                }
+
+                _dataLoadedCallback(response) {
+                    if (response.Status == H.StatusCode.OK) {
+                        this._data = response.Data[this._apiResponseKey];
+                        console.log(response);
+                        // TODO hide spinner/loading indicator
+                        this.RenderData();
+                        return;
+                    }
+
+                    if (response.Status == H.StatusCode.InternalServerError) {
+                        console.warn("The API enpoint \""+this._apiEndpoint+"\" responded with 500 Internal Server Error.", response);
+                    } else if (response.Status == H.StatusCode.NotFound) {
+                        // TODO display no permission message
+                        console.warn("The API enpoint \""+this._apiEndpoint+"\" responded with 404 Not Found.", response);
+                    } else {
+                        console.warn("The API enpoint \""+this._apiEndpoint+"\" responded with an unexpected status code.", response);
+                    }
+                }
+
+                RenderData() {
+                    var tbodyHtml = "";
+                    // for each row in this._data:
+                    for (var row of this._data) {
+                        // add <tr>
+                        tbodyHtml += "<tr>";
+                        // for each property in this._columns:
+                        for (var property of this._columns) {
+                            // add <td>row[property]</td> to tbodyHtml
+                            tbodyHtml += "<td>" + row[property] + "</td>";
+                        }
+                        // add <td>[actions]</td>
+                        tbodyHtml += "<td>[actions]</td>";
+                        // add </tr>
+                        tbodyHtml += "</tr>";
+                    }
+                    this._e.Nodes("tbody").HTML(tbodyHtml);
+                }
+            }
+            
+            var table = new SortableTable("#db_connections_table", "/api/hydro2/database/profiles", "databaseprofiles");
+            table.Load();
+        </script>
+    {#}
+{#}

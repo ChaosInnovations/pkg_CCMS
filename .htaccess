@@ -1,10 +1,11 @@
 # Protect files and directories from prying eyes.
-<FilesMatch "\.(template(\..*)?|ini|bat|sh|.*sql|tpl(\.php)?)(~|\.sw[op]|\.bak|\.orig|\.save)?$|^(\.(?!well-known).*|Entries.*|Repository|Root|Tag|Template|composer\.(json|lock))$|^#.*#$|\.php(~|\.sw[op]|\.bak|\.orig|\.save)$">
+<FilesMatch "\.(template(\..*)?|sqlite3|ini|bat|sh|.*sql|tpl(\.php)?)(~|\.sw[op]|\.bak|\.orig|\.save)?$|^(\.(?!well-known).*|Entries.*|Repository|Root|Tag|Template|composer\.(json|lock))$|^#.*#$|\.php(~|\.sw[op]|\.bak|\.orig|\.save)$">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>
   <IfModule !mod_authz_core.c>
     Order allow,deny
+    deny from all
   </IfModule>
 </FilesMatch>
 

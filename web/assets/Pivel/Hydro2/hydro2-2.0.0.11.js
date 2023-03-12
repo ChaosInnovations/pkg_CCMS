@@ -61,7 +61,6 @@ var H = {
             const req = new XMLHttpRequest();
             req.addEventListener("load", function () {
                 // build response
-                console.log(this.status, this.responseText);
                 var response = new H.AjaxResponse(this.status, this.responseText);
                 callback(response);
             });
@@ -77,6 +76,7 @@ var H = {
     StatusCode: {
         OK: 200,
         BadRequest: 400,
+        NotFound: 404,
         InternalServerError: 500,
     },
 

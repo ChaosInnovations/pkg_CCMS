@@ -81,9 +81,9 @@ class MasterDetail {
     }
 
     NavigateTo(pageKey) {
-        // check that target key exists
+        // check that target key exists. If not, navigate to first page.
         if (!this._pageKeys.includes(pageKey)) {
-            return;
+            pageKey = this._pageKeys[0];
         }
         // removeclass("active") from currently-active page
         this._pages.RemoveClass("active");
