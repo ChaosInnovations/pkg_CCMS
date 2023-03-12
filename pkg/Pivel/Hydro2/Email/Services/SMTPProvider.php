@@ -344,7 +344,7 @@ class SMTPProvider implements IOutboundEmailProvider
         }
         // if a line starts with '.', add an additional '.' to the beginning of the line.
         //  (without splitting lines, is equivalent to replacing '<CRLF>.' with '<CRLF>..')
-        str_replace(self::LINE_ENDING . '.', self::LINE_ENDING . '..', $data);
+        $data = str_replace(self::LINE_ENDING . '.', self::LINE_ENDING . '..', $data);
         // if the data does not end with <CRLF>, then add a <CRLF>
         if (substr($data, strlen($data)-strlen(self::LINE_ENDING)) != self::LINE_ENDING) {
             $data .= self::LINE_ENDING;
