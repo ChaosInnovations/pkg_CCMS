@@ -38,9 +38,22 @@ var H = {
 
         // TODO adding files
 
-        // TODO implement this
         SetQueryData(queryData) {
+            // for each key in queryData
+            // queryPart[] = urlencode(key)=urlencode(queryData[key])
+            var queryParts = [];
+            for (var key in queryData) {
+                queryParts.push(""+encodeURIComponent(key)+"="+encodeURIComponent(queryData[key]));
+            }
 
+            // join queryParts with '&'
+            var query = queryParts.join("&");
+
+            // remove any query part in this.Url
+            this.Url = this.Url.split("?")[0];
+
+            // append new query part to this.Url
+            this.Url += "?" + query;
         }
 
         // TODO implement this
