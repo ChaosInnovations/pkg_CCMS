@@ -109,9 +109,7 @@
                     var request = new H.AjaxRequest("GET", this._apiEndpoint);
                     request.SetQueryData({
                         "sort_by": this._sortedBy,
-                        "sort_dir": this._sortDir === 0 ? "asc" : "desc",
-                        "offset": 0,
-                        "limit": 2
+                        "sort_dir": this._sortDir === 0 ? "asc" : "desc"
                     });
                     request.Send(this._dataLoadedCallback.bind(this));
                 }
