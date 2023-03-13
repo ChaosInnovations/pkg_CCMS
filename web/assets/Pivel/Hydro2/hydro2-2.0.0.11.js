@@ -93,6 +93,18 @@ var H = {
         InternalServerError: 500,
     },
 
+    HtmlEncode: function(s) {
+        var el = document.createElement('div');
+        el.innerText = el.textContent = s;
+        return el.innerHTML;
+    },
+    
+    HtmlDecode: function(s) {
+        var el = document.createElement('div');
+        el.innerHtml = s;
+        return el.innerText;
+    },
+
     Nodes: function(selector, parent=null) {
         return new H.DOMNodes(selector, parent);
     },
@@ -100,6 +112,7 @@ var H = {
     DOMNodes: class {
         _nodeList = [];
         constructor(selector, parent=null) {
+            // TODO create new element when selector is like <tag>
             if (selector instanceof H.DOMNodes) {
                 this._nodeList = selector._nodeList;
                 return;
@@ -178,10 +191,25 @@ var H = {
         HTML(newHTML=null) {
             var values = [];
             this._nodeList.forEach(element => {
-                // TODO check if element.dataset contains key
                 values.push(element.innerHTML);
                 if (newHTML != null) {
                     element.innerHTML = newHTML;
+                }
+            });
+
+            if (values.length == 1) {
+                return values[0];
+            }
+
+            return values;
+        }
+
+        Text(newText=null) {
+            var values = [];
+            this._nodeList.forEach(element => {
+                values.push(element.innerText);
+                if (newHTML != null) {
+                    element.innerText = element.textContent = newText;
                 }
             });
 
