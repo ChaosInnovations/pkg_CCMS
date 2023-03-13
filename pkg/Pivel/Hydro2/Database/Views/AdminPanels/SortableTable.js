@@ -94,7 +94,17 @@ class SortableTable {
             // for each property in this._columns:
             for (var property of this._columns) {
                 // add <td>row[property]</td> to tbodyHtml
-                tbodyHtml += "<td>" + row[property] + "</td>";
+                var value = row[property];
+                if (value === true) {
+                    value = "Yes";
+                }
+                if (value === false) {
+                    value = "No";
+                }
+                if (value === null) {
+                    value = "N/A";
+                }
+                tbodyHtml += "<td>" + H.HtmlEncode(value) + "</td>";
             }
             // add </tr>
             tbodyHtml += "</tr>";
