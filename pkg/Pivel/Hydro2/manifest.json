@@ -16,7 +16,6 @@
     "controllers": [
         "\\Package\\Pivel\\Hydro2\\Core\\Controllers\\FallbackController",
         "\\Package\\Pivel\\Hydro2\\Database\\Controllers\\SettingsController",
-        "\\Package\\Pivel\\Hydro2\\Database\\Controllers\\TestObjectController",
         "\\Package\\Pivel\\Hydro2\\Email\\Controllers\\OutboundEmailProfilesController",
         "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\UserController",
         "\\Package\\Pivel\\Hydro2\\Identity\\Controllers\\UserRoleController",
