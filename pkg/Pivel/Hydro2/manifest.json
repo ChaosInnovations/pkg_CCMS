@@ -24,14 +24,14 @@
     ],
 
     "permissions": [
-        {"key":"managedatabaseconnections","name":"Manage Database Connections","description":"Allow editing, adding, and deleting database connection profiles."},
-        {"key":"browsedatabases","name":"Browse Databases","description":"Allow browsing databases."},
-        {"key":"manageoutboundemailprofiles","name":"Manage Outbound Email Profiles","description":"Allow editing, adding, and deleting outbound email profiles."},
-        {"key":"viewusers","name":"View Users","description":"Allow viewing a list of other users."},
+        {"key":"viewadminpanel","name":"View Admin Panel","description":"Allow the user to access the admin panel page at /admin."},
+        {"key":"managedatabaseconnections","requires":["pivel/hydro2/viewadminpanel"],"name":"Manage Database Connections","description":"Allow editing, adding, and deleting database connection profiles."},
+        {"key":"manageoutboundemailprofiles","requires":["pivel/hydro2/viewadminpanel"],"name":"Manage Outbound Email Profiles","description":"Allow editing, adding, and deleting outbound email profiles."},
+        {"key":"viewusers","name":"View Users","requires":["pivel/hydro2/viewadminpanel"],"description":"Allow viewing a list of other users."},
         {"key":"manageusers","requires":["pivel/hydro2/viewusers"],"name":"Manage Users","description":"Allow editing/deleting other users."},
         {"key":"createusers","requires":["pivel/hydro2/viewusers"],"name":"Create Users","description":"Allow creating new users."},
-        {"key":"createuserroles","name":"Create User Roles","description":"Allow creating new user roles."},
-        {"key":"manageuserroles","name":"Manage User Roles","description":"Allow editing/deleting user roles."},
+        {"key":"createuserroles","requires":["pivel/hydro2/viewadminpanel"],"name":"Create User Roles","description":"Allow creating new user roles."},
+        {"key":"manageuserroles","requires":["pivel/hydro2/viewadminpanel"],"name":"Manage User Roles","description":"Allow editing/deleting user roles."},
         {"key":"viewusersessions","requires":["pivel/hydro2/viewusers"],"name":"View User Sessions","description":"Allow viewing a list of user' sessions."},
         {"key":"endusersessions","requires":["pivel/hydro2/viewusersessions"],"name":"End User Sessions","description":"Allow terminating a list of user' sessions."}
     ],
@@ -41,7 +41,6 @@
 
         {"key":"hydro2/config", "name":"Configuration"},
         {"key":"hydro2/config/dbconnect", "name":"Database Connections", "view":"\\Package\\Pivel\\Hydro2\\Database\\Views\\AdminPanels\\ConnectionProfiles", "requires":"pivel/hydro2/managedatabaseconnections"},
-        {"key":"hydro2/config/dbbrowse", "name":"Database Browser", "view":"\\Package\\Pivel\\Hydro2\\Database\\Views\\AdminPanels\\DatabaseBrowser", "requires":"pivel/hydro2/browsedatabases"},
         {"key":"hydro2/config/email", "name":"Outbound Email Profiles", "view":"\\Package\\Pivel\\Hydro2\\Email\\Views\\AdminPanels\\OutboundProfiles", "requires":"pivel/hydro2/manageoutboundemailprofiles"},
 
         {"key":"hydro2/identity", "name":"Users & Security"},

@@ -28,6 +28,13 @@ class AdminPanelController extends BaseController
             );
         }
 
+        // check whether the session/user is allowed to view the admin panel at all.
+        if (!IdentityService::GetRequestUser($this->request)->Role->HasPermission('pivel/hydro2/viewadminpanel')) {
+            return new Response(
+                status: StatusCode::Forbidden,
+            );
+        }
+
         $nodes = [];
         $packageManifest = Utilities::getPackageManifest();
         foreach ($packageManifest as $vendorName => $vendorPackages) {
@@ -36,9 +43,24 @@ class AdminPanelController extends BaseController
                     continue;
                 }
 
-                // pivel/hydro2/viewusers
-
                 foreach ($package['admin_panel_nodes'] as $node) {
+                    // check whether user has permission to view this node. If no permissions are specified, user is permitted.
+                    if (isset($node['requires']) && !empty($node['requires'])) {
+                        if (!is_array($node['requires'])) {
+                            $node['requires'] = [$node['requires']];
+                        }
+                        $permitted = false;
+                        foreach ($node['requires'] as $requiredPermission) {
+                            $permitted |= IdentityService::GetRequestUser($this->request)->Role->HasPermission($requiredPermission);
+                            if ($permitted) {
+                                break;
+                            }
+                        }
+                        if (!$permitted) {
+                            continue;
+                        }
+                    }
+
                     $nodes[$node['key']] = [
                         'name' => $node['name'],
                     ];
