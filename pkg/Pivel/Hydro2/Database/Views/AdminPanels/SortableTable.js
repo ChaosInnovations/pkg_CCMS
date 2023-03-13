@@ -8,10 +8,12 @@ class SortableTable {
     _sortedBy = null;
     _sortDir = 0; // 0=asc,1=desc
     _data = [];
-    constructor(selector, apiEndpoint, apiResponseKey) {
+    _customRenderer = null;
+    constructor(selector, apiEndpoint, apiResponseKey, renderer=null) {
         this._e = H.Nodes(selector+".sortable");
         this._apiEndpoint = apiEndpoint;
         this._apiResponseKey = apiResponseKey;
+        this._customRenderer = renderer;
 
         // find columns
         this._headers = this._e.Nodes("th.sortable[data-property]");
@@ -71,7 +73,11 @@ class SortableTable {
             this._data = response.Data[this._apiResponseKey];
             console.log(response);
             // TODO hide spinner/loading indicator
-            this.RenderData();
+            if (this._customRenderer !== null) {
+                this._customRenderer(this);
+            } else {
+                this.RenderData();
+            }
             return;
         }
 
