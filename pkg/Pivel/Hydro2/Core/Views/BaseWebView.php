@@ -8,8 +8,8 @@ use Package\Pivel\Hydro2\Core\Views\BaseView;
 use Reflection;
 use ReflectionClass;
 
-#[RequireScript('/web/assets/Pivel/Hydro2/hydro2-2.0.0.11.js', Inline: false)]
-#[RequireStyle('/web/assets/Pivel/Hydro2/hydro2-2.0.0.11.css', Inline: false)]
+#[RequireScript('/web/assets/Pivel/Hydro2/hydro2-2.0.0.12.js', Inline: false)]
+#[RequireStyle('/web/assets/Pivel/Hydro2/hydro2-2.0.0.12.css', Inline: false)]
 class BaseWebView extends BaseView
 {
     protected $Scripts = '';
