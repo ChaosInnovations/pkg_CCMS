@@ -9,6 +9,8 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
 use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
+use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
+use Package\Pivel\Hydro2\Database\Models\Order;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
 use Package\Pivel\Hydro2\Identity\Models\Permissions;
 use Package\Pivel\Hydro2\Identity\Models\User;
@@ -32,8 +34,16 @@ class UserRoleController extends BaseController
             return new Response(status: StatusCode::NotFound);
         }
 
+        $order = null;
+        if (isset($this->request->Args['sort_by'])) {
+            $dir = Order::tryFrom(strtoupper($this->request->Args['sort_dir']??'asc'))??Order::Ascending;
+            $order = (new OrderBy)->Column($this->request->Args['sort_by']??'id', $dir);
+        }
+        $limit = $this->request->Args['limit']??null;
+        $offset = $this->request->Args['offset']??null;
+
         /** @var UserRole[] */
-        $userRoles = UserRole::GetAll();
+        $userRoles = UserRole::GetAll($order, $limit, $offset);
 
         $userRoleResults = [];
 

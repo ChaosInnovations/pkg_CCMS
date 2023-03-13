@@ -17,7 +17,7 @@ class SortableTable {
 
         // find columns
         this._headers = this._e.Nodes("th.sortable[data-property]");
-        this._columns = this._headers.Data("property");
+        this._columns = this._e.Nodes("th[data-property]").Data("property");
 
         this._sortedBy = this._columns[0];
         this._sortDir = 0;

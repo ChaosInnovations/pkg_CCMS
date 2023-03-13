@@ -49,7 +49,7 @@ class UserController extends BaseController
                 $this->request->Args['sort_by'] = 'inserted';
             }
             $dir = Order::tryFrom(strtoupper($this->request->Args['sort_dir']??'asc'))??Order::Ascending;
-            $order = (new OrderBy)->Column($this->request->Args['sort_by']??'key', $dir);
+            $order = (new OrderBy)->Column($this->request->Args['sort_by']??'email', $dir);
         }
         $limit = $this->request->Args['limit']??null;
         $offset = $this->request->Args['offset']??null;
