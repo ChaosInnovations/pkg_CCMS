@@ -78,7 +78,6 @@ class UserController extends BaseController
     }
 
     #[Route(Method::POST, '')]
-    #[Route(Method::POST, 'create')]
     public function CreateUser() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
@@ -251,7 +250,6 @@ class UserController extends BaseController
     }
 
     #[Route(Method::POST, '{id}')]
-    #[Route(Method::POST, '{id}/update')]
     public function UpdateUser() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
@@ -352,7 +350,6 @@ class UserController extends BaseController
         );
     }
 
-    #[Route(Method::GET, '{id}/remove')]
     #[Route(Method::DELETE, '{id}')]
     public function DeleteUser() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {
@@ -377,7 +374,7 @@ class UserController extends BaseController
 
     // TODO add 2FA for changing passwords if set up
     #[Route(Method::POST, '{id}/changepassword')]
-    #[Route(Method::POST, 'changepassword')]
+    #[Route(Method::POST, '~api/hydro2/identity/changeuserpassword')]
     public function UserChangePassword() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {
             return new JsonResponse(
@@ -515,7 +512,7 @@ class UserController extends BaseController
     }
 
     #[Route(Method::POST, '{id}/sendpasswordreset')]
-    #[Route(Method::POST, 'sendpasswordreset')]
+    #[Route(Method::POST, '~api/hydro2/identity/sendpasswordreset')]
     public function UserSendResetPassword() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {
             return new JsonResponse(

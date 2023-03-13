@@ -68,7 +68,6 @@ class UserRoleController extends BaseController
     }
 
     #[Route(Method::POST, '')]
-    #[Route(Method::POST, 'create')]
     public function CreateUserRole() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
@@ -193,7 +192,6 @@ class UserRoleController extends BaseController
         );
     }
 
-    #[Route(Method::POST, '{id}/update')]
     #[Route(Method::POST, '{id}')]
     public function UpdateUserRole() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {
@@ -288,7 +286,6 @@ class UserRoleController extends BaseController
         );
     }
 
-    #[Route(Method::GET, '{id}/remove')]
     #[Route(Method::DELETE, '{id}')]
     public function DeleteUserRole() : Response {
         if (!DatabaseService::IsPrimaryConnected()) {

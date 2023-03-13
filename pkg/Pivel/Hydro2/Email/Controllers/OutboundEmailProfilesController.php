@@ -66,7 +66,7 @@ class OutboundEmailProfilesController extends BaseController
         );
     }
 
-    #[Route(Method::GET, 'getproviders')]
+    #[Route(Method::GET, '~api/hydro2/email/outboundprofileproviders')]
     public function GetProviders() : Response
     {
         // if not logged in as admin, return 404
@@ -78,14 +78,13 @@ class OutboundEmailProfilesController extends BaseController
 
         return new JsonResponse(
             data: [
-                'emailproviders' => EmailService::GetAvailableProviders(),
+                'outboundemailproviders' => EmailService::GetAvailableProviders(),
             ],
             status: StatusCode::OK,
         );
     }
 
     #[Route(Method::POST, '')]
-    #[Route(Method::POST, 'create')]
     public function CreateProfile() : Response {
         if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
             return new Response(
@@ -204,7 +203,6 @@ class OutboundEmailProfilesController extends BaseController
     }
 
     #[Route(Method::POST, '{key}')]
-    #[Route(Method::POST, '{key}/update')]
     public function UpdateProfile() : Response {
         if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
             return new Response(
@@ -251,7 +249,6 @@ class OutboundEmailProfilesController extends BaseController
         return new JsonResponse(status:StatusCode::OK);
     }
 
-    #[Route(Method::POST, '{key}/remove')]
     #[Route(Method::DELETE, '{key}')]
     public function DeleteProfile() : Response {
         if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
@@ -272,7 +269,7 @@ class OutboundEmailProfilesController extends BaseController
         return new JsonResponse(status:StatusCode::OK);
     }
 
-    #[Route(Method::GET, '{key}/test')]
+    #[Route(Method::POST, '{key}/test')]
     public function TestProfile() : Response {
         if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
             return new Response(
