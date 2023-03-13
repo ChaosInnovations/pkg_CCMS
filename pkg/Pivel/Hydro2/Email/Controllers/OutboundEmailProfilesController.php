@@ -10,6 +10,8 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
 use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
+use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
+use Package\Pivel\Hydro2\Database\Models\Order;
 use Package\Pivel\Hydro2\Email\Extensions\Exceptions\AuthenticationFailedException;
 use Package\Pivel\Hydro2\Email\Extensions\Exceptions\EmailHostNotFoundException;
 use Package\Pivel\Hydro2\Email\Extensions\Exceptions\NotAuthenticatedException;
@@ -38,10 +40,21 @@ class OutboundEmailProfilesController extends BaseController
             );
         }
 
+        $order = null;
+        if (isset($this->request->Args['sort_by'])) {
+            if ($this->request->Args['sort_by'] == 'sender') {
+                $this->request->Args['sort_by'] = 'sender_address';
+            }
+            $dir = Order::tryFrom(strtoupper($this->request->Args['sort_dir']??'asc'))??Order::Ascending;
+            $order = (new OrderBy)->Column($this->request->Args['sort_by']??'key', $dir);
+        }
+        $limit = $this->request->Args['limit']??null;
+        $offset = $this->request->Args['offset']??null;
+
         /**
          * @var OutboundEmailProfile[]
          */
-        $profiles = OutboundEmailProfile::GetAll();
+        $profiles = OutboundEmailProfile::GetAll($order, $limit, $offset);
         $serializedProfiles = [];
         foreach ($profiles as $profile) {
             $serializedProfiles[] = [
