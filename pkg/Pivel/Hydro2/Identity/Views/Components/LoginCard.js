@@ -58,7 +58,7 @@ class LoginCard extends MultiPageCard {
     SubmitResetForm() {
         // disable submit button and change contents to spinner
         this._e.Nodes(this.id+"_requestresetpasswordform_submit").Disable();
-        var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/sendpasswordreset");
+        var request = new H.AjaxRequest("POST", "/api/hydro2/identity/sendpasswordreset");
         request.SetJsonData({
             "email": this._e.Nodes(this.id+"_requestresetpasswordform_email").Value()
         });
@@ -69,7 +69,7 @@ class LoginCard extends MultiPageCard {
         // disable submit button and change contents to spinner
         // session cookie should have already been set.
         this._e.Nodes(this.id+"_changepasswordform_submit").Disable();
-        var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/changepassword");
+        var request = new H.AjaxRequest("POST", "/api/hydro2/identity/changeuserpassword");
         request.SetJsonData({
             "password": this._e.Nodes(this.id+"_changepasswordform_current-password").Value(),
             "new_password": this._e.Nodes(this.id+"_changepasswordform_new-password").Value()

@@ -5,6 +5,7 @@ namespace Package\Pivel\Hydro2\Database\Models;
 use DateTime;
 use Package\Pivel\Hydro2\Database\Controllers\IDatabaseProvider;
 use Package\Pivel\Hydro2\Database\Extensions\ChildTable;
+use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
 use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
 use Package\Pivel\Hydro2\Database\Extensions\TableForeignKey;
 use Package\Pivel\Hydro2\Database\Extensions\TableName;
@@ -219,11 +220,11 @@ abstract class BaseObject
         return self::CastFromRow($results[0], className:get_called_class());
     }
 
-    public static function GetAll() : array {
+    public static function GetAll(?OrderBy $order=null, ?int $limit=null, ?int $offset=null) : array {
         // 1. need to run a query like:
         //     SELECT * FROM [tablename];
         $table = self::getTable();
-        $results = $table->Select();
+        $results = $table->Select(null, null, $order, $limit, $offset);
         // 3. 'cast' each result to an instance of TestObject
         // 4. return array of instances
 

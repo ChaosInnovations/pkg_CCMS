@@ -10,6 +10,8 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
 use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
+use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
+use Package\Pivel\Hydro2\Database\Models\Order;
 use Package\Pivel\Hydro2\Email\Extensions\Exceptions\AuthenticationFailedException;
 use Package\Pivel\Hydro2\Email\Extensions\Exceptions\EmailHostNotFoundException;
 use Package\Pivel\Hydro2\Email\Extensions\Exceptions\NotAuthenticatedException;
@@ -38,10 +40,21 @@ class OutboundEmailProfilesController extends BaseController
             );
         }
 
+        $order = null;
+        if (isset($this->request->Args['sort_by'])) {
+            if ($this->request->Args['sort_by'] == 'sender') {
+                $this->request->Args['sort_by'] = 'sender_address';
+            }
+            $dir = Order::tryFrom(strtoupper($this->request->Args['sort_dir']??'asc'))??Order::Ascending;
+            $order = (new OrderBy)->Column($this->request->Args['sort_by']??'key', $dir);
+        }
+        $limit = $this->request->Args['limit']??null;
+        $offset = $this->request->Args['offset']??null;
+
         /**
          * @var OutboundEmailProfile[]
          */
-        $profiles = OutboundEmailProfile::GetAll();
+        $profiles = OutboundEmailProfile::GetAll($order, $limit, $offset);
         $serializedProfiles = [];
         foreach ($profiles as $profile) {
             $serializedProfiles[] = [
@@ -66,7 +79,7 @@ class OutboundEmailProfilesController extends BaseController
         );
     }
 
-    #[Route(Method::GET, 'getproviders')]
+    #[Route(Method::GET, '~api/hydro2/email/outboundprofileproviders')]
     public function GetProviders() : Response
     {
         // if not logged in as admin, return 404
@@ -78,14 +91,13 @@ class OutboundEmailProfilesController extends BaseController
 
         return new JsonResponse(
             data: [
-                'emailproviders' => EmailService::GetAvailableProviders(),
+                'outboundemailproviders' => EmailService::GetAvailableProviders(),
             ],
             status: StatusCode::OK,
         );
     }
 
     #[Route(Method::POST, '')]
-    #[Route(Method::POST, 'create')]
     public function CreateProfile() : Response {
         if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
             return new Response(
@@ -204,7 +216,6 @@ class OutboundEmailProfilesController extends BaseController
     }
 
     #[Route(Method::POST, '{key}')]
-    #[Route(Method::POST, '{key}/update')]
     public function UpdateProfile() : Response {
         if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
             return new Response(
@@ -251,7 +262,6 @@ class OutboundEmailProfilesController extends BaseController
         return new JsonResponse(status:StatusCode::OK);
     }
 
-    #[Route(Method::POST, '{key}/remove')]
     #[Route(Method::DELETE, '{key}')]
     public function DeleteProfile() : Response {
         if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
@@ -272,7 +282,7 @@ class OutboundEmailProfilesController extends BaseController
         return new JsonResponse(status:StatusCode::OK);
     }
 
-    #[Route(Method::GET, '{key}/test')]
+    #[Route(Method::POST, '{key}/test')]
     public function TestProfile() : Response {
         if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
             return new Response(

@@ -7,7 +7,7 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
 class Request
 {
     
-    protected string $endpoint = '';
+    public string $endpoint = '';
     protected bool $isWeb = true;
     protected array $cookies = [];
     protected bool $isHttps = false;
@@ -15,6 +15,7 @@ class Request
     protected string $clientAddress = '';
     public Method $method;
     public string $baseUrl = '';
+    public string $fullUrl = '';
     /**
      * Union of all args from POST, query string, path (defined by matched route), and a json object contained in
      * the request body (if content-type=="application/json" and there is a valid json object in the request body)
@@ -49,6 +50,7 @@ class Request
         $this->baseUrl = "http" . ($this->isHttps ? "s" : "") . "://" . $this->hostname;
         
         $url = trim($server["REQUEST_URI"], "/");
+        $this->fullUrl = $this->baseUrl . '/' . $url;
         if (strstr($url, '?')) {
             $url = substr($url, 0, strpos($url, '?'));
         }

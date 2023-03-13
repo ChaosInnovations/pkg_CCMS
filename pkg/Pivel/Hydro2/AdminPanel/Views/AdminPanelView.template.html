@@ -1,0 +1,19 @@
+{#parent}
+    {#arg Head}
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Admin Panel</title>
+        <style>
+            body {
+                margin: 0;
+            }
+        </style>
+    {#}
+    {#arg Body}
+        {#view Package\Pivel\Hydro2\AdminPanel\Views\MasterDetailView(Id:"adminpanel",Title:"Hydro2",NavTree:$NavTree,ContentPages:$ContentPages)#}
+        <script>
+            var adminPanel = new MasterDetail("#adminpanel", "admin");
+            adminPanel.NavigateTo("{$DefaultNode$}");
+        </script>
+    {#}
+{#}

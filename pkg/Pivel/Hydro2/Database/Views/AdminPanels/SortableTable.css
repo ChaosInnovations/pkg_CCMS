@@ -1,0 +1,32 @@
+table.sortable th.sortable {
+                
+}
+
+table.sortable th.sortable:hover {
+    background-color: #eeeeee;
+    cursor: pointer;
+}
+
+table.sortable th.sortable.sorted::after {
+    content: "";
+    height: 4px;
+    display: inline-block;
+    margin-left: 0.25rem;
+    position: relative;
+}
+
+table.sortable th.sortable.sorted.asc::after {
+    /*^*/
+    border-bottom: 4px solid #000000;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    top: -4px;
+}
+
+table.sortable th.sortable.sorted.desc::after {
+    /*v*/
+    border-top: 4px solid #000000;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    top: 4px
+}

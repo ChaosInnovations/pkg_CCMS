@@ -81,7 +81,7 @@ class Table
     /**
      * @param ?TableColumn[] $columns
      */
-    public function Select(?array $columns=null, ?Where $where=null, ?OrderBy $order=null, ?int $limit=null) {
+    public function Select(?array $columns=null, ?Where $where=null, ?OrderBy $order=null, ?int $limit=null, ?int $offset=null) {
         if (!$this->IsConnected()) {
             return [];
         }
@@ -91,12 +91,12 @@ class Table
         }
 
         try {
-            $results = $this->dbp->Select($this->tableName, $columns, $where, $order, $limit);
+            $results = $this->dbp->Select($this->tableName, $columns, $where, $order, $limit, $offset);
         } catch (TableNotFoundException) {
             if (!$this->CreateTable()) {
                 return [];
             }
-            $results = $this->dbp->Select($this->tableName, $columns, $where, $order, $limit);
+            $results = $this->dbp->Select($this->tableName, $columns, $where, $order, $limit, $offset);
         }
         
         return $results;

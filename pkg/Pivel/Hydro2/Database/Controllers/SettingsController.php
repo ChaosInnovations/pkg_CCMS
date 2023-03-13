@@ -9,27 +9,34 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
 use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
+use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
 use Package\Pivel\Hydro2\Database\Models\DatabaseConfigurationProfile;
+use Package\Pivel\Hydro2\Database\Models\Order;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
+use Package\Pivel\Hydro2\Identity\Services\IdentityService;
 
-#[RoutePrefix('api/hydro2/database/settings')]
+#[RoutePrefix('api/hydro2/database')]
 class SettingsController extends BaseController
 {
-    private function UserHasPermission(string $permission) : bool {
-        return false;
-    }
-
-    #[Route(Method::GET, '~/api/hydro2/database/profiles')]
+    #[Route(Method::GET, 'profiles')]
     public function GetAllProfiles() : Response
     {
         // if database has already been configured and not logged in as admin, return 404
-        if (!DatabaseService::IsPrimaryConnected() || !$this->UserHasPermission("database:admin")) {
+        if (!DatabaseService::IsPrimaryConnected() || !IdentityService::GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
             return new Response(
                 status: StatusCode::NotFound
             );
         }
 
-        $profiles = DatabaseConfigurationProfile::GetAll();
+        $order = null;
+        if (isset($this->request->Args['sort_by'])) {
+            $dir = Order::tryFrom(strtoupper($this->request->Args['sort_dir']??'asc'))??Order::Ascending;
+            $order = (new OrderBy)->Column($this->request->Args['sort_by']??'key', $dir);
+        }
+        $limit = $this->request->Args['limit']??null;
+        $offset = $this->request->Args['offset']??null;
+
+        $profiles = DatabaseConfigurationProfile::GetAll($order, $limit, $offset);
         $serializedProfiles = [];
         foreach ($profiles as $profile) {
             $serializedProfiles[] = [
@@ -50,11 +57,11 @@ class SettingsController extends BaseController
         );
     }
 
-    #[Route(Method::POST, 'getdrivers')]
+    #[Route(Method::GET, 'drivers')]
     public function GetDrivers() : Response
     {
         // if database has already been configured and not logged in as admin, return 404
-        if (!DatabaseService::IsPrimaryConnected() || !$this->UserHasPermission("database:admin")) {
+        if (!DatabaseService::IsPrimaryConnected() || !IdentityService::GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
             return new Response(
                 status: StatusCode::NotFound
             );
@@ -71,7 +78,7 @@ class SettingsController extends BaseController
     #[Route(Method::POST, 'validatehost')]
     public function ValidateHost() : Response {
         // if database has already been configured and not logged in as admin, return 404
-        if (!DatabaseService::IsPrimaryConnected() || !$this->UserHasPermission("database:admin")) {
+        if (!DatabaseService::IsPrimaryConnected() || !IdentityService::GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
             return new Response(
                 status: StatusCode::NotFound
             );
@@ -155,7 +162,7 @@ class SettingsController extends BaseController
     #[Route(Method::POST, 'validateuser')]
     public function ValidateUser() : Response {
         // if database has already been configured and not logged in as admin, return 404
-        if (!DatabaseService::IsPrimaryConnected() || !$this->UserHasPermission("database:admin")) {
+        if (!DatabaseService::IsPrimaryConnected() || !IdentityService::GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
             return new Response(
                 status: StatusCode::NotFound
             );
@@ -266,7 +273,7 @@ class SettingsController extends BaseController
     #[Route(Method::POST, 'getdatabases')]
     public function GetDatabases() : Response {
         // if database has already been configured and not logged in as admin, return 404
-        if (!DatabaseService::IsPrimaryConnected() || !$this->UserHasPermission("database:admin")) {
+        if (!DatabaseService::IsPrimaryConnected() || !IdentityService::GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
             return new Response(
                 status: StatusCode::NotFound
             );
@@ -393,10 +400,11 @@ class SettingsController extends BaseController
         );
     }
 
-    #[Route(Method::POST, 'configure')]
+    #[Route(Method::POST, 'profiles/{key}')]
+    #[Route(Method::POST, 'profiles')]
     public function SaveConfiguration() : Response {
         // if database has already been configured and not logged in as admin, return 404
-        if (!DatabaseService::IsPrimaryConnected() || !$this->UserHasPermission("database:admin")) {
+        if (!DatabaseService::IsPrimaryConnected() || !IdentityService::GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
             return new Response(
                 status: StatusCode::NotFound
             );

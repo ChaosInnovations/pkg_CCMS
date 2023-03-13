@@ -124,12 +124,12 @@ class MySQLDatabaseProvider extends PDO implements IDatabaseProvider
         $stmt->execute();
     }
 
-    public function Select(string $tableName, array $columns, ?Where $where, ?OrderBy $order, ?int $limit) : array {
+    public function Select(string $tableName, array $columns, ?Where $where, ?OrderBy $order, ?int $limit, ?int $offset) : array {
         $columnsString = implode(',',array_map(fn($col):string=>$col->columnName,$columns));
         $query = 'SELECT '.$columnsString.' FROM '.$tableName;
         $query .= ($where==null?'':' '.$where->GetParameterizedQueryString());
         $query .= ($order==null?'':' '.$order->GetQueryString());
-        $query .= ($limit==null?'':' LIMIT '.$limit);
+        $query .= ($limit==null?'':' LIMIT '.($offset==null?'':''.$offset.', ').$limit);
         try {
             $stmt = $this->prepare($query);
             $stmt->execute($where==null?[]:$where->GetParameters());

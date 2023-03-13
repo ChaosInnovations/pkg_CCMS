@@ -38,9 +38,22 @@ var H = {
 
         // TODO adding files
 
-        // TODO implement this
         SetQueryData(queryData) {
+            // for each key in queryData
+            // queryPart[] = urlencode(key)=urlencode(queryData[key])
+            var queryParts = [];
+            for (var key in queryData) {
+                queryParts.push(""+encodeURIComponent(key)+"="+encodeURIComponent(queryData[key]));
+            }
 
+            // join queryParts with '&'
+            var query = queryParts.join("&");
+
+            // remove any query part in this.Url
+            this.Url = this.Url.split("?")[0];
+
+            // append new query part to this.Url
+            this.Url += "?" + query;
         }
 
         // TODO implement this
@@ -61,7 +74,6 @@ var H = {
             const req = new XMLHttpRequest();
             req.addEventListener("load", function () {
                 // build response
-                console.log(this.status, this.responseText);
                 var response = new H.AjaxResponse(this.status, this.responseText);
                 callback(response);
             });
@@ -77,7 +89,20 @@ var H = {
     StatusCode: {
         OK: 200,
         BadRequest: 400,
+        NotFound: 404,
         InternalServerError: 500,
+    },
+
+    HtmlEncode: function(s) {
+        var el = document.createElement('div');
+        el.innerText = el.textContent = s;
+        return el.innerHTML;
+    },
+    
+    HtmlDecode: function(s) {
+        var el = document.createElement('div');
+        el.innerHtml = s;
+        return el.innerText;
     },
 
     Nodes: function(selector, parent=null) {
@@ -87,6 +112,7 @@ var H = {
     DOMNodes: class {
         _nodeList = [];
         constructor(selector, parent=null) {
+            // TODO create new element when selector is like <tag>
             if (selector instanceof H.DOMNodes) {
                 this._nodeList = selector._nodeList;
                 return;
@@ -165,10 +191,25 @@ var H = {
         HTML(newHTML=null) {
             var values = [];
             this._nodeList.forEach(element => {
-                // TODO check if element.dataset contains key
                 values.push(element.innerHTML);
                 if (newHTML != null) {
                     element.innerHTML = newHTML;
+                }
+            });
+
+            if (values.length == 1) {
+                return values[0];
+            }
+
+            return values;
+        }
+
+        Text(newText=null) {
+            var values = [];
+            this._nodeList.forEach(element => {
+                values.push(element.innerText);
+                if (newHTML != null) {
+                    element.innerText = element.textContent = newText;
                 }
             });
 
