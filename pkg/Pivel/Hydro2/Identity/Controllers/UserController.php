@@ -11,6 +11,8 @@ use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
 use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
 use Package\Pivel\Hydro2\Core\Models\JsonResponse;
 use Package\Pivel\Hydro2\Core\Models\Response;
+use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
+use Package\Pivel\Hydro2\Database\Models\Order;
 use Package\Pivel\Hydro2\Database\Services\DatabaseService;
 use Package\Pivel\Hydro2\Identity\Models\PasswordResetToken;
 use Package\Pivel\Hydro2\Identity\Models\Permissions;
@@ -38,7 +40,21 @@ class UserController extends BaseController
             return new Response(status: StatusCode::NotFound);
         }
 
-        // TODO implement sorting/filtering better
+        $order = null;
+        if (isset($this->request->Args['sort_by'])) {
+            if ($this->request->Args['sort_by'] == 'role') {
+                $this->request->Args['sort_by'] = 'user_role_id';
+            }
+            if ($this->request->Args['sort_by'] == 'created') {
+                $this->request->Args['sort_by'] = 'inserted';
+            }
+            $dir = Order::tryFrom(strtoupper($this->request->Args['sort_dir']??'asc'))??Order::Ascending;
+            $order = (new OrderBy)->Column($this->request->Args['sort_by']??'key', $dir);
+        }
+        $limit = $this->request->Args['limit']??null;
+        $offset = $this->request->Args['offset']??null;
+
+        // TODO implement filtering better
         /** @var User[] */
         $users = [];
         if (isset($this->request->Args['role_id']) && UserRole::LoadFromId($this->request->Args['role_id']) !== null) {
@@ -46,7 +62,7 @@ class UserController extends BaseController
             $users = User::GetAllWithRole(UserRole::LoadFromId($this->request->Args['role_id']));
         } else {
             /** @var User[] */
-            $users = User::GetAll();
+            $users = User::GetAll($order, $limit, $offset);
         }
         
         $userResults = [];
