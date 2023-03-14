@@ -2,14 +2,14 @@
 
 namespace Package\Pivel\Hydro2\Services\Database;
 
-use Package\Pivel\Hydro2\Database\Extensions\Exceptions\HostNotFoundException;
-use Package\Pivel\Hydro2\Database\Extensions\Exceptions\InvalidUserException;
-use Package\Pivel\Hydro2\Database\Extensions\Exceptions\TableNotFoundException;
-use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
-use Package\Pivel\Hydro2\Database\Extensions\Where;
-use Package\Pivel\Hydro2\Database\Models\DatabaseConfigurationProfile;
-use Package\Pivel\Hydro2\Database\Models\TableColumn;
-use Package\Pivel\Hydro2\Database\Models\Type;
+use Package\Pivel\Hydro2\Exceptions\Database\HostNotFoundException;
+use Package\Pivel\Hydro2\Exceptions\Database\InvalidUserException;
+use Package\Pivel\Hydro2\Exceptions\Database\TableNotFoundException;
+use Package\Pivel\Hydro2\Extensions\Database\OrderBy;
+use Package\Pivel\Hydro2\Extensions\Database\Where;
+use Package\Pivel\Hydro2\Models\Database\DatabaseConfigurationProfile;
+use Package\Pivel\Hydro2\Models\Database\TableColumn;
+use Package\Pivel\Hydro2\Models\Database\Type;
 use PDO;
 use PDOException;
 

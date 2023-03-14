@@ -4,21 +4,20 @@ namespace Package\Pivel\Hydro2\Controllers;
 
 use DateTime;
 use DateTimeZone;
-use Package\Pivel\Hydro2\Core\Controllers\BaseController;
-use Package\Pivel\Hydro2\Core\Extensions\Route;
-use Package\Pivel\Hydro2\Core\Extensions\RoutePrefix;
-use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
-use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
-use Package\Pivel\Hydro2\Core\Models\JsonResponse;
-use Package\Pivel\Hydro2\Core\Models\Response;
-use Package\Pivel\Hydro2\Database\Services\DatabaseService;
-use Package\Pivel\Hydro2\Identity\Models\Permissions;
-use Package\Pivel\Hydro2\Identity\Models\Session;
-use Package\Pivel\Hydro2\Identity\Models\User;
-use Package\Pivel\Hydro2\Identity\Models\UserPassword;
-use Package\Pivel\Hydro2\Identity\Services\IdentityService;
-use Package\Pivel\Hydro2\Identity\Views\EmailViews\NewUserVerificationEmailView;
-use Package\Pivel\Hydro2\Identity\Views\LoginView;
+use Package\Pivel\Hydro2\Extensions\Route;
+use Package\Pivel\Hydro2\Extensions\RoutePrefix;
+use Package\Pivel\Hydro2\Models\HTTP\JsonResponse;
+use Package\Pivel\Hydro2\Models\HTTP\Method;
+use Package\Pivel\Hydro2\Models\HTTP\Response;
+use Package\Pivel\Hydro2\Models\HTTP\StatusCode;
+use Package\Pivel\Hydro2\Models\Identity\Session;
+use Package\Pivel\Hydro2\Models\Identity\User;
+use Package\Pivel\Hydro2\Models\Identity\UserPassword;
+use Package\Pivel\Hydro2\Models\Permissions;
+use Package\Pivel\Hydro2\Services\Database\DatabaseService;
+use Package\Pivel\Hydro2\Services\IdentityService;
+use Package\Pivel\Hydro2\Views\EmailViews\Identity\NewUserVerificationEmailView;
+use Package\Pivel\Hydro2\Views\Identity\LoginView;
 
 #[RoutePrefix('api/hydro2/identity')]
 class SessionController extends BaseController

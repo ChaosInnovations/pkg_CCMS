@@ -3,10 +3,7 @@
 namespace Package\Pivel\Hydro2\Services;
 
 use Exception;
-use Package\Pivel\Hydro2\Core\Extensions\Route;
-use Package\Pivel\Hydro2\Core\Extensions\RoutePrefix;
-use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
-use Package\Pivel\Hydro2\Core\Utilities;
+use Package\Pivel\Hydro2\Models\HTTP\Method;
 use ReflectionClass;
 
 class Router

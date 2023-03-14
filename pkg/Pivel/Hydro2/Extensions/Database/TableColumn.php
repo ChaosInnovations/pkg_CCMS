@@ -3,7 +3,7 @@
 namespace Package\Pivel\Hydro2\Extensions\Database;
 
 use Attribute;
-use Package\Pivel\Hydro2\Database\Models\Type;
+use Package\Pivel\Hydro2\Models\Database\Type;
 
 #[Attribute(Attribute::TARGET_PROPERTY)]
 class TableColumn {

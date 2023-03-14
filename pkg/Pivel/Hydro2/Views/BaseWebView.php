@@ -2,10 +2,8 @@
 
 namespace Package\Pivel\Hydro2\Views;
 
-use Package\Pivel\Hydro2\Core\Extensions\RequireScript;
-use Package\Pivel\Hydro2\Core\Extensions\RequireStyle;
-use Package\Pivel\Hydro2\Core\Views\BaseView;
-use Reflection;
+use Package\Pivel\Hydro2\Extensions\RequireScript;
+use Package\Pivel\Hydro2\Extensions\RequireStyle;
 use ReflectionClass;
 
 #[RequireScript('/web/assets/Pivel/Hydro2/hydro2-2.0.0.12.js', Inline: false)]

@@ -2,8 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Services;
 
-use \DirectoryIterator;
-use \PDO;
+use DirectoryIterator;
 
 class Utilities
 {

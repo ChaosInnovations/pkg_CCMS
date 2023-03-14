@@ -2,7 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Controllers;
 
-use Package\Pivel\Hydro2\Core\Models\Request;
+use Package\Pivel\Hydro2\Models\HTTP\Request;
 
 class BaseController
 {

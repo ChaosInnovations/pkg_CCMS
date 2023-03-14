@@ -2,12 +2,12 @@
 
 namespace Package\Pivel\Hydro2\Models\Identity;
 
-use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
-use Package\Pivel\Hydro2\Database\Extensions\TableForeignKey;
-use Package\Pivel\Hydro2\Database\Extensions\TableName;
-use Package\Pivel\Hydro2\Database\Extensions\TablePrimaryKey;
-use Package\Pivel\Hydro2\Database\Models\BaseObject;
-use Package\Pivel\Hydro2\Database\Models\ReferenceBehaviour;
+use Package\Pivel\Hydro2\Extensions\Database\TableColumn;
+use Package\Pivel\Hydro2\Extensions\Database\TableForeignKey;
+use Package\Pivel\Hydro2\Extensions\Database\TableName;
+use Package\Pivel\Hydro2\Extensions\Database\TablePrimaryKey;
+use Package\Pivel\Hydro2\Models\Database\BaseObject;
+use Package\Pivel\Hydro2\Models\Database\ReferenceBehaviour;
 
 #[TableName('hydro2_user_permissions')]
 class UserPermission extends BaseObject

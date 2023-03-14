@@ -2,13 +2,10 @@
 
 namespace Package\Pivel\Hydro2\Services\Database;
 
-use Package\Pivel\Hydro2\Database\Controllers\IDatabaseProvider;
-use Package\Pivel\Hydro2\Database\Controllers\MySQLDatabaseProvider;
-use Package\Pivel\Hydro2\Database\Controllers\SqliteDatabaseProvider;
-use Package\Pivel\Hydro2\Database\Extensions\Exceptions\HostNotFoundException;
 use Package\Pivel\Hydro2\Database\Extensions\Exceptions\InvalidConfigurationException;
-use Package\Pivel\Hydro2\Database\Extensions\Exceptions\InvalidUserException;
-use Package\Pivel\Hydro2\Database\Models\DatabaseConfigurationProfile;
+use Package\Pivel\Hydro2\Exceptions\Database\HostNotFoundException;
+use Package\Pivel\Hydro2\Exceptions\Database\InvalidUserException;
+use Package\Pivel\Hydro2\Models\Database\DatabaseConfigurationProfile;
 use PDO;
 use PDOException;
 

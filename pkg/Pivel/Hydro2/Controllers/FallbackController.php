@@ -2,12 +2,11 @@
 
 namespace Package\Pivel\Hydro2\Controllers;
 
-use Package\Pivel\Hydro2\Core\Extensions\Route;
-use Package\Pivel\Hydro2\Core\Extensions\RoutePrefix;
-use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
-use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
-use Package\Pivel\Hydro2\Core\Models\Response;
-use Package\Pivel\Hydro2\Core\Views\FallbackView;
+use Package\Pivel\Hydro2\Models\HTTP\Method;
+use Package\Pivel\Hydro2\Models\HTTP\StatusCode;
+use Package\Pivel\Hydro2\Extensions\Route;
+use Package\Pivel\Hydro2\Models\HTTP\Response;
+use Package\Pivel\Hydro2\Views\FallbackView;
 
 class FallbackController extends BaseController
 {

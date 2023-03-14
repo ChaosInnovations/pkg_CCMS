@@ -2,9 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Views\Components\Form;
 
-use Package\Pivel\Hydro2\Core\Extensions\RequireScript;
-use Package\Pivel\Hydro2\Identity\Views\Components\LabelledFormField;
-
+use Package\Pivel\Hydro2\Extensions\RequireScript;
 
 #[RequireScript('LabelledFormPasswordField.js')]
 class LabelledFormPasswordField extends LabelledFormField

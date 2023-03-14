@@ -2,7 +2,6 @@
 
 namespace Package\Pivel\Hydro2\Views;
 
-use Exception;
 use ReflectionClass;
 use ReflectionException;
 

@@ -2,17 +2,17 @@
     <div id="{$Id$}_multipagecard" class="card multipage">
         <div id="login" class="card-page hide-left active">
             <h2>Login</h2>
-            {#view Package\Pivel\Hydro2\Identity\Views\Components\Form($LoginFormId)}
+            {#view Package\Pivel\Hydro2\Views\Components\Form\Form($LoginFormId)}
                 {#arg Fields[]}
-                    {#view Package\Pivel\Hydro2\Identity\Views\Components\LabelledFormField(
+                    {#view Package\Pivel\Hydro2\Views\Components\Form\LabelledFormField(
                         Name:"email", Type:"email", IdPrefix:$LoginFormId, Label:"Email Address", AutoComplete:"email")#}
                 {#}
                 {#arg Fields[]}
-                    {#view Package\Pivel\Hydro2\Identity\Views\Components\LabelledFormPasswordField(
+                    {#view Package\Pivel\Hydro2\Views\Components\Form\LabelledFormPasswordField(
                         Name:"password", IdPrefix:$LoginFormId, Label:"Password", AutoComplete:"current-password")#}
                 {#}
                 {#arg Fields[]}
-                    {#view Package\Pivel\Hydro2\Identity\Views\Components\FormSubmitField(IdPrefix:$LoginFormId, Content:"Log In")#}
+                    {#view Package\Pivel\Hydro2\Views\Components\Form\FormSubmitField(IdPrefix:$LoginFormId, Content:"Log In")#}
                 {#}
             {#}
             <p><a href="#" data-multipagecardtarget="resetpassword">Forgot password?</a></p>
@@ -26,17 +26,17 @@
         <div id="changepassword" class="card-page">
             <h2>Password change required</h2>
             <p>Your password has expired. Create a new password below.</p>
-            {#view Package\Pivel\Hydro2\Identity\Views\Components\Form($ChangePasswordFormId)}
+            {#view Package\Pivel\Hydro2\Views\Components\Form\Form($ChangePasswordFormId)}
                 {#arg Fields[]}
-                    {#view Package\Pivel\Hydro2\Identity\Views\Components\LabelledFormPasswordField(
+                    {#view Package\Pivel\Hydro2\Views\Components\Form\LabelledFormPasswordField(
                         Name:"current-password", IdPrefix:$ChangePasswordFormId, Label:"Current Password", AutoComplete:"current-password")#}
                 {#}
                 {#arg Fields[]}
-                    {#view Package\Pivel\Hydro2\Identity\Views\Components\LabelledFormPasswordField(
+                    {#view Package\Pivel\Hydro2\Views\Components\Form\LabelledFormPasswordField(
                         Name:"new-password", IdPrefix:$ChangePasswordFormId, Label:"New Password", AutoComplete:"new-password")#}
                 {#}
                 {#arg Fields[]}
-                    {#view Package\Pivel\Hydro2\Identity\Views\Components\FormSubmitField(IdPrefix:$ChangePasswordFormId, Content:"Change Password")#}
+                    {#view Package\Pivel\Hydro2\Views\Components\Form\FormSubmitField(IdPrefix:$ChangePasswordFormId, Content:"Change Password")#}
                 {#}
             {#}
         </div>
@@ -53,13 +53,13 @@
         <div id="resetpassword" class="card-page">
             <h2>Password reset</h2>
             <p>Enter your email address below to send a link to reset your password.</p>
-            {#view Package\Pivel\Hydro2\Identity\Views\Components\Form($ResetPasswordFormId)}
+            {#view Package\Pivel\Hydro2\Views\Components\Form\Form($ResetPasswordFormId)}
                 {#arg Fields[]}
-                    {#view Package\Pivel\Hydro2\Identity\Views\Components\LabelledFormField(
+                    {#view Package\Pivel\Hydro2\Views\Components\Form\LabelledFormField(
                         Name:"email", Type:"email", IdPrefix:$ResetPasswordFormId, Label:"Email Address", AutoComplete:"email")#}
                 {#}
                 {#arg Fields[]}
-                    {#view Package\Pivel\Hydro2\Identity\Views\Components\FormSubmitField(IdPrefix:$ResetPasswordFormId, Content:"Send Reset Link")#}
+                    {#view Package\Pivel\Hydro2\Views\Components\Form\FormSubmitField(IdPrefix:$ResetPasswordFormId, Content:"Send Reset Link")#}
                 {#}
             {#}
             <p><a href="#" data-multipagecardtarget="login">Go back</a></p>

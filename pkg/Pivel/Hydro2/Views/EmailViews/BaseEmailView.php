@@ -2,7 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Views\EmailViews;
 
-use Package\Pivel\Hydro2\Core\Views\BaseView;
+use Package\Pivel\Hydro2\Views\BaseView;
 use ReflectionClass;
 
 class BaseEmailView extends BaseView

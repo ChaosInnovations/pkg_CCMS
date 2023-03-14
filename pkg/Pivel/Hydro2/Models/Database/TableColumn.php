@@ -2,9 +2,6 @@
 
 namespace Package\Pivel\Hydro2\Models\Database;
 
-use Package\Pivel\Hydro2\Database\Controllers\IDatabaseProvider;
-use Package\Pivel\Hydro2\Database\Services\DatabaseService;
-
 class TableColumn
 {
     public function __construct(

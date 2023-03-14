@@ -2,7 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Views;
 
-use Package\Pivel\Hydro2\Core\Utilities;
+use Package\Pivel\Hydro2\Services\Utilities;
 
 class FallbackView extends BaseWebView
 {

@@ -2,9 +2,9 @@
 
 namespace Package\Pivel\Hydro2\Views\Components\Identity;
 
-use Package\Pivel\Hydro2\Core\Extensions\RequireScript;
-use Package\Pivel\Hydro2\Core\Extensions\RequireStyle;
-use Package\Pivel\Hydro2\Identity\Views\Components\MultiPageCard;
+use Package\Pivel\Hydro2\Extensions\RequireScript;
+use Package\Pivel\Hydro2\Extensions\RequireStyle;
+use Package\Pivel\Hydro2\Views\Components\MultiPageCard;
 
 #[RequireScript('LoginCard.js')]
 #[RequireStyle('LoginCard.css')]

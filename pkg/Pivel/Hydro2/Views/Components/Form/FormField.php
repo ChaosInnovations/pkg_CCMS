@@ -2,9 +2,9 @@
 
 namespace Package\Pivel\Hydro2\Views\Components\Form;
 
-use Package\Pivel\Hydro2\Core\Extensions\RequireScript;
-use Package\Pivel\Hydro2\Core\Extensions\RequireStyle;
-use Package\Pivel\Hydro2\Core\Views\BaseView;
+use Package\Pivel\Hydro2\Extensions\RequireScript;
+use Package\Pivel\Hydro2\Extensions\RequireStyle;
+use Package\Pivel\Hydro2\Views\BaseView;
 
 #[RequireStyle('FormField.css')]
 #[RequireScript('FormField.js')]

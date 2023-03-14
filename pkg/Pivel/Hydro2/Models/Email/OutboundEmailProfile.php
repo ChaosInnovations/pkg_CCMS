@@ -2,11 +2,11 @@
 
 namespace Package\Pivel\Hydro2\Models\Email;
 
-use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
-use Package\Pivel\Hydro2\Database\Extensions\TableName;
-use Package\Pivel\Hydro2\Database\Extensions\TablePrimaryKey;
-use Package\Pivel\Hydro2\Database\Extensions\Where;
-use Package\Pivel\Hydro2\Database\Models\BaseObject;
+use Package\Pivel\Hydro2\Extensions\Database\TableColumn;
+use Package\Pivel\Hydro2\Extensions\Database\TableName;
+use Package\Pivel\Hydro2\Extensions\Database\TablePrimaryKey;
+use Package\Pivel\Hydro2\Extensions\Database\Where;
+use Package\Pivel\Hydro2\Models\Database\BaseObject;
 
 #[TableName('hydro2_outbound_email_profiles')]
 class OutboundEmailProfile extends BaseObject

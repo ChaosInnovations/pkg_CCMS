@@ -2,8 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Views\Components\Email;
 
-use Package\Pivel\Hydro2\Email\Views\BaseEmailView;
-use ReflectionClass;
+use Package\Pivel\Hydro2\Views\EmailViews\BaseEmailView;
 
 class ButtonLink extends BaseEmailView
 {

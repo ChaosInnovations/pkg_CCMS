@@ -2,7 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Models\Database;
 
-use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
+use Package\Pivel\Hydro2\Extensions\Database\OrderBy;
 
 class DatabaseConfigurationProfile
 {

@@ -3,7 +3,7 @@
 namespace Package\Pivel\Hydro2\Models\Email;
 
 use Exception;
-use Package\Pivel\Hydro2\Email\Views\BaseEmailView;
+use Package\Pivel\Hydro2\Views\EmailViews\BaseEmailView;
 
 class EmailMessage
 {

@@ -3,7 +3,7 @@
 namespace Package\Pivel\Hydro2\Extensions;
 
 use Attribute;
-use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
+use Package\Pivel\Hydro2\Models\HTTP\Method;
 
 #[Attribute(Attribute::IS_REPEATABLE | Attribute::TARGET_METHOD)]
 class Route {

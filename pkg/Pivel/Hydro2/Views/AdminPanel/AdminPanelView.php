@@ -2,8 +2,8 @@
 
 namespace Package\Pivel\Hydro2\Views\AdminPanel;
 
-use Package\Pivel\Hydro2\Core\Views\BaseWebView;
-use Package\Pivel\Hydro2\Identity\Models\PasswordResetToken;
+use Package\Pivel\Hydro2\Views\BaseWebView;
+use Package\Pivel\Hydro2\Views\Components\MasterDetail\MasterDetailViewPage;
 
 class AdminPanelView extends BaseWebView
 {

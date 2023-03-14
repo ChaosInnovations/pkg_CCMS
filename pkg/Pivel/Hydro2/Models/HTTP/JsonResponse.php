@@ -2,8 +2,6 @@
 
 namespace Package\Pivel\Hydro2\Models\HTTP;
 
-use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
-
 class JsonResponse extends Response
 {
     public function __construct(?array $data=null, StatusCode $status=StatusCode::OK, ?string $error_message=null, ?int $error_code=null, array $headers=[])

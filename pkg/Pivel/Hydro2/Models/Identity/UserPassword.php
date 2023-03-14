@@ -4,16 +4,16 @@ namespace Package\Pivel\Hydro2\Models\Identity;
 
 use DateTime;
 use DateTimeZone;
-use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
-use Package\Pivel\Hydro2\Database\Extensions\TableName;
-use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
-use Package\Pivel\Hydro2\Database\Extensions\TablePrimaryKey;
-use Package\Pivel\Hydro2\Database\Extensions\TableForeignKey;
-use Package\Pivel\Hydro2\Database\Extensions\Where;
-use Package\Pivel\Hydro2\Database\Models\BaseObject;
-use Package\Pivel\Hydro2\Database\Models\Order;
-use Package\Pivel\Hydro2\Database\Models\ReferenceBehaviour;
-use Package\Pivel\Hydro2\Database\Models\Type;
+use Package\Pivel\Hydro2\Extensions\Database\OrderBy;
+use Package\Pivel\Hydro2\Extensions\Database\TableColumn;
+use Package\Pivel\Hydro2\Extensions\Database\TableForeignKey;
+use Package\Pivel\Hydro2\Extensions\Database\TableName;
+use Package\Pivel\Hydro2\Extensions\Database\TablePrimaryKey;
+use Package\Pivel\Hydro2\Extensions\Database\Where;
+use Package\Pivel\Hydro2\Models\Database\BaseObject;
+use Package\Pivel\Hydro2\Models\Database\Order;
+use Package\Pivel\Hydro2\Models\Database\ReferenceBehaviour;
+use Package\Pivel\Hydro2\Models\Database\Type;
 
 #[TableName('hydro2_user_passwords')]
 class UserPassword extends BaseObject

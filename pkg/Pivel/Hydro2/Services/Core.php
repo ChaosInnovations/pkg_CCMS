@@ -2,11 +2,11 @@
 
 namespace Package\Pivel\Hydro2\Services;
 
-use \Exception;
-use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
-use Package\Pivel\Hydro2\Core\Models\JsonResponse;
-use \Package\Pivel\Hydro2\Core\Models\Request;
-use \Package\Pivel\Hydro2\Core\Models\Response;
+use Exception;
+use Package\Pivel\Hydro2\Models\HTTP\JsonResponse;
+use Package\Pivel\Hydro2\Models\HTTP\Request;
+use Package\Pivel\Hydro2\Models\HTTP\Response;
+use Package\Pivel\Hydro2\Models\HTTP\StatusCode;
 
 class Core
 {

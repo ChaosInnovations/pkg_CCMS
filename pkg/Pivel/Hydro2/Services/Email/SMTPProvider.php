@@ -3,14 +3,14 @@
 namespace Package\Pivel\Hydro2\Services\Email;
 
 use Exception;
-use Package\Pivel\Hydro2\Email\Extensions\Exceptions\AuthenticationFailedException;
-use Package\Pivel\Hydro2\Email\Extensions\Exceptions\EmailHostNotFoundException;
-use Package\Pivel\Hydro2\Email\Extensions\Exceptions\NotAuthenticatedException;
-use Package\Pivel\Hydro2\Email\Extensions\Exceptions\TLSUnavailableException;
-use Package\Pivel\Hydro2\Email\Models\EmailAddress;
-use Package\Pivel\Hydro2\Email\Models\EmailMessage;
-use Package\Pivel\Hydro2\Email\Models\Encoding;
-use Package\Pivel\Hydro2\Email\Models\OutboundEmailProfile;
+use Package\Pivel\Hydro2\Exceptions\Email\AuthenticationFailedException;
+use Package\Pivel\Hydro2\Exceptions\Email\EmailHostNotFoundException;
+use Package\Pivel\Hydro2\Exceptions\Email\NotAuthenticatedException;
+use Package\Pivel\Hydro2\Exceptions\Email\TLSUnavailableException;
+use Package\Pivel\Hydro2\Models\Email\EmailAddress;
+use Package\Pivel\Hydro2\Models\Email\EmailMessage;
+use Package\Pivel\Hydro2\Models\Email\Encoding;
+use Package\Pivel\Hydro2\Models\Email\OutboundEmailProfile;
 
 class SMTPProvider implements IOutboundEmailProvider
 {

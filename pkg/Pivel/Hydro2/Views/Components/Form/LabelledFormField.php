@@ -2,8 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Views\Components\Form;
 
-use Package\Pivel\Hydro2\Core\Extensions\RequireStyle;
-use Package\Pivel\Hydro2\Identity\Views\Components\FormField;
+use Package\Pivel\Hydro2\Extensions\RequireStyle;
 
 #[RequireStyle('LabelledFormField.css')]
 class LabelledFormField extends FormField

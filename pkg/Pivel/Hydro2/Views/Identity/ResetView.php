@@ -2,8 +2,8 @@
 
 namespace Package\Pivel\Hydro2\Views\Identity;
 
-use Package\Pivel\Hydro2\Core\Views\BaseWebView;
-use Package\Pivel\Hydro2\Identity\Models\PasswordResetToken;
+use Package\Pivel\Hydro2\Models\Identity\PasswordResetToken;
+use Package\Pivel\Hydro2\Views\BaseWebView;
 
 class ResetView extends BaseWebView
 {

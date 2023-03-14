@@ -2,8 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Views\AdminPanel;
 
-use Package\Pivel\Hydro2\AdminPanel\Views\BaseAdminPanelViewPage;
-use Package\Pivel\Hydro2\Core\Utilities;
+use Package\Pivel\Hydro2\Services\Utilities;
 
 class About extends BaseAdminPanelViewPage
 {

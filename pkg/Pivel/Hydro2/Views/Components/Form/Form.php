@@ -2,7 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Views\Components\Form;
 
-use Package\Pivel\Hydro2\Core\Views\BaseView;
+use Package\Pivel\Hydro2\Views\BaseView;
 
 class Form extends BaseView
 {

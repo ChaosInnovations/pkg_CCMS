@@ -2,7 +2,7 @@
 
 namespace Package\Pivel\Hydro2\Views\Identity;
 
-use Package\Pivel\Hydro2\Core\Views\BaseWebView;
+use Package\Pivel\Hydro2\Views\BaseWebView;
 
 class LoginView extends BaseWebView
 {

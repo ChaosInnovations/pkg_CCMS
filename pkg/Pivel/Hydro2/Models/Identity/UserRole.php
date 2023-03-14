@@ -2,15 +2,11 @@
 
 namespace Package\Pivel\Hydro2\Models\Identity;
 
-use DateTime;
-use DateTimeZone;
-use Package\Pivel\Hydro2\Database\Extensions\ChildTable;
-use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
-use Package\Pivel\Hydro2\Database\Extensions\TableName;
-use Package\Pivel\Hydro2\Database\Extensions\TablePrimaryKey;
-use Package\Pivel\Hydro2\Database\Extensions\Where;
-use Package\Pivel\Hydro2\Database\Models\BaseObject;
-use Package\Pivel\Hydro2\Identity\Models\UserPermission;
+use Package\Pivel\Hydro2\Extensions\Database\ChildTable;
+use Package\Pivel\Hydro2\Extensions\Database\TableColumn;
+use Package\Pivel\Hydro2\Extensions\Database\TableName;
+use Package\Pivel\Hydro2\Extensions\Database\TablePrimaryKey;
+use Package\Pivel\Hydro2\Models\Database\BaseObject;
 
 #[TableName('hydro2_user_roles')]
 class UserRole extends BaseObject

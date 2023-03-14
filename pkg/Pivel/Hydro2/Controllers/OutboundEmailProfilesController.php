@@ -3,24 +3,23 @@
 namespace Package\Pivel\Hydro2\Controllers;
 
 use Exception;
-use Package\Pivel\Hydro2\Core\Controllers\BaseController;
-use Package\Pivel\Hydro2\Core\Extensions\Route;
-use Package\Pivel\Hydro2\Core\Extensions\RoutePrefix;
-use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
-use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
-use Package\Pivel\Hydro2\Core\Models\JsonResponse;
-use Package\Pivel\Hydro2\Core\Models\Response;
-use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
-use Package\Pivel\Hydro2\Database\Models\Order;
-use Package\Pivel\Hydro2\Email\Extensions\Exceptions\AuthenticationFailedException;
-use Package\Pivel\Hydro2\Email\Extensions\Exceptions\EmailHostNotFoundException;
-use Package\Pivel\Hydro2\Email\Extensions\Exceptions\NotAuthenticatedException;
-use Package\Pivel\Hydro2\Email\Extensions\Exceptions\TLSUnavailableException;
-use Package\Pivel\Hydro2\Email\Models\EmailAddress;
-use Package\Pivel\Hydro2\Email\Models\EmailMessage;
-use Package\Pivel\Hydro2\Email\Models\OutboundEmailProfile;
-use Package\Pivel\Hydro2\Email\Services\EmailService;
-use Package\Pivel\Hydro2\Email\Views\TestEmailView;
+use Package\Pivel\Hydro2\Exceptions\Email\AuthenticationFailedException;
+use Package\Pivel\Hydro2\Exceptions\Email\EmailHostNotFoundException;
+use Package\Pivel\Hydro2\Exceptions\Email\NotAuthenticatedException;
+use Package\Pivel\Hydro2\Exceptions\Email\TLSUnavailableException;
+use Package\Pivel\Hydro2\Extensions\Database\OrderBy;
+use Package\Pivel\Hydro2\Models\HTTP\Method;
+use Package\Pivel\Hydro2\Extensions\Route;
+use Package\Pivel\Hydro2\Extensions\RoutePrefix;
+use Package\Pivel\Hydro2\Models\Database\Order;
+use Package\Pivel\Hydro2\Models\Email\EmailAddress;
+use Package\Pivel\Hydro2\Models\Email\EmailMessage;
+use Package\Pivel\Hydro2\Models\Email\OutboundEmailProfile;
+use Package\Pivel\Hydro2\Models\HTTP\JsonResponse;
+use Package\Pivel\Hydro2\Models\HTTP\Response;
+use Package\Pivel\Hydro2\Models\HTTP\StatusCode;
+use Package\Pivel\Hydro2\Services\Email\EmailService;
+use Package\Pivel\Hydro2\Views\EmailViews\TestEmailView;
 
 #[RoutePrefix('api/hydro2/email/outboundprofiles')]
 class OutboundEmailProfilesController extends BaseController

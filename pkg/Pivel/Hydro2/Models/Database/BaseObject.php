@@ -3,17 +3,10 @@
 namespace Package\Pivel\Hydro2\Models\Database;
 
 use DateTime;
-use Package\Pivel\Hydro2\Database\Controllers\IDatabaseProvider;
-use Package\Pivel\Hydro2\Database\Extensions\ChildTable;
-use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
-use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
-use Package\Pivel\Hydro2\Database\Extensions\TableForeignKey;
-use Package\Pivel\Hydro2\Database\Extensions\TableName;
-use Package\Pivel\Hydro2\Database\Extensions\TablePrimaryKey;
-use Package\Pivel\Hydro2\Database\Extensions\Where;
-use Package\Pivel\Hydro2\Database\Models\TableColumn as ModelsTableColumn;
-use Package\Pivel\Hydro2\Database\Services\DatabaseService;
-use Reflection;
+use Package\Pivel\Hydro2\Extensions\Database\OrderBy;
+use Package\Pivel\Hydro2\Extensions\Database\Where;
+use Package\Pivel\Hydro2\Services\Database\DatabaseService;
+use Package\Pivel\Hydro2\Services\Database\IDatabaseProvider;
 use ReflectionClass;
 
 abstract class BaseObject
@@ -92,7 +85,7 @@ abstract class BaseObject
                 continue;
             }
 
-            /** @var TableColumn */
+            /** @var Package\Pivel\Hydro2\Extensions\Database\TableColumn */
             $tableColumn = $method_attributes[0]->newInstance();
 
             $column_name = $tableColumn->columnName;
@@ -135,7 +128,7 @@ abstract class BaseObject
                 $foreignKeyColumnName = $fkAttr->foreignTableColumnName??$foreignKeyColumnName;
             }
 
-            $columns[$column_name] = new ModelsTableColumn(
+            $columns[$column_name] = new TableColumn(
                 $column_name,
                 $property_name,
                 $sqlType,

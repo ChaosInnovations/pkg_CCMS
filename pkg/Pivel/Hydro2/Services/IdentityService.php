@@ -2,20 +2,17 @@
 
 namespace Package\Pivel\Hydro2\Services;
 
-use DateTime;
-use DateTimeZone;
-use Package\Pivel\Hydro2\Core\Models\Request;
-use Package\Pivel\Hydro2\Core\Utilities;
-use Package\Pivel\Hydro2\Email\Models\EmailAddress;
-use Package\Pivel\Hydro2\Email\Models\EmailMessage;
-use Package\Pivel\Hydro2\Email\Services\EmailService;
-use Package\Pivel\Hydro2\Email\Views\BaseEmailView;
-use Package\Pivel\Hydro2\Identity\Models\PasswordResetToken;
-use Package\Pivel\Hydro2\Identity\Models\Permission;
-use Package\Pivel\Hydro2\Identity\Models\Permissions;
-use Package\Pivel\Hydro2\Identity\Models\Session;
-use Package\Pivel\Hydro2\Identity\Models\User;
-use Package\Pivel\Hydro2\Identity\Models\UserRole;
+use Package\Pivel\Hydro2\Models\Email\EmailAddress;
+use Package\Pivel\Hydro2\Models\Email\EmailMessage;
+use Package\Pivel\Hydro2\Models\HTTP\Request;
+use Package\Pivel\Hydro2\Models\Identity\PasswordResetToken;
+use Package\Pivel\Hydro2\Models\Identity\Permission;
+use Package\Pivel\Hydro2\Models\Identity\Session;
+use Package\Pivel\Hydro2\Models\Identity\User;
+use Package\Pivel\Hydro2\Models\Identity\UserRole;
+use Package\Pivel\Hydro2\Models\Permissions;
+use Package\Pivel\Hydro2\Services\Email\EmailService;
+use Package\Pivel\Hydro2\Views\EmailViews\BaseEmailView;
 
 class IdentityService
 {

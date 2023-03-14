@@ -2,8 +2,6 @@
 
 namespace Package\Pivel\Hydro2\Views\Components\Form;
 
-use Package\Pivel\Hydro2\Identity\Views\Components\FormField;
-
 class FormSubmitField extends FormField
 {
 

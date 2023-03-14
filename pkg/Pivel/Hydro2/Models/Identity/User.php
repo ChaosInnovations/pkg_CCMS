@@ -4,23 +4,12 @@ namespace Package\Pivel\Hydro2\Models\Identity;
 
 use DateTime;
 use DateTimeZone;
-use \Package\Pivel\Hydro2\Core\Models\Response;
-use \Package\Pivel\Hydro2\Core\Models\Request;
-use \Package\Pivel\Hydro2\Core\Utilities;
-use Package\Pivel\Hydro2\Database\Extensions\ChildTable;
-use Package\Pivel\Hydro2\Database\Extensions\TableColumn;
-use Package\Pivel\Hydro2\Database\Extensions\TableForeignKey;
-use Package\Pivel\Hydro2\Database\Extensions\TableName;
-use Package\Pivel\Hydro2\Database\Extensions\TablePrimaryKey;
-use Package\Pivel\Hydro2\Database\Extensions\Where;
-//use \Package\Mailer;
-use \Package\Pivel\Hydro2\Database\Models\BaseObject;
-//use \Package\ModuleMenu;
-//use \Package\Page;
-//use \Package\SecureMenu;
-//use \Package\SiteConfiguration;
-//use \Package\User\AccountManager;
-//use \Package\User\UserPermissions;
+use Package\Pivel\Hydro2\Extensions\Database\TableColumn;
+use Package\Pivel\Hydro2\Extensions\Database\TableForeignKey;
+use Package\Pivel\Hydro2\Extensions\Database\TableName;
+use Package\Pivel\Hydro2\Extensions\Database\TablePrimaryKey;
+use Package\Pivel\Hydro2\Extensions\Database\Where;
+use Package\Pivel\Hydro2\Models\Database\BaseObject;
 
 #[TableName('hydro2_users')]
 class User extends BaseObject

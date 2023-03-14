@@ -2,10 +2,10 @@
 
 namespace Package\Pivel\Hydro2\Models\Database;
 
-use Package\Pivel\Hydro2\Database\Controllers\IDatabaseProvider;
-use Package\Pivel\Hydro2\Database\Extensions\Exceptions\TableNotFoundException;
-use Package\Pivel\Hydro2\Database\Extensions\OrderBy;
-use Package\Pivel\Hydro2\Database\Extensions\Where;
+use Package\Pivel\Hydro2\Exceptions\Database\TableNotFoundException;
+use Package\Pivel\Hydro2\Extensions\Database\OrderBy;
+use Package\Pivel\Hydro2\Extensions\Database\Where;
+use Package\Pivel\Hydro2\Services\Database\IDatabaseProvider;
 
 class Table
 {

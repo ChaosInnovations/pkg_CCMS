@@ -2,17 +2,14 @@
 
 namespace Package\Pivel\Hydro2\Controllers;
 
-use Package\Pivel\Hydro2\AdminPanel\Views\AdminPanelView;
-use Package\Pivel\Hydro2\AdminPanel\Views\BaseAdminPanelViewPage;
-use Package\Pivel\Hydro2\Core\Controllers\BaseController;
-use Package\Pivel\Hydro2\Core\Extensions\Route;
-use Package\Pivel\Hydro2\Core\Extensions\RoutePrefix;
-use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
-use Package\Pivel\Hydro2\Core\Models\HTTP\StatusCode;
-use Package\Pivel\Hydro2\Core\Models\Response;
-use Package\Pivel\Hydro2\Core\Utilities;
-use Package\Pivel\Hydro2\Core\Views\FallbackView;
-use Package\Pivel\Hydro2\Identity\Services\IdentityService;
+use Package\Pivel\Hydro2\Models\HTTP\Method;
+use Package\Pivel\Hydro2\Models\HTTP\StatusCode;
+use Package\Pivel\Hydro2\Extensions\Route;
+use Package\Pivel\Hydro2\Models\HTTP\Response;
+use Package\Pivel\Hydro2\Services\IdentityService;
+use Package\Pivel\Hydro2\Services\Utilities;
+use Package\Pivel\Hydro2\Views\AdminPanel\AdminPanelView;
+use Package\Pivel\Hydro2\Views\AdminPanel\BaseAdminPanelViewPage;
 
 class AdminPanelController extends BaseController
 {

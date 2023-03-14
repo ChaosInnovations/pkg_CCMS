@@ -2,8 +2,6 @@
 
 namespace Package\Pivel\Hydro2\Models\HTTP;
 
-use Package\Pivel\Hydro2\Core\Models\HTTP\Method;
-
 class Request
 {
     
