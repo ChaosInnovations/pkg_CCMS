@@ -1,0 +1,53 @@
+{#parent}
+    {#arg Content}
+        <h2>User Roles</h2>
+        {#view Pivel\Hydro2\Views\Components\SortableTable(Id:"user_roles_table")}
+            {#arg Headers[]}<th class="sortable" data-property="id">Id</th>{#}
+            {#arg Headers[]}<th class="sortable" data-property="name">Name</th>{#}
+            {#arg Headers[]}<th class="sortable" data-property="description">Description</th>{#}
+            {#arg Headers[]}<th data-property="permissions">Permissions</th>{#}
+        {#}
+        <script>
+            var user_roles_table_renderer = function(table) {
+                var tbodyHtml = "";
+                // for each row in this._data:
+                for (var row of table._data) {
+                    // add <tr>
+                    tbodyHtml += "<tr>";
+                    // for each property in this._columns:
+                    for (var property of table._columns) {
+                        // add <td>row[property]</td> to tbodyHtml
+                        if (property == 'permissions') {
+                            var value = "";
+                            for (var permission of row['permissions']) {
+                                value += ""+permission["name"]+"<br />";
+                            }
+                            if (value == "") {
+                                value = "None";
+                            }
+                        } else {
+                            value = row[property];
+                            if (value === true) {
+                                value = "Yes";
+                            } else if (value === false) {
+                                value = "No";
+                            } else if (value === null) {
+                                value = "N/A";
+                            }
+                            value = H.HtmlEncode(value);
+                        }
+
+                        
+
+                        tbodyHtml += "<td>" + value + "</td>";
+                    }
+                    // add </tr>
+                    tbodyHtml += "</tr>";
+                }
+                table._e.Nodes("tbody").HTML(tbodyHtml);
+            }
+
+            var user_roles_table = new SortableTable("#user_roles_table", "/api/hydro2/identity/userroles", "user_roles", user_roles_table_renderer);
+        </script>
+    {#}
+{#}

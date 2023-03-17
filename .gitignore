@@ -1,3 +1,4 @@
 *.code-workspace
-pkg/Database/config.json
+app/dbconfig.json
+app/routes.json
 *.sqlite3
