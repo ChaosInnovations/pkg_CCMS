@@ -40,8 +40,6 @@ class Router
 
             $route_prefix_segments = [];
             $class_attributes = $class->getAttributes(RoutePrefix::class);
-
-            var_dump($class_attributes);
             foreach ($class_attributes as $class_attribute) {
                 $route_prefix = $class_attribute->newInstance();
                 $prefix = $route_prefix->pathPrefix;

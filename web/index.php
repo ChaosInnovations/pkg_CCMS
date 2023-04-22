@@ -13,7 +13,7 @@ require_once $app_dir."/Pivel/Hydro2/Services/Autoloader.php";
 
 // Set up Autoloader
 $loader = new Autoloader($app_dir);
-$loader->register();
+$loader->Register();
 
 // Process incoming request
 Hydro2::$app = new Hydro2($web_dir, $app_dir);
