@@ -16,14 +16,29 @@ use Pivel\Hydro2\Models\Email\EmailAddress;
 use Pivel\Hydro2\Models\Email\EmailMessage;
 use Pivel\Hydro2\Models\Email\OutboundEmailProfile;
 use Pivel\Hydro2\Models\HTTP\JsonResponse;
+use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
 use Pivel\Hydro2\Services\Email\EmailService;
+use Pivel\Hydro2\Services\IdentityService;
 use Pivel\Hydro2\Views\EmailViews\TestEmailView;
 
 #[RoutePrefix('api/hydro2/email/outboundprofiles')]
 class OutboundEmailProfilesController extends BaseController
 {
+    protected IdentityService $_identityService;
+    protected EmailService $_emailService;
+
+    public function __construct(
+        IdentityService $identityService,
+        EmailService $emailService,
+        Request $request,
+    )
+    {
+        $this->_identityService = $identityService;
+        parent::__construct($request);
+    }
+    
     // TODO replace with real permission check
     private function UserHasPermission(string $permission) : bool {
         return true;
@@ -90,7 +105,7 @@ class OutboundEmailProfilesController extends BaseController
 
         return new JsonResponse(
             data: [
-                'outboundemailproviders' => EmailService::GetAvailableProviders(),
+                'outboundemailproviders' => $this->_emailService->GetAvailableProviders(),
             ],
             status: StatusCode::OK,
         );
@@ -323,7 +338,7 @@ class OutboundEmailProfilesController extends BaseController
             );
         }
 
-        $provider = EmailService::GetOutboundEmailProvider($profile);
+        $provider = $this->_emailService->GetOutboundEmailProvider($profile);
 
         if ($provider === null) {
             return new JsonResponse(

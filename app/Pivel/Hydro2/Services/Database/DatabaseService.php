@@ -13,27 +13,8 @@ class DatabaseService
 {
     public IDatabaseProvider $databaseProvider;
 
-    // Singleton pattern
-    private static null|DatabaseService $instance = null;
-    
-    public static function Instance() : ?DatabaseService {
-        if (!self::$instance instanceof DatabaseService) {
-            try {
-                self::$instance = new static();
-            } catch (InvalidConfigurationException) {
-                self::$instance = null;
-            } catch (HostNotFoundException) {
-                self::$instance = null;
-            } catch (InvalidUserException) {
-                self::$instance = null;
-            }
-        }
-        
-        return self::$instance;
-    }
-
-    public static function IsPrimaryConnected() : bool {
-        return (self::Instance() instanceof DatabaseService && self::Instance()->IsConnectionOpen());
+    public function IsPrimaryConnected() : bool {
+        return $this->IsConnectionOpen();
     }
 
     private array $config;
@@ -44,7 +25,8 @@ class DatabaseService
         'sqlite' => SqliteDatabaseProvider::class,
     ];
     
-    public function __construct(string $configurationKey='primary') {
+    public function __construct() {
+        $configurationKey='primary';
         $config = DatabaseConfigurationProfile::LoadFromKey($configurationKey);
 
         if ($config === null) {
@@ -60,7 +42,7 @@ class DatabaseService
         $this->connectionOpen = $this->databaseProvider->OpenConnection();
     }
 
-    public static function GetDatabaseProvider(DatabaseConfigurationProfile $profile) : ?IDatabaseProvider {
+    public function GetDatabaseProvider(DatabaseConfigurationProfile $profile) : ?IDatabaseProvider {
         // string $driver, string $host, ?string $database, ?string $username, ?string $password) : null|IDatabaseProvider {
         if (!isset(self::$databaseProviders[$profile->Driver])) {
             return null;
@@ -75,15 +57,15 @@ class DatabaseService
     }
 
     /** @return string[] */
-    public static function GetAvailableDrivers() : array {
+    public function GetAvailableDrivers() : array {
         return array_filter(PDO::getAvailableDrivers(),fn($d)=>in_array($d, array_keys(self::$databaseProviders)));
     }
 
-    public static function CheckDriver(string $driver) : bool {
-        return in_array($driver, self::GetAvailableDrivers());
+    public function CheckDriver(string $driver) : bool {
+        return in_array($driver, $this->GetAvailableDrivers());
     }
 
-    public static function CheckHost(string $driver, string $host) : bool {
+    public function CheckHost(string $driver, string $host) : bool {
         $dbp = self::GetDatabaseProvider(new DatabaseConfigurationProfile('', $driver, $host));
         if (!($dbp instanceof IDatabaseProvider)) {
             return false;
@@ -100,8 +82,8 @@ class DatabaseService
         return true;
     }
 
-    public static function GetPrivileges(string $driver, string $host, ?string $username, ?string $password) : bool|array {
-        $dbp = self::GetDatabaseProvider(new DatabaseConfigurationProfile('', $driver, $host, $username, $password));
+    public function GetPrivileges(string $driver, string $host, ?string $username, ?string $password) : bool|array {
+        $dbp = $this->GetDatabaseProvider(new DatabaseConfigurationProfile('', $driver, $host, $username, $password));
         if (!($dbp instanceof IDatabaseProvider)) {
             return false;
         }
@@ -119,8 +101,8 @@ class DatabaseService
         return ['valid'=>true,'cancreatedb'=>$canCreate];
     }
 
-    public static function GetDatabases(string $driver, string $host, ?string $username, ?string $password) : bool|array {
-        $dbp = self::GetDatabaseProvider(new DatabaseConfigurationProfile('', $driver, $host, $username, $password));
+    public function GetDatabases(string $driver, string $host, ?string $username, ?string $password) : bool|array {
+        $dbp = $this->GetDatabaseProvider(new DatabaseConfigurationProfile('', $driver, $host, $username, $password));
         if (!($dbp instanceof IDatabaseProvider)) {
             return false;
         }
@@ -137,8 +119,8 @@ class DatabaseService
         return $dbp->GetDatabases();
     }
 
-    public static function CreateDatabase(string $driver, string $host, ?string $username, ?string $password, ?string $database) : bool {
-        $dbp = self::GetDatabaseProvider(new DatabaseConfigurationProfile('', $driver, $host, $username, $password));
+    public function CreateDatabase(string $driver, string $host, ?string $username, ?string $password, ?string $database) : bool {
+        $dbp = $this->GetDatabaseProvider(new DatabaseConfigurationProfile('', $driver, $host, $username, $password));
         if (!($dbp instanceof IDatabaseProvider)) {
             return false;
         }

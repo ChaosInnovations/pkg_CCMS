@@ -12,6 +12,7 @@ use Pivel\Hydro2\Extensions\Database\TableForeignKey;
 use Pivel\Hydro2\Extensions\Database\TableName;
 use Pivel\Hydro2\Extensions\Database\TablePrimaryKey;
 use Pivel\Hydro2\Extensions\Database\Where;
+use Pivel\Hydro2\Hydro2;
 use Pivel\Hydro2\Services\Database\DatabaseService;
 use Pivel\Hydro2\Services\Database\IDatabaseProvider;
 use ReflectionClass;
@@ -44,11 +45,12 @@ abstract class BaseObject
     }
 
     private static function getDbi() : ?IDatabaseProvider {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        $databaseService = Hydro2::$Current->ResolveDependency(DatabaseService::class);
+        if (!$databaseService->IsPrimaryConnected()) {
             return null;
         }
 
-        return DatabaseService::Instance()->databaseProvider;
+        return $databaseService->databaseProvider;
     }
 
     private static function getTableName() : string {
@@ -107,6 +109,7 @@ abstract class BaseObject
             $fkOnUpdate = ReferenceBehaviour::RESTRICT;
             $fkOnDelete = ReferenceBehaviour::RESTRICT;
 
+            $databaseService = Hydro2::$Current->ResolveDependency(DatabaseService::class);
             if ($sqlType === null) {
                 if (is_subclass_of($phpType, self::class)) {
                     // sql type should be the type of the primary key in the other class
@@ -118,7 +121,7 @@ abstract class BaseObject
                     $foreignKey = true;
                     $foreignKeyTable = $foreignTable->tableName;
                     $foreignKeyColumnName = $foreignColumn->columnName;
-                } else if (DatabaseService::IsPrimaryConnected()) {
+                } else if ($databaseService->IsPrimaryConnected()) {
                     $sqlType = self::getDbi()->ConvertToSQLType($phpType);
                 } else {
                     $sqlType = Type::TEXT;

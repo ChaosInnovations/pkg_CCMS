@@ -8,6 +8,7 @@ use Pivel\Hydro2\Extensions\Route;
 use Pivel\Hydro2\Extensions\RoutePrefix;
 use Pivel\Hydro2\Models\HTTP\JsonResponse;
 use Pivel\Hydro2\Models\HTTP\Method;
+use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
 use Pivel\Hydro2\Models\Identity\Session;
@@ -22,11 +23,24 @@ use Pivel\Hydro2\Views\Identity\LoginView;
 #[RoutePrefix('api/hydro2/identity')]
 class SessionController extends BaseController
 {
+    protected IdentityService $_identityService;
+    protected DatabaseService $_databaseService;
+
+    public function __construct(
+        IdentityService $identityService,
+        DatabaseService $databaseService,
+        Request $request,
+    )
+    {
+        $this->_identityService = $identityService;
+        parent::__construct($request);
+    }
+
     #[Route(Method::POST, 'login')]
     #[Route(Method::POST, '~login')]
     #[Route(Method::POST, '~api/login')]
     public function Login() : Response {
-        if (IdentityService::GetRequestSession($this->request) !== false) {
+        if ($this->_identityService->GetRequestSession($this->request) !== false) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -114,8 +128,8 @@ class SessionController extends BaseController
         if ($userPassword === null || !$user->EmailVerified) {
             $user->EmailVerified = false;
             $user->Save();
-            $view = new NewUserVerificationEmailView(IdentityService::GetEmailVerificationUrl($this->request, $user, true), $user->Name);
-            IdentityService::SendEmailToUser($user, $view);
+            $view = new NewUserVerificationEmailView($this->_identityService->GetEmailVerificationUrl($this->request, $user, true), $user->Name);
+            $this->_identityService->SendEmailToUser($user, $view);
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -204,13 +218,13 @@ class SessionController extends BaseController
 
     #[Route(Method::GET, 'users/{id}/sessions')]
     public function UserGetSessions() : Response {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
         // need to have either viewusersessions permission or be requestion own user's sessions
         if (!(
-            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ViewUserSessions->value) ||
-            IdentityService::GetRequestUser($this->request)->RandomId === $this->request->Args['id']
+            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ViewUserSessions->value) ||
+            $this->_identityService->GetRequestUser($this->request)->RandomId === $this->request->Args['id']
         )) {
             return new Response(status: StatusCode::NotFound);
         }
@@ -232,7 +246,7 @@ class SessionController extends BaseController
             );
         }
 
-        $currentSessionId = IdentityService::GetRequestSession($this->request)->RandomId;
+        $currentSessionId = $this->_identityService->GetRequestSession($this->request)->RandomId;
         $sessionsResults = [];
         $sessions = Session::GetAllByUser($user);
         foreach ($sessions as $s) {
@@ -262,17 +276,17 @@ class SessionController extends BaseController
     #[Route(Method::POST, 'sessions/{sessionid}/expire')]
     #[Route(Method::DELETE, 'sessions/{sessionid}')]
     public function UserExpireSession() : Response {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
         // need to have either viewusersessions permission or be requesting on own user's session
         $session = Session::LoadFromRandomId($this->request->Args['sessionid']);
         if (!(
-            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::EndUserSessions->value) ||
+            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::EndUserSessions->value) ||
             
             (
                 $session !== null &&
-                IdentityService::GetRequestUser($this->request)->Id === $session->UserId
+                $this->_identityService->GetRequestUser($this->request)->Id === $session->UserId
             )
         )) {
             return new Response(status: StatusCode::NotFound);
@@ -314,8 +328,8 @@ class SessionController extends BaseController
         // check if already logged in. If there is a ?next= arg, redirect to that path. Otherwise, redirect to ~/
         //  unless password change is required, then display the password change screen.
         //  TODO if 2FA challenge is required, then display the 2FA challenge screen.
-        if (IdentityService::GetRequestSession($this->request) !== false) {
-            $userPassword = UserPassword::LoadCurrentFromUser(IdentityService::GetRequestUser($this->request));
+        if ($this->_identityService->GetRequestSession($this->request) !== false) {
+            $userPassword = UserPassword::LoadCurrentFromUser($this->_identityService->GetRequestUser($this->request));
             if (!$userPassword->IsExpired()) {
                 return new Response(
                     status: StatusCode::Found,
@@ -327,7 +341,7 @@ class SessionController extends BaseController
         }
 
         $view = new LoginView();
-        if (IdentityService::GetRequestSession($this->request) !== false && $userPassword->IsExpired()) {
+        if ($this->_identityService->GetRequestSession($this->request) !== false && $userPassword->IsExpired()) {
             $view->DefaultPage = 'changepassword';
         }
         return new Response(
@@ -337,9 +351,9 @@ class SessionController extends BaseController
 
     #[Route(Method::GET, '~logout')]
     public function Logout() : Response {
-        if (IdentityService::GetRequestSession($this->request) !== false) {
-            IdentityService::GetRequestSession($this->request)->Expire();
-            IdentityService::GetRequestSession($this->request)->Save();
+        if ($this->_identityService->GetRequestSession($this->request) !== false) {
+            $this->_identityService->GetRequestSession($this->request)->Expire();
+            $this->_identityService->GetRequestSession($this->request)->Save();
         }
 
         return new Response(

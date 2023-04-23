@@ -10,6 +10,7 @@ use Pivel\Hydro2\Extensions\RoutePrefix;
 use Pivel\Hydro2\Models\Database\Order;
 use Pivel\Hydro2\Models\HTTP\JsonResponse;
 use Pivel\Hydro2\Models\HTTP\Method;
+use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
 use Pivel\Hydro2\Models\Identity\PasswordResetToken;
@@ -29,13 +30,27 @@ use Pivel\Hydro2\Views\Identity\VerifyView;
 #[RoutePrefix('api/hydro2/identity/users')]
 class UserController extends BaseController
 {
+    protected IdentityService $_identityService;
+    protected DatabaseService $_databaseService;
+
+    public function __construct(
+        IdentityService $identityService,
+        DatabaseService $databaseService,
+        Request $request,
+    )
+    {
+        $this->_identityService = $identityService;
+        $this->_databaseService = $databaseService;
+        parent::__construct($request);
+    }
+    
     #[Route(Method::GET, '')]
     public function ListUsers() : Response {
         // if current user doesn't have permission pivel/hydro2/viewusers/, return 404
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
-        if (!IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ViewUsers->value)) {
+        if (!$this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ViewUsers->value)) {
             return new Response(status: StatusCode::NotFound);
         }
 
@@ -94,13 +109,13 @@ class UserController extends BaseController
 
     #[Route(Method::POST, '')]
     public function CreateUser() : Response {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
         // if current user doesn't have permission pivel/hydro2/viewusers/, return 404,
         //  unless trying to get info about self which is always allowed
         // TODO Self-creation
-        if (!IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUsers->value)) {
+        if (!$this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUsers->value)) {
             return new Response(status: StatusCode::NotFound);
         }
 
@@ -155,7 +170,7 @@ class UserController extends BaseController
                 );
             }
         } else {
-            $role = IdentityService::GetDefaultUserRole();
+            $role = $this->_identityService->GetDefaultUserRole();
         }
         echo $role->Id;
 
@@ -190,8 +205,8 @@ class UserController extends BaseController
             );
         }
 
-        $view = new NewUserVerificationEmailView(IdentityService::GetEmailVerificationUrl($this->request, $user, true), $user->Name);
-        if (!IdentityService::SendEmailToUser($user, $view)) {
+        $view = new NewUserVerificationEmailView($this->_identityService->GetEmailVerificationUrl($this->request, $user, true), $user->Name);
+        if (!$this->_identityService->SendEmailToUser($user, $view)) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "Unable to send validation email."
@@ -210,14 +225,14 @@ class UserController extends BaseController
 
     #[Route(Method::GET, '{id}')]
     public function ListUser() : Response {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
         // if current user doesn't have permission pivel/hydro2/viewusers/, return 404,
         //  unless trying to get info about self which is always allowed
         if (!(
-            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ViewUsers->value) ||
-            IdentityService::GetRequestUser($this->request)->RandomId === ($this->request->Args['id']??null)
+            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ViewUsers->value) ||
+            $this->_identityService->GetRequestUser($this->request)->RandomId === ($this->request->Args['id']??null)
             )) {
             return new Response(status: StatusCode::NotFound);
         }
@@ -266,13 +281,13 @@ class UserController extends BaseController
 
     #[Route(Method::POST, '{id}')]
     public function UpdateUser() : Response {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
         // if manageuser or if self.
         if (!(
-            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value) ||
-            IdentityService::GetRequestUser($this->request)->RandomId === ($this->request->Args['id']??null)
+            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value) ||
+            $this->_identityService->GetRequestUser($this->request)->RandomId === ($this->request->Args['id']??null)
             )) {
             return new Response(status: StatusCode::NotFound);
         }
@@ -330,7 +345,7 @@ class UserController extends BaseController
             $role = $user->Role;
         }
         
-        if (IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value)) {
+        if ($this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value)) {
             $user->Role = $role;
             $user->NeedsReview = $this->request->Args['needs_review']??$user->NeedsReview;
             $user->Enabled = $this->request->Args['enabled']??$user->Enabled;
@@ -350,9 +365,9 @@ class UserController extends BaseController
         }
 
         if ($emailChanged) {
-            $newEmailView = new NewUserVerificationEmailView(IdentityService::GetEmailVerificationUrl($this->request, $user, true), $user->Name);
+            $newEmailView = new NewUserVerificationEmailView($this->_identityService->GetEmailVerificationUrl($this->request, $user, true), $user->Name);
             $oldEmailView = new NewEmailNotificationEmailView($user->Name, $oldEmail, $user->Email);
-            if (!(IdentityService::SendEmailToUser($user, $newEmailView) && IdentityService::SendEmailToUser(new User($oldEmail, $user->Name), $oldEmailView))) {
+            if (!($this->_identityService->SendEmailToUser($user, $newEmailView) && $this->_identityService->SendEmailToUser(new User($oldEmail, $user->Name), $oldEmailView))) {
                 return new JsonResponse(
                     status: StatusCode::InternalServerError,
                     error_message: "Unable to send validation email."
@@ -367,11 +382,11 @@ class UserController extends BaseController
 
     #[Route(Method::DELETE, '{id}')]
     public function DeleteUser() : Response {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
         // if current user doesn't have permission pivel/hydro2/manageusers/, return 404
-        if (!IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value)) {
+        if (!$this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value)) {
             return new Response(status: StatusCode::NotFound);
         }
 
@@ -391,7 +406,7 @@ class UserController extends BaseController
     #[Route(Method::POST, '{id}/changepassword')]
     #[Route(Method::POST, '~api/hydro2/identity/changeuserpassword')]
     public function UserChangePassword() : Response {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database."
@@ -403,7 +418,7 @@ class UserController extends BaseController
             $user = User::LoadFromEmail($this->request->Args['email']??'');
         }
         if ($user === null) {
-            $user = IdentityService::GetRequestUser($this->request);
+            $user = $this->_identityService->GetRequestUser($this->request);
         }
 
         if ($user === null) {
@@ -467,7 +482,7 @@ class UserController extends BaseController
                 error_message: 'One or more arguments are invalid.'
             );
         }
-        if ($reset_token !== null && !IdentityService::IsPasswordResetTokenValid($reset_token, $user)) {
+        if ($reset_token !== null && !$this->_identityService->IsPasswordResetTokenValid($reset_token, $user)) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -502,7 +517,7 @@ class UserController extends BaseController
 
         // send notification email
         $emailView = new PasswordChangedNotificationEmailView($user->Name);
-        if (!IdentityService::SendEmailToUser($user, $emailView)) {
+        if (!$this->_identityService->SendEmailToUser($user, $emailView)) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "Unable to send notification email."
@@ -529,7 +544,7 @@ class UserController extends BaseController
     #[Route(Method::POST, '{id}/sendpasswordreset')]
     #[Route(Method::POST, '~api/hydro2/identity/sendpasswordreset')]
     public function UserSendResetPassword() : Response {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database."
@@ -567,8 +582,8 @@ class UserController extends BaseController
         $token->Save();
 
         // send reset email
-        $emailView = new PasswordResetEmailView(IdentityService::GetPasswordResetUrl($this->request, $user, $token), $user->Name, 10);
-        if (!IdentityService::SendEmailToUser($user, $emailView)) {
+        $emailView = new PasswordResetEmailView($this->_identityService->GetPasswordResetUrl($this->request, $user, $token), $user->Name, 10);
+        if (!$this->_identityService->SendEmailToUser($user, $emailView)) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "Unable to send password reset email."

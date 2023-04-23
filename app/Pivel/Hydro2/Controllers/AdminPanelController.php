@@ -5,18 +5,33 @@ namespace Pivel\Hydro2\Controllers;
 use Pivel\Hydro2\Models\HTTP\Method;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
 use Pivel\Hydro2\Extensions\Route;
+use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Services\IdentityService;
-use Pivel\Hydro2\Services\Utilities;
+use Pivel\Hydro2\Services\PackageManifestService;
 use Pivel\Hydro2\Views\AdminPanel\AdminPanelView;
 use Pivel\Hydro2\Views\AdminPanel\BaseAdminPanelViewPage;
 
 class AdminPanelController extends BaseController
 {
+    protected PackageManifestService $_manifestService;
+    protected IdentityService $_identityService;
+
+    public function __construct(
+        PackageManifestService $manifestService,
+        IdentityService $identityService,
+        Request $request,
+    )
+    {
+        $this->_manifestService = $manifestService;
+        $this->_identityService = $identityService;
+        parent::__construct($request);
+    }
+
     #[Route(Method::GET, 'admin/{*path}')]
     #[Route(Method::GET, 'admin')]
     public function GetAdminPanelView() : Response {
-        if (IdentityService::GetRequestSession($this->request) === false) {
+        if ($this->_identityService->GetRequestSession($this->request) === false) {
             return new Response(
                 status: StatusCode::Found,
                 headers: [
@@ -26,14 +41,14 @@ class AdminPanelController extends BaseController
         }
 
         // check whether the session/user is allowed to view the admin panel at all.
-        if (!IdentityService::GetRequestUser($this->request)->Role->HasPermission('pivel/hydro2/viewadminpanel')) {
+        if (!$this->_identityService->GetRequestUser($this->request)->Role->HasPermission('pivel/hydro2/viewadminpanel')) {
             return new Response(
                 status: StatusCode::Forbidden,
             );
         }
 
         $nodes = [];
-        $packageManifest = Utilities::getPackageManifest();
+        $packageManifest = $this->_manifestService->GetPackageManifest();
         foreach ($packageManifest as $vendorName => $vendorPackages) {
             foreach ($vendorPackages as $packageName => $package) {
                 if (!isset($package['admin_panel_nodes'])) {
@@ -48,7 +63,7 @@ class AdminPanelController extends BaseController
                         }
                         $permitted = false;
                         foreach ($node['requires'] as $requiredPermission) {
-                            $permitted |= IdentityService::GetRequestUser($this->request)->Role->HasPermission($requiredPermission);
+                            $permitted |= $this->_identityService->GetRequestUser($this->request)->Role->HasPermission($requiredPermission);
                             if ($permitted) {
                                 break;
                             }

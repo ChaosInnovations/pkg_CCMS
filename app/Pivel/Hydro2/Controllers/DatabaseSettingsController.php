@@ -10,6 +10,7 @@ use Pivel\Hydro2\Extensions\RoutePrefix;
 use Pivel\Hydro2\Models\Database\DatabaseConfigurationProfile;
 use Pivel\Hydro2\Models\Database\Order;
 use Pivel\Hydro2\Models\HTTP\JsonResponse;
+use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Services\Database\DatabaseService;
 use Pivel\Hydro2\Services\IdentityService;
@@ -17,11 +18,25 @@ use Pivel\Hydro2\Services\IdentityService;
 #[RoutePrefix('api/hydro2/database')]
 class DatabaseSettingsController extends BaseController
 {
+    protected IdentityService $_identityService;
+    protected DatabaseService $_databaseService;
+
+    public function __construct(
+        IdentityService $identityService,
+        DatabaseService $databaseService,
+        Request $request,
+    )
+    {
+        $this->_identityService = $identityService;
+        $this->_databaseService = $databaseService;
+        parent::__construct($request);
+    }
+
     #[Route(Method::GET, 'profiles')]
     public function GetAllProfiles() : Response
     {
         // if database has already been configured and not logged in as admin, return 404
-        if (!DatabaseService::IsPrimaryConnected() || !IdentityService::GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
+        if (!$this->_databaseService->IsPrimaryConnected() || !$this->_identityService->GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
             return new Response(
                 status: StatusCode::NotFound
             );
@@ -60,7 +75,7 @@ class DatabaseSettingsController extends BaseController
     public function GetDrivers() : Response
     {
         // if database has already been configured and not logged in as admin, return 404
-        if (!DatabaseService::IsPrimaryConnected() || !IdentityService::GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
+        if (!$this->_databaseService->IsPrimaryConnected() || !$this->_identityService->GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
             return new Response(
                 status: StatusCode::NotFound
             );
@@ -68,7 +83,7 @@ class DatabaseSettingsController extends BaseController
 
         return new JsonResponse(
             data: [
-                'databasedrivers' => DatabaseService::GetAvailableDrivers(),
+                'databasedrivers' => $this->_databaseService->GetAvailableDrivers(),
             ],
             status: StatusCode::OK,
         );
@@ -77,7 +92,7 @@ class DatabaseSettingsController extends BaseController
     #[Route(Method::POST, 'validatehost')]
     public function ValidateHost() : Response {
         // if database has already been configured and not logged in as admin, return 404
-        if (!DatabaseService::IsPrimaryConnected() || !IdentityService::GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
+        if (!$this->_databaseService->IsPrimaryConnected() || !$this->_identityService->GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
             return new Response(
                 status: StatusCode::NotFound
             );
@@ -120,7 +135,7 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if (!DatabaseService::CheckDriver($this->request->Args['driver'])) {
+        if (!$this->_databaseService->CheckDriver($this->request->Args['driver'])) {
             // invalid driver argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
@@ -139,7 +154,7 @@ class DatabaseSettingsController extends BaseController
         }
 
         // check if host is a database server that matches selected driver
-        if (!DatabaseService::CheckHost($this->request->Args['driver'], $this->request->Args['host'])) {
+        if (!$this->_databaseService->CheckHost($this->request->Args['driver'], $this->request->Args['host'])) {
             return new JsonResponse(
                 data: [
                     'databasehostcheck' => false,
@@ -161,7 +176,7 @@ class DatabaseSettingsController extends BaseController
     #[Route(Method::POST, 'validateuser')]
     public function ValidateUser() : Response {
         // if database has already been configured and not logged in as admin, return 404
-        if (!DatabaseService::IsPrimaryConnected() || !IdentityService::GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
+        if (!$this->_databaseService->IsPrimaryConnected() || !$this->_identityService->GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
             return new Response(
                 status: StatusCode::NotFound
             );
@@ -204,7 +219,7 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if (!DatabaseService::CheckDriver($this->request->Args['driver'])) {
+        if (!$this->_databaseService->CheckDriver($this->request->Args['driver'])) {
             // invalid driver argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
@@ -222,7 +237,7 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if (!DatabaseService::CheckHost($this->request->Args['driver'], $this->request->Args['host'])) {
+        if (!$this->_databaseService->CheckHost($this->request->Args['driver'], $this->request->Args['host'])) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -242,7 +257,7 @@ class DatabaseSettingsController extends BaseController
         $password = $this->request->Args['password'] ?? null;
 
         // check if this is a valid user/password on the selected host
-        $privileges = DatabaseService::GetPrivileges(
+        $privileges = $this->_databaseService->GetPrivileges(
             $this->request->Args['driver'],
             $this->request->Args['host'],
             $username,
@@ -272,7 +287,7 @@ class DatabaseSettingsController extends BaseController
     #[Route(Method::POST, 'getdatabases')]
     public function GetDatabases() : Response {
         // if database has already been configured and not logged in as admin, return 404
-        if (!DatabaseService::IsPrimaryConnected() || !IdentityService::GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
+        if (!$this->_databaseService->IsPrimaryConnected() || !$this->_identityService->GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
             return new Response(
                 status: StatusCode::NotFound
             );
@@ -315,7 +330,7 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if (!DatabaseService::CheckDriver($this->request->Args['driver'])) {
+        if (!$this->_databaseService->CheckDriver($this->request->Args['driver'])) {
             // invalid driver argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
@@ -333,7 +348,7 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if (!DatabaseService::CheckHost($this->request->Args['driver'], $this->request->Args['host'])) {
+        if (!$this->_databaseService->CheckHost($this->request->Args['driver'], $this->request->Args['host'])) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -353,7 +368,7 @@ class DatabaseSettingsController extends BaseController
         $password = $this->request->Args['password'] ?? null;
 
         // check if this is a valid user/password on the selected host
-        $privileges = DatabaseService::GetPrivileges(
+        $privileges = $this->_databaseService->GetPrivileges(
             $this->request->Args['driver'],
             $this->request->Args['host'],
             $username,
@@ -383,7 +398,7 @@ class DatabaseSettingsController extends BaseController
 
         // get a list of databases which this user has privileges on
         // can't be false because that would mean the user is invalid, which we've already checked.
-        $databases = DatabaseService::GetDatabases(
+        $databases = $this->_databaseService->GetDatabases(
             $this->request->Args['driver'],
             $this->request->Args['host'],
             $username,
@@ -403,7 +418,7 @@ class DatabaseSettingsController extends BaseController
     #[Route(Method::POST, 'profiles')]
     public function SaveConfiguration() : Response {
         // if database has already been configured and not logged in as admin, return 404
-        if (!DatabaseService::IsPrimaryConnected() || !IdentityService::GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
+        if (!$this->_databaseService->IsPrimaryConnected() || !$this->_identityService->GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
             return new Response(
                 status: StatusCode::NotFound
             );
@@ -446,7 +461,7 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if (!DatabaseService::CheckDriver($this->request->Args['driver'])) {
+        if (!$this->_databaseService->CheckDriver($this->request->Args['driver'])) {
             // invalid driver argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
@@ -464,7 +479,7 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if (!DatabaseService::CheckHost($this->request->Args['driver'], $this->request->Args['host'])) {
+        if (!$this->_databaseService->CheckHost($this->request->Args['driver'], $this->request->Args['host'])) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -484,7 +499,7 @@ class DatabaseSettingsController extends BaseController
         $password = $this->request->Args['password'] ?? null;
 
         // check if this is a valid user/password on the selected host
-        $privileges = DatabaseService::GetPrivileges(
+        $privileges = $this->_databaseService->GetPrivileges(
             $this->request->Args['driver'],
             $this->request->Args['host'],
             $username,
@@ -516,7 +531,7 @@ class DatabaseSettingsController extends BaseController
 
         // get a list of databases which this user has privileges on
         // can't be false because that would mean the user is invalid, which we've already checked.
-        $databases = DatabaseService::GetDatabases(
+        $databases = $this->_databaseService->GetDatabases(
             $this->request->Args['driver'],
             $this->request->Args['host'],
             $username,
@@ -541,7 +556,7 @@ class DatabaseSettingsController extends BaseController
         }
 
         if ($privileges['cancreatedb'] && !in_array($database, $databases)) {
-            if (!DatabaseService::CreateDatabase(
+            if (!$this->_databaseService->CreateDatabase(
                 $this->request->Args['driver'],
                 $this->request->Args['host'],
                 $username,

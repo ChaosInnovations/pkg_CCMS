@@ -2,7 +2,8 @@
 
 namespace Pivel\Hydro2\Views\AdminPanel;
 
-use Pivel\Hydro2\Services\Utilities;
+use Pivel\Hydro2\Hydro2;
+use Pivel\Hydro2\Services\PackageManifestService;
 
 class About extends BaseAdminPanelViewPage
 {
@@ -19,7 +20,8 @@ class About extends BaseAdminPanelViewPage
     public function __construct(
         protected ?string $Content = null,
     ) {
-        $manifest = Utilities::getPackageManifest();
+        $manifestService = Hydro2::$Current->ResolveDependency(PackageManifestService::class);
+        $manifest = $manifestService->GetPackageManifest();
         $h2manifest = $manifest['Pivel']['Hydro2'];
 
         $this->AboutWebsite = $h2manifest['author']['website'];

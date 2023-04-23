@@ -5,21 +5,25 @@ namespace Pivel\Hydro2\Services;
 use Exception;
 use Pivel\Hydro2\Extensions\Route;
 use Pivel\Hydro2\Extensions\RoutePrefix;
+use Pivel\Hydro2\Hydro2;
 use Pivel\Hydro2\Models\HTTP\Method;
 use ReflectionClass;
 
-class Router
+class RouterService
 {
     private array $routes;
+    private PackageManifestService $_manifestService;
 
-    public function __construct() {
-
+    public function __construct(
+        PackageManifestService $packageManifestService,
+    ) {
+        $this->_manifestService = $packageManifestService;
     }
 
     public function RegisterRoutesFromAttributes() : void {
         // Get list of controllers from Utilities\getPackageManifest()
         $controllers = [];
-        $pkg_manifest = Utilities::getPackageManifest();
+        $pkg_manifest = $this->_manifestService->GetPackageManifest();
         foreach ($pkg_manifest as $vendor_name => $vendor_pkg) {
             foreach ($vendor_pkg as $pkg_name => $pkg_info) {
                 if (!isset($pkg_info['controllers'])) {
@@ -77,12 +81,12 @@ class Router
     }
 
     public function LoadRoutes() : bool {
-        if (!file_exists(Hydro2::$app->AppDir . '/routes.json')) {
+        if (!file_exists(Hydro2::$Current->MainAppDir . '/routes.json')) {
             return false;
         }
 
         //$loading_start = microtime(true);
-        $raw_routes = file_get_contents(Hydro2::$app->AppDir . '/routes.json');
+        $raw_routes = file_get_contents(Hydro2::$Current->MainAppDir . '/routes.json');
         //$loading_end = microtime(true);
         //echo "Took " . ($loading_end - $loading_start) * 1000 . 'ms to load file contents.';
         $this->routes = json_decode($raw_routes, true);
@@ -95,7 +99,7 @@ class Router
     }
 
     public function SaveRoutes() : void {
-        file_put_contents(Hydro2::$app->AppDir . '/routes.json', json_encode($this->routes));
+        file_put_contents(Hydro2::$Current->MainAppDir . '/routes.json', json_encode($this->routes));
     }
 
     public function GetMatchingRoutes(Method $method, string $path) : array {

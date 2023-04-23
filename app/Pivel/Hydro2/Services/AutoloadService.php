@@ -2,9 +2,7 @@
 
 namespace Pivel\Hydro2\Services;
 
-use Pivel\Hydro2\Services\Utilities;
-
-class Autoloader
+class AutoloadService
 {
     /**
      * @var string[]
@@ -12,14 +10,13 @@ class Autoloader
     protected array $base_dirs;
 
     /**
-     * @return Autoloader
+     * @return AutoloadService
      */
     public function __construct(?string $base_dir=null)
     {
         $this->base_dirs[] = rtrim($base_dir??$_SERVER["DOCUMENT_ROOT"], DIRECTORY_SEPARATOR);
         
         // Manually require Utilities.php because we don't have a working autoloader yet
-        require_once $base_dirs[0]."/Pivel/Hydro2/Services/Utilities.php";
     }
 
     public function AddDir(string $base_dir)
@@ -38,14 +35,6 @@ class Autoloader
 
         if (count($class_parts) < 3) {
             // Hydro2 package namespaces must have at least [vendor]\[package]\[class], (2x '\' or 3x parts minimum).
-            return false;
-        }
-
-        // Only load the class if the package has all its dependencies installed.
-        $vendor_name = $class_parts[0];
-        $pkg_name = $class_parts[1];
-        if (!isset(Utilities::getPackageManifest()[$vendor_name][$pkg_name])) {
-            echo "Couldn't load class \"{$class}\" because package \"{$pkg_name}\" is either missing dependencies or has an invalid manifest.<br />\n";
             return false;
         }
 

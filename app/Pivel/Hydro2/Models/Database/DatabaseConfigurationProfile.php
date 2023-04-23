@@ -2,7 +2,7 @@
 
 namespace Pivel\Hydro2\Models\Database;
 
-use Pivel\Hydro2\Services\Hydro2;
+use Pivel\Hydro2\Hydro2;
 use Pivel\Hydro2\Extensions\Database\OrderBy;
 
 class DatabaseConfigurationProfile
@@ -22,12 +22,12 @@ class DatabaseConfigurationProfile
      * @return DatabaseConfigurationProfile[]
      */
     public static function GetAll(?OrderBy $order=null, ?int $limit=null, ?int $offset=null) : array {
-        if (!file_exists(Hydro2::$app->AppDir . '/dbconfig.json')) {
+        if (!file_exists(Hydro2::$Current->MainAppDir . '/dbconfig.json')) {
             $defaultConfig = new DatabaseConfigurationProfile('primary', 'sqlite', 'default.sqlite3', null, null, null);
             $defaultConfig->Save();
         }
 
-        $raw_config = file_get_contents(Hydro2::$app->AppDir . '/dbconfig.json');
+        $raw_config = file_get_contents(Hydro2::$Current->MainAppDir . '/dbconfig.json');
         /** @var array[] */
         $config = json_decode($raw_config, true);
         if (json_last_error() != JSON_ERROR_NONE) {
@@ -91,12 +91,12 @@ class DatabaseConfigurationProfile
     }
 
     public static function LoadFromKey(string $key) : ?self {
-        if (!file_exists(Hydro2::$app->AppDir . '/dbconfig.json')) {
+        if (!file_exists(Hydro2::$Current->MainAppDir . '/dbconfig.json')) {
             $defaultConfig = new DatabaseConfigurationProfile('primary', 'sqlite', 'default.sqlite3', null, null, null);
             $defaultConfig->Save();
         }
 
-        $raw_config = file_get_contents(Hydro2::$app->AppDir . '/dbconfig.json');
+        $raw_config = file_get_contents(Hydro2::$Current->MainAppDir . '/dbconfig.json');
         /** @var array[] */
         $config = json_decode($raw_config, true);
         if (json_last_error() != JSON_ERROR_NONE) {
@@ -119,8 +119,8 @@ class DatabaseConfigurationProfile
 
     public function Save() : void {
         $config = [];
-        if (file_exists(Hydro2::$app->AppDir . '/dbconfig.json')) {
-            $raw_config = file_get_contents(Hydro2::$app->AppDir . '/dbconfig.json');
+        if (file_exists(Hydro2::$Current->MainAppDir . '/dbconfig.json')) {
+            $raw_config = file_get_contents(Hydro2::$Current->MainAppDir . '/dbconfig.json');
             /** @var array[] */
             $config = json_decode($raw_config, true);
             if (json_last_error() != JSON_ERROR_NONE) {
@@ -136,6 +136,6 @@ class DatabaseConfigurationProfile
             'databasescheme' => $this->DatabaseSchema,
         ];
 
-        file_put_contents(Hydro2::$app->AppDir . '/dbconfig.json', json_encode($config));
+        file_put_contents(Hydro2::$Current->MainAppDir . '/dbconfig.json', json_encode($config));
     }
 }

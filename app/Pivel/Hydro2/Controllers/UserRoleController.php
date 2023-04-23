@@ -8,6 +8,7 @@ use Pivel\Hydro2\Extensions\RoutePrefix;
 use Pivel\Hydro2\Models\Database\Order;
 use Pivel\Hydro2\Models\HTTP\JsonResponse;
 use Pivel\Hydro2\Models\HTTP\Method;
+use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
 use Pivel\Hydro2\Models\Identity\User;
@@ -19,15 +20,29 @@ use Pivel\Hydro2\Services\IdentityService;
 #[RoutePrefix('api/hydro2/identity/userroles')]
 class UserRoleController extends BaseController
 {
+    protected IdentityService $_identityService;
+    protected DatabaseService $_databaseService;
+
+    public function __construct(
+        IdentityService $identityService,
+        DatabaseService $databaseService,
+        Request $request,
+    )
+    {
+        $this->_identityService = $identityService;
+        $this->_databaseService = $databaseService;
+        parent::__construct($request);
+    }
+    
     #[Route(Method::GET, '')]
     public function GetUserRoles() : Response {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
         if (!(
-            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value) ||
-            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUsers->value) ||
-            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value)
+            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value) ||
+            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUsers->value) ||
+            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value)
         )) {
             return new Response(status: StatusCode::NotFound);
         }
@@ -45,7 +60,7 @@ class UserRoleController extends BaseController
 
         $userRoleResults = [];
 
-        $permissions = IdentityService::GetAvailablePermissions();
+        $permissions = $this->_identityService->GetAvailablePermissions();
 
         foreach ($userRoles as $userRole) {
             $userRoleResults[] = [
@@ -77,10 +92,10 @@ class UserRoleController extends BaseController
 
     #[Route(Method::POST, '')]
     public function CreateUserRole() : Response {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
-        if (!IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUserRoles->value)) {
+        if (!$this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUserRoles->value)) {
             return new Response(status: StatusCode::NotFound);
         }
 
@@ -95,7 +110,7 @@ class UserRoleController extends BaseController
         );
 
         $requestedPermissions = $this->request->Args['permissions']??[];
-        $availablePermissions = IdentityService::GetAvailablePermissions();
+        $availablePermissions = $this->_identityService->GetAvailablePermissions();
 
         // validate permissions. can't add yet since we don't know that the new UserRole's ID will be.
         foreach ($requestedPermissions as $permission) {
@@ -142,13 +157,13 @@ class UserRoleController extends BaseController
 
     #[Route(Method::GET, '{id}')]
     public function GetUserRole() : Response {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
         if (!(
-            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value) ||
-            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUsers->value) ||
-            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value)
+            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value) ||
+            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUsers->value) ||
+            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value)
         )) {
             return new Response(status: StatusCode::NotFound);
         }
@@ -172,7 +187,7 @@ class UserRoleController extends BaseController
             );
         }
 
-        $permissions = IdentityService::GetAvailablePermissions();
+        $permissions = $this->_identityService->GetAvailablePermissions();
 
         $userRoleResults = [[
             'id' => $userRole->Id,
@@ -202,10 +217,10 @@ class UserRoleController extends BaseController
 
     #[Route(Method::POST, '{id}')]
     public function UpdateUserRole() : Response {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
-        if (!IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value)) {
+        if (!$this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value)) {
             return new Response(status: StatusCode::NotFound);
         }
 
@@ -237,7 +252,7 @@ class UserRoleController extends BaseController
         $userRole->Max2FAAttempts = intval($this->request->Args['max_2fa_attempts']??$userRole->Max2FAAttempts);
 
         $requestedPermissionKeys = $this->request->Args['permissions']??[];
-        $availablePermissions = IdentityService::GetAvailablePermissions();
+        $availablePermissions = $this->_identityService->GetAvailablePermissions();
 
         // validate new permissions
         foreach ($requestedPermissionKeys as $permissionKey) {
@@ -296,10 +311,10 @@ class UserRoleController extends BaseController
 
     #[Route(Method::DELETE, '{id}')]
     public function DeleteUserRole() : Response {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
-        if (!IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value)) {
+        if (!$this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value)) {
             return new Response(status: StatusCode::NotFound);
         }
 
@@ -334,17 +349,17 @@ class UserRoleController extends BaseController
 
     #[Route(Method::GET, '~api/hydro2/identity/permissions')]
     public function GetPermissions() : Response {
-        if (!DatabaseService::IsPrimaryConnected()) {
+        if (!$this->_databaseService->IsPrimaryConnected()) {
             return new Response(status: StatusCode::NotFound);
         }
         if (!(
-            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value) ||
-            IdentityService::GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUserRoles->value)
+            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value) ||
+            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUserRoles->value)
         )) {
             return new Response(status: StatusCode::NotFound);
         }
 
-        $permissions = IdentityService::GetAvailablePermissions();
+        $permissions = $this->_identityService->GetAvailablePermissions();
         $permissionResults = [];
 
         foreach ($permissions as $permission) {

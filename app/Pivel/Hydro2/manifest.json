@@ -31,6 +31,12 @@
         "Pivel\\Hydro2\\Controllers\\AdminPanelController"
     ],
 
+    "services": [
+        {"class":"Pivel\\Hydro2\\Services\\IdentityService"},
+        {"class":"Pivel\\Hydro2\\Services\\Database\\DatabaseService"},
+        {"class":"Pivel\\Hydro2\\Services\\Email\\EmailService"}
+    ],
+
     "permissions": [
         {"key":"viewadminpanel","name":"View Admin Panel","description":"Allow the user to access the admin panel page at /admin."},
         {"key":"managedatabaseconnections","requires":["pivel/hydro2/viewadminpanel"],"name":"Manage Database Connections","description":"Allow editing, adding, and deleting database connection profiles."},

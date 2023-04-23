@@ -3,20 +3,24 @@
 namespace Pivel\Hydro2\Services;
 
 use DirectoryIterator;
+use Pivel\Hydro2\Hydro2;
 
-class Utilities
+class PackageManifestService
 {
-    private static $pkg_manifest = null;
-    public static function getPackageManifest() : array {
-        global $app_dir;
-        if (self::$pkg_manifest === null) {
-            self::$pkg_manifest = [];
+    private ?array $pkg_manifest = null;
 
-            $pkgDirs = [
-                $app_dir,
-            ];
+    private array $pkgDirs = [];
+
+    public function __construct()
+    {
+        $this->pkgDirs = array_merge([Hydro2::$Current->MainAppDir], Hydro2::$Current->AdditionalAppDirs);
+    }
+
+    public function GetPackageManifest() : array {
+        if ($this->pkg_manifest === null) {
+            $this->pkg_manifest = [];
         
-            foreach ($pkgDirs as $searchDir) {
+            foreach ($this->pkgDirs as $searchDir) {
                 $dir = new DirectoryIterator($searchDir);
                 foreach ($dir as $vendorDir) {
                     if ($vendorDir->isDot()) {
@@ -26,7 +30,7 @@ class Utilities
                         continue;
                     }
 
-                    self::$pkg_manifest[$vendorDir->getFilename()] = [];
+                    $this->pkg_manifest[$vendorDir->getFilename()] = [];
                     $vdir = new DirectoryIterator($vendorDir->getPath().'/'.$vendorDir->getFilename());
                     foreach ($vdir as $fileinfo) {
                         if ($fileinfo->isDot()) {
@@ -46,8 +50,8 @@ class Utilities
                     
                         $manifest = json_decode(file_get_contents($fileinfo->getPath().'/'.$fileinfo->getFilename()."/manifest.json"), true);
     
-                        self::$pkg_manifest[$vendorDir->getFilename()][$fileinfo->getFilename()] = $manifest;
-                        self::$pkg_manifest[$vendorDir->getFilename()][$fileinfo->getFilename()]["has_dependent"] = false;
+                        $this->pkg_manifest[$vendorDir->getFilename()][$fileinfo->getFilename()] = $manifest;
+                        $this->pkg_manifest[$vendorDir->getFilename()][$fileinfo->getFilename()]["has_dependent"] = false;
                     }
                 }
             }
@@ -59,7 +63,7 @@ class Utilities
             // Check dependencies
             $missing_dependencies = false;
             do {
-                foreach (self::$pkg_manifest as $vendor_name => $vendor_pkgs) {
+                foreach ($this->pkg_manifest as $vendor_name => $vendor_pkgs) {
                     foreach ($vendor_pkgs as $pkg_name => $pkg_info) {
                         //echo $module_name . '<br />';
                         //var_dump($module_info['dependencies']);
@@ -70,16 +74,16 @@ class Utilities
                         }
 
                         foreach ($dependencies as $index => $dependency) {
-                            if (!isset(self::$pkg_manifest[$dependency["vendor"]][$dependency["name"]])) {
+                            if (!isset($this->pkg_manifest[$dependency["vendor"]][$dependency["name"]])) {
                                 echo "Module \"{$pkg_name}\" missing dependency \"{$dependency["vendor"]}/{$dependency["name"]}\"<br />\n";
                                 $missing_dependencies = true;
                                 break;
                             }
 
-                            self::$pkg_manifest[$dependency["vendor"]][$dependency["name"]]["has_dependent"] = true;
+                            $this->pkg_manifest[$dependency["vendor"]][$dependency["name"]]["has_dependent"] = true;
 
                             $minVer = $dependency["min_version"];
-                            $depVer = self::$pkg_manifest[$dependency["vendor"]][$dependency["name"]]["version"];
+                            $depVer = $this->pkg_manifest[$dependency["vendor"]][$dependency["name"]]["version"];
 
                             $cmp = 8 * ($depVer[0] <=> $minVer[0]);
                             $cmp += 4 * ($depVer[1] <=> $minVer[1]);
@@ -100,7 +104,7 @@ class Utilities
                         }
 
                         if ($missing_dependencies) {
-                            unset(self::$pkg_manifest[$pkg_name]);
+                            unset($this->pkg_manifest[$pkg_name]);
                             break;
                         }
                     }
@@ -109,6 +113,6 @@ class Utilities
 
         }
 
-        return self::$pkg_manifest;
+        return $this->pkg_manifest;
     }
 }

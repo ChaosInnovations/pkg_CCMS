@@ -7,6 +7,7 @@ use Pivel\Hydro2\Models\Email\OutboundEmailProfile;
 class EmailService
 {
     // Singleton pattern
+    // TODO use DI pattern
     /**
      * @var IOutboundEmailProvider[]
      */
@@ -31,7 +32,7 @@ class EmailService
         'smtp' => SMTPProvider::class,
     ];
 
-    public static function GetOutboundEmailProvider(OutboundEmailProfile $profile) : ?IOutboundEmailProvider {
+    public function GetOutboundEmailProvider(OutboundEmailProfile $profile) : ?IOutboundEmailProvider {
         if (!isset(self::$emailProviders[$profile->Type])) {
             return null;
         }
@@ -43,7 +44,7 @@ class EmailService
     /**
      * @return string[]
      */
-    public static function GetAvailableProviders() : array {
+    public function GetAvailableProviders() : array {
         return array_keys(self::$emailProviders);
     }
 }
