@@ -12,15 +12,20 @@ use ReflectionClass;
 class RouterService
 {
     private array $routes;
+    private ILoggerService $_loggerService;
     private PackageManifestService $_manifestService;
 
     public function __construct(
+        ILoggerService $loggerService,
         PackageManifestService $packageManifestService,
     ) {
+        $this->_loggerService = $loggerService;
         $this->_manifestService = $packageManifestService;
     }
 
     public function RegisterRoutesFromAttributes() : void {
+        $this->_loggerService->Info('Pivel/Hydro2', "Buidling new routing table...");
+
         // Get list of controllers from Utilities\getPackageManifest()
         $controllers = [];
         $pkg_manifest = $this->_manifestService->GetPackageManifest();
@@ -78,6 +83,9 @@ class RouterService
 
         // Sort routes
         $this->SortRoutes();
+
+        $qty = count($this->routes);
+        $this->_loggerService->Info('Pivel/Hydro2', "Built new routing table. Found {$qty} routes.");
     }
 
     public function LoadRoutes() : bool {

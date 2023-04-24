@@ -2,3 +2,4 @@
 app/dbconfig.json
 app/routes.json
 *.sqlite3
+*.log

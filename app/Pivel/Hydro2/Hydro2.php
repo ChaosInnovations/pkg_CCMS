@@ -5,6 +5,8 @@ namespace Pivel\Hydro2;
 use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Services\AutoloadService;
+use Pivel\Hydro2\Services\ILoggerService;
+use Pivel\Hydro2\Services\LoggerService;
 use Pivel\Hydro2\Services\PackageManifestService;
 use Pivel\Hydro2\Services\Router;
 use Pivel\Hydro2\Services\RouterService;
@@ -40,7 +42,10 @@ class Hydro2
 
         self::$Current->RegisterSingleton(PackageManifestService::class);
         self::$Current->RegisterSingleton(RouterService::class);
+        self::$Current->RegisterSingleton(LoggerService::class, ILoggerService::class);
 
+        
+        self::$Current->ResolveLoggerService(ILoggerService::class);
         self::$Current->ResolveManifestService(PackageManifestService::class);
         self::$Current->ResolveRouterService(RouterService::class);
 
@@ -54,6 +59,7 @@ class Hydro2
     private AutoloadService $_autoloadService;
     private PackageManifestService $_manifestService;
     private RouterService $_routerService;
+    private ILoggerService $_loggerService;
     private array $diClasses = [];
 
     public function __construct(
@@ -145,6 +151,11 @@ class Hydro2
         return $instance;
     }
 
+    public function ResolveLoggerService(string $class) : void
+    {
+        $this->_loggerService = $this->ResolveDependency($class);
+    }
+
     public function ResolveManifestService(string $class) : void
     {
         $this->_manifestService = $this->ResolveDependency($class);
@@ -196,6 +207,7 @@ class Hydro2
         if (!$could_load) {
             // routing table hasn't been built yet, so build it
             //$parsing_start = microtime(true);
+            $this->_loggerService->Warn('Pivel/Hydro2', "Couldn't load routing table.");
             $this->_routerService->RegisterRoutesFromAttributes();
             //$parsing_end = microtime(true);
             //echo 'Took ' . ($parsing_end - $parsing_start) * 1000 . 'ms to build a new routing table.';
@@ -253,8 +265,10 @@ class Hydro2
     {
         // Process incoming request
         $request = $this->buildRequest();
+        $this->_loggerService->Info('Pivel/Hydro2', "{$request->method->value} {$request->getClientAddress()} {$request->endpoint}");
         $response = $this->processRequest($request);
         $response->send(false);
+        $this->_loggerService->Info('Pivel/Hydro2', "Sent response for {$request->endpoint}");
 
         return $this;
     }
