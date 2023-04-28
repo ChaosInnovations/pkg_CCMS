@@ -1,0 +1,15 @@
+{#parent}
+    {#arg Content}
+        <h2>Database Connections</h2>
+        {#view Pivel\Hydro2\Views\Components\SortableTable(Id:"persistence_profiles_table")}
+            {#arg Headers[]}<th class="sortable" data-property="key">Name</th>{#}
+            {#arg Headers[]}<th class="sortable" data-property="persistenceProviderClass">Driver</th>{#}
+            {#arg Headers[]}<th class="sortable" data-property="hostOrPath">Host/Path</th>{#}
+            {#arg Headers[]}<th class="sortable" data-property="username">Username</th>{#}
+            {#arg Headers[]}<th class="sortable" data-property="databaseSchema">Schema Name</th>{#}
+        {#}
+        <script>
+            var db_connections_table = new SortableTable("#persistence_profiles_table", "/api/hydro2/persistence/profiles", "persistenceprofiles");
+        </script>
+    {#}
+{#}

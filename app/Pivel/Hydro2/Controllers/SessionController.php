@@ -17,18 +17,19 @@ use Pivel\Hydro2\Models\Identity\UserPassword;
 use Pivel\Hydro2\Models\Permissions;
 use Pivel\Hydro2\Services\Database\DatabaseService;
 use Pivel\Hydro2\Services\IdentityService;
+use Pivel\Hydro2\Services\UserNotificationService;
 use Pivel\Hydro2\Views\EmailViews\Identity\NewUserVerificationEmailView;
 use Pivel\Hydro2\Views\Identity\LoginView;
 
 #[RoutePrefix('api/hydro2/identity')]
 class SessionController extends BaseController
 {
-    protected IdentityService $_identityService;
-    protected DatabaseService $_databaseService;
+    private IdentityService $_identityService;
+    private UserNotificationService $_userNotificationService;
 
     public function __construct(
         IdentityService $identityService,
-        DatabaseService $databaseService,
+        UserNotificationService $userNotificationService,
         Request $request,
     )
     {
@@ -39,8 +40,9 @@ class SessionController extends BaseController
     #[Route(Method::POST, 'login')]
     #[Route(Method::POST, '~login')]
     #[Route(Method::POST, '~api/login')]
-    public function Login() : Response {
-        if ($this->_identityService->GetRequestSession($this->request) !== false) {
+    public function Login(): Response
+    {
+        if ($this->_identityService->GetSessionFromRequest($this->request) !== null) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -88,7 +90,7 @@ class SessionController extends BaseController
             );
         }
 
-        $user = User::LoadFromEmail($this->request->Args['email']);
+        $user = $this->_identityService->GetUserFromEmail($this->request->Args['email']);
         if ($user == null) {
             return new JsonResponse(
                 data: [
@@ -106,9 +108,9 @@ class SessionController extends BaseController
         }
 
         if (
-            ($user->Role->MaxLoginAttempts > 0 && $user->FailedLoginAttempts >= $user->Role->MaxLoginAttempts) ||
-            ($user->Role->Max2FAAttempts > 0 && $user->Failed2FAAttempts >= $user->Role->Max2FAAttempts)
-            ) {
+            ($user->GetUserRole()->MaxLoginAttempts > 0 && $user->FailedLoginAttempts >= $user->GetUserRole()->MaxLoginAttempts) ||
+            ($user->GetUserRole()->Max2FAAttempts > 0 && $user->Failed2FAAttempts >= $user->GetUserRole()->Max2FAAttempts)
+        ) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -124,12 +126,11 @@ class SessionController extends BaseController
             );
         }
 
-        $userPassword = UserPassword::LoadCurrentFromUser($user);
-        if ($userPassword === null || !$user->EmailVerified) {
+        if ($user->GetPasswordCount() == 0 || !$user->EmailVerified) {
             $user->EmailVerified = false;
-            $user->Save();
+            $this->_identityService->UpdateUser($user);
             $view = new NewUserVerificationEmailView($this->_identityService->GetEmailVerificationUrl($this->request, $user, true), $user->Name);
-            $this->_identityService->SendEmailToUser($user, $view);
+            $this->_userNotificationService->SendEmailToUser($user, $view);
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -144,10 +145,10 @@ class SessionController extends BaseController
                 error_message: 'One or more arguments are invalid.'
             );
         }
-
-        if (!$userPassword->ComparePassword($this->request->Args['password'])) {
+        
+        if (!$user->CheckPassword($this->request->Args['password'])) {
             $user->FailedLoginAttempts++;
-            $user->Save();
+            $this->_identityService->UpdateUser($user);
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -179,37 +180,23 @@ class SessionController extends BaseController
             );
         }
 
-        $sessionStarts = new DateTime(timezone:new DateTimeZone('UTC'));
-        $sessionExpires = (clone $sessionStarts)->modify("+{$user->Role->MaxSessionLengthMinutes} minutes");
-        $session2FAExpires = $user->Role->ChallengeIntervalMinutes>0?(clone $sessionStarts):null;
+        $session = $this->_identityService->StartSession($user, $this->request);
 
-        // create new session
-        $session = new Session(
-            userId: $user->Id,
-            browser: $this->request->UserAgent,
-            startTime: $sessionStarts,
-            expireTime: $sessionExpires,
-            expire2FATime: $session2FAExpires,
-            lastAccessTime: $sessionStarts,
-            startIP: $this->request->getClientAddress(),
-            lastIP: $this->request->getClientAddress(),
-        );
-
-        if (!$session->Save()) {
+        if ($session === null) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database."
             );
         }
 
-        setcookie('sridkey', $session->RandomId . ';' . $session->Key, $sessionExpires->getTimestamp(), '/', httponly: true);
+        setcookie('sridkey', $session->RandomId . ';' . $session->Key, $session->ExpireTime->getTimestamp(), '/', httponly: true);
 
         return new JsonResponse(
             data: [
                 'login_result' => [
                     'authenticated' => true,
-                    'challenge_required' => ($user->Role->ChallengeIntervalMinutes>0),
-                    'password_change_required' => $userPassword->IsExpired(),
+                    'challenge_required' => ($user->GetUserRole()->ChallengeIntervalMinutes>0),
+                    'password_change_required' => $user->IsPasswordChangeRequired(),
                 ],
             ],
             status: StatusCode::OK,
@@ -217,19 +204,18 @@ class SessionController extends BaseController
     }
 
     #[Route(Method::GET, 'users/{id}/sessions')]
-    public function UserGetSessions() : Response {
-        if (!$this->_databaseService->IsPrimaryConnected()) {
-            return new Response(status: StatusCode::NotFound);
-        }
+    public function UserGetSessions(): Response
+    {
         // need to have either viewusersessions permission or be requestion own user's sessions
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
         if (!(
-            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ViewUserSessions->value) ||
-            $this->_identityService->GetRequestUser($this->request)->RandomId === $this->request->Args['id']
+            $requestUser->GetUserRole()->HasPermission(Permissions::ViewUserSessions->value) ||
+            $requestUser->RandomId == $this->request->Args['id']
         )) {
             return new Response(status: StatusCode::NotFound);
         }
 
-        $user = User::LoadFromRandomId($this->request->Args['id']);
+        $user = $this->_identityService->GetUserFromRandomId($this->request->Args['id']);
         if ($user === null) {
             return new JsonResponse(
                 data: [
@@ -246,9 +232,9 @@ class SessionController extends BaseController
             );
         }
 
-        $currentSessionId = $this->_identityService->GetRequestSession($this->request)->RandomId;
+        $currentSessionId = $this->_identityService->GetSessionFromRequest($this->request)->RandomId;
         $sessionsResults = [];
-        $sessions = Session::GetAllByUser($user);
+        $sessions = $user->GetSessions();
         foreach ($sessions as $s) {
             $sessionsResults[] = [
                 'random_id' => $s->RandomId,
@@ -275,19 +261,14 @@ class SessionController extends BaseController
     #[Route(Method::GET, 'sessions/{sessionid}/expire')]
     #[Route(Method::POST, 'sessions/{sessionid}/expire')]
     #[Route(Method::DELETE, 'sessions/{sessionid}')]
-    public function UserExpireSession() : Response {
-        if (!$this->_databaseService->IsPrimaryConnected()) {
-            return new Response(status: StatusCode::NotFound);
-        }
-        // need to have either viewusersessions permission or be requesting on own user's session
-        $session = Session::LoadFromRandomId($this->request->Args['sessionid']);
+    public function UserExpireSession(): Response
+    {
+        $session = $this->_identityService->GetSessionFromRandomId($this->request->Args['sessionid']);
+        // need to have either endusersessions permission or be requesting on own user's sessions
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
         if (!(
-            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::EndUserSessions->value) ||
-            
-            (
-                $session !== null &&
-                $this->_identityService->GetRequestUser($this->request)->Id === $session->UserId
-            )
+            $requestUser->GetUserRole()->HasPermission(Permissions::EndUserSessions->value) ||
+            ($session !== null && $requestUser->Id == $session->GetUser()->Id)
         )) {
             return new Response(status: StatusCode::NotFound);
         }
@@ -308,8 +289,7 @@ class SessionController extends BaseController
             );
         }
 
-        $session->Expire();
-        if (!$session->Save()) {
+        if (!$this->_identityService->ExpireSession($session)) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database."
@@ -324,13 +304,16 @@ class SessionController extends BaseController
     }
 
     #[Route(Method::GET, '~login')]
-    public function GetLoginView() : Response {
+    public function GetLoginView(): Response
+    {
+        $session = $this->_identityService->GetSessionFromRequest($this->request);
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
         // check if already logged in. If there is a ?next= arg, redirect to that path. Otherwise, redirect to ~/
         //  unless password change is required, then display the password change screen.
         //  TODO if 2FA challenge is required, then display the 2FA challenge screen.
-        if ($this->_identityService->GetRequestSession($this->request) !== false) {
-            $userPassword = UserPassword::LoadCurrentFromUser($this->_identityService->GetRequestUser($this->request));
-            if (!$userPassword->IsExpired()) {
+        $view = new LoginView();
+        if ($session !== null) {
+            if (!$requestUser->IsPasswordChangeRequired()) {
                 return new Response(
                     status: StatusCode::Found,
                     headers: [
@@ -338,22 +321,22 @@ class SessionController extends BaseController
                     ],
                 );
             }
-        }
 
-        $view = new LoginView();
-        if ($this->_identityService->GetRequestSession($this->request) !== false && $userPassword->IsExpired()) {
             $view->DefaultPage = 'changepassword';
         }
+
         return new Response(
             content: $view->Render()
         );
     }
 
     #[Route(Method::GET, '~logout')]
-    public function Logout() : Response {
-        if ($this->_identityService->GetRequestSession($this->request) !== false) {
-            $this->_identityService->GetRequestSession($this->request)->Expire();
-            $this->_identityService->GetRequestSession($this->request)->Save();
+    public function Logout(): Response
+    {
+        $session = $this->_identityService->GetSessionFromRequest($this->request);
+
+        if ($session !== false) {
+            $this->_identityService->ExpireSession($session);
         }
 
         return new Response(

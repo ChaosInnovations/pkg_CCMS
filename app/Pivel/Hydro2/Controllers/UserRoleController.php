@@ -2,7 +2,7 @@
 
 namespace Pivel\Hydro2\Controllers;
 
-use Pivel\Hydro2\Extensions\Database\OrderBy;
+use Pivel\Hydro2\Extensions\Query;
 use Pivel\Hydro2\Extensions\Route;
 use Pivel\Hydro2\Extensions\RoutePrefix;
 use Pivel\Hydro2\Models\Database\Order;
@@ -11,57 +11,50 @@ use Pivel\Hydro2\Models\HTTP\Method;
 use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
-use Pivel\Hydro2\Models\Identity\User;
 use Pivel\Hydro2\Models\Identity\UserRole;
 use Pivel\Hydro2\Models\Permissions;
-use Pivel\Hydro2\Services\Database\DatabaseService;
 use Pivel\Hydro2\Services\IdentityService;
 
 #[RoutePrefix('api/hydro2/identity/userroles')]
 class UserRoleController extends BaseController
 {
     protected IdentityService $_identityService;
-    protected DatabaseService $_databaseService;
 
     public function __construct(
         IdentityService $identityService,
-        DatabaseService $databaseService,
         Request $request,
     )
     {
         $this->_identityService = $identityService;
-        $this->_databaseService = $databaseService;
         parent::__construct($request);
     }
     
     #[Route(Method::GET, '')]
-    public function GetUserRoles() : Response {
-        if (!$this->_databaseService->IsPrimaryConnected()) {
-            return new Response(status: StatusCode::NotFound);
-        }
+    public function GetUserRoles(): Response
+    {
+        // if current user doesn't have permission , return 404
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
         if (!(
-            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value) ||
-            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUsers->value) ||
-            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value)
+            $requestUser->GetUserRole()->HasPermission(Permissions::ManageUserRoles->value) ||
+            $requestUser->GetUserRole()->HasPermission(Permissions::CreateUsers->value) ||
+            $requestUser->GetUserRole()->HasPermission(Permissions::ManageUsers->value)
         )) {
             return new Response(status: StatusCode::NotFound);
         }
 
-        $order = null;
+        $query = new Query();
+        $query->Limit($this->request->Args['limit'] ?? -1);
+        $query->Offset($this->request->Args['offset'] ?? 0);
+        
         if (isset($this->request->Args['sort_by'])) {
             $dir = Order::tryFrom(strtoupper($this->request->Args['sort_dir']??'asc'))??Order::Ascending;
-            $order = (new OrderBy)->Column($this->request->Args['sort_by']??'id', $dir);
+            $query->OrderBy($this->request->Args['sort_by']??'id', $dir);
         }
-        $limit = $this->request->Args['limit']??null;
-        $offset = $this->request->Args['offset']??null;
 
-        /** @var UserRole[] */
-        $userRoles = UserRole::GetAll($order, $limit, $offset);
-
-        $userRoleResults = [];
-
+        $userRoles = $this->_identityService->GetUserRolesMatchingQuery($query);
         $permissions = $this->_identityService->GetAvailablePermissions();
 
+        $userRoleResults = [];
         foreach ($userRoles as $userRole) {
             $userRoleResults[] = [
                 'id' => $userRole->Id,
@@ -77,9 +70,9 @@ class UserRoleController extends BaseController
                     /** @var UserPermission $p */
                     return [
                         'key' => $p->PermissionKey,
-                        'name' => isset($permissions[$p->PermissionKey])?$permissions[$p->PermissionKey]->Name:'Unknown Permission',
+                        'name' => isset($permissions[$p->PermissionKey]) ? $permissions[$p->PermissionKey]->Name : 'Unknown Permission',
                     ];
-                }, $userRole->Permissions),
+                }, $userRole->GetPermissions()),
             ];
         }
 
@@ -91,22 +84,22 @@ class UserRoleController extends BaseController
     }
 
     #[Route(Method::POST, '')]
-    public function CreateUserRole() : Response {
-        if (!$this->_databaseService->IsPrimaryConnected()) {
-            return new Response(status: StatusCode::NotFound);
-        }
-        if (!$this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUserRoles->value)) {
+    public function CreateUserRole(): Response
+    {
+        // if current user doesn't have permission , return 404
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::CreateUserRoles->value)) {
             return new Response(status: StatusCode::NotFound);
         }
 
         $userRole = new UserRole(
-            name: $this->request->Args['name']??'New Role',
-            description: $this->request->Args['description']??'',
-            maxLoginAttempts: intval($this->request->Args['max_login_attempts']??5),
-            maxSessionLengthMinutes: intval($this->request->Args['max_session_length_minutes']??43200),
-            daysUntil2FASetupRequired: intval($this->request->Args['days_until_2fa_setup_required']??3),
-            challengeIntervalMinutes: intval($this->request->Args['challenge_interval']??21600),
-            max2FAAttempts: intval($this->request->Args['max_2fa_attempts']??5),
+            name: $this->request->Args['name'] ?? 'New Role',
+            description: $this->request->Args['description'] ?? '',
+            maxLoginAttempts: intval($this->request->Args['max_login_attempts'] ?? 5),
+            maxSessionLengthMinutes: intval($this->request->Args['max_session_length_minutes'] ?? 43200),
+            daysUntil2FASetupRequired: intval($this->request->Args['days_until_2fa_setup_required'] ?? 3),
+            challengeIntervalMinutes: intval($this->request->Args['challenge_interval'] ?? 21600),
+            max2FAAttempts: intval($this->request->Args['max_2fa_attempts'] ?? 5),
         );
 
         $requestedPermissions = $this->request->Args['permissions']??[];
@@ -131,18 +124,16 @@ class UserRoleController extends BaseController
             }
         }
 
-        if (!$userRole->Save()) {
+        if (!$this->_identityService->CreateNewUserRole($userRole)) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database."
             );
         }
 
-        // now we can add the permission.
-
+        // now we can add the permissions.
         foreach ($requestedPermissions as $permission) {
-            echo $permission."\n";
-            if (!$userRole->AddPermission($permission)) {
+            if (!$userRole->GrantPermission($permission)) {
                 return new JsonResponse(
                     status: StatusCode::InternalServerError,
                     error_message: 'The UserRole was generated, but there was a problem with the database while adding permissions.'
@@ -156,20 +147,19 @@ class UserRoleController extends BaseController
     }
 
     #[Route(Method::GET, '{id}')]
-    public function GetUserRole() : Response {
-        if (!$this->_databaseService->IsPrimaryConnected()) {
-            return new Response(status: StatusCode::NotFound);
-        }
+    public function GetUserRole(): Response
+    {
+        // if current user doesn't have permission , return 404
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
         if (!(
-            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value) ||
-            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUsers->value) ||
-            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUsers->value)
+            $requestUser->GetUserRole()->HasPermission(Permissions::ManageUserRoles->value) ||
+            $requestUser->GetUserRole()->HasPermission(Permissions::CreateUsers->value) ||
+            $requestUser->GetUserRole()->HasPermission(Permissions::ManageUsers->value)
         )) {
             return new Response(status: StatusCode::NotFound);
         }
 
-        /** @var UserRole */
-        $userRole = UserRole::LoadFromId($this->request->Args['id']);
+        $userRole = $this->_identityService->GetUserRoleFromId($this->request->Args['id']);
 
         if ($userRole === null) {
             return new JsonResponse(
@@ -203,9 +193,9 @@ class UserRoleController extends BaseController
                 /** @var UserPermission $p */
                 return [
                     'key' => $p->PermissionKey,
-                    'name' => (isset($permissions[$p->PermissionKey])?$permissions[$p->PermissionKey]->Name:'Unknown Permission'),
+                    'name' => (isset($permissions[$p->PermissionKey]) ? $permissions[$p->PermissionKey]->Name : 'Unknown Permission'),
                 ];
-            }, $userRole->Permissions),
+            }, $userRole->GetPermissions()),
         ]];
 
         return new JsonResponse(
@@ -216,16 +206,15 @@ class UserRoleController extends BaseController
     }
 
     #[Route(Method::POST, '{id}')]
-    public function UpdateUserRole() : Response {
-        if (!$this->_databaseService->IsPrimaryConnected()) {
-            return new Response(status: StatusCode::NotFound);
-        }
-        if (!$this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value)) {
+    public function UpdateUserRole(): Response
+    {
+        // if current user doesn't have permission , return 404
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManageUserRoles->value)) {
             return new Response(status: StatusCode::NotFound);
         }
 
-        /** @var UserRole */
-        $userRole = UserRole::LoadFromId($this->request->Args['id']);
+        $userRole = $this->_identityService->GetUserRoleFromId($this->request->Args['id']);
 
         if ($userRole === null) {
             return new JsonResponse(
@@ -273,7 +262,7 @@ class UserRoleController extends BaseController
             }
         }
 
-        if (!$userRole->Save()) {
+        if (!$this->_identityService->UpdateUserRole($userRole)) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database."
@@ -282,7 +271,7 @@ class UserRoleController extends BaseController
 
         // add new permissions
         foreach ($requestedPermissionKeys as $permissionKey) {
-            if (!$userRole->AddPermission($permissionKey)) {
+            if (!$userRole->GrantPermission($permissionKey)) {
                 return new JsonResponse(
                     status: StatusCode::InternalServerError,
                     error_message: 'The UserRole was updated, but there was a problem with the database while adding permissions.'
@@ -290,11 +279,11 @@ class UserRoleController extends BaseController
             }
         }
         // remove permissions
-        foreach ($userRole->Permissions as $permission) {
+        foreach ($userRole->GetPermissions() as $permission) {
             if (in_array($permission->PermissionKey, $requestedPermissionKeys)) {
                 continue;
             }
-            if (!$userRole->RemovePermission($permission->PermissionKey)) {
+            if (!$userRole->DenyPermission($permission->PermissionKey)) {
                 return new JsonResponse(
                     status: StatusCode::InternalServerError,
                     error_message: 'The UserRole was updated, but there was a problem with the database while removing permissions.'
@@ -302,26 +291,39 @@ class UserRoleController extends BaseController
             }
         }
 
-        
-
         return new JsonResponse(
             status:StatusCode::OK
         );
     }
 
     #[Route(Method::DELETE, '{id}')]
-    public function DeleteUserRole() : Response {
-        if (!$this->_databaseService->IsPrimaryConnected()) {
-            return new Response(status: StatusCode::NotFound);
-        }
-        if (!$this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value)) {
+    public function DeleteUserRole(): Response
+    {
+        // if current user doesn't have permission , return 404
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManageUserRoles->value)) {
             return new Response(status: StatusCode::NotFound);
         }
 
-        /** @var UserRole */
-        $userRole = UserRole::LoadFromId($this->request->Args['id']);
+        $userRole = $this->_identityService->GetUserRoleFromId($this->request->Args['id']);
 
-        if ($userRole != null && count(User::GetAllWithRole($userRole)) != 0) {
+        if ($userRole === null) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'id',
+                            'description' => 'User Role ID.',
+                            'message' => 'This user role doesn\'t exist.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
+
+        if ($userRole->GetUserCount() != 0) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -337,7 +339,7 @@ class UserRoleController extends BaseController
             );
         }
 
-        if ($userRole != null && !$userRole->Delete()) {
+        if (!$this->_identityService->DeleteUserRole($userRole)) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database.",
@@ -348,13 +350,14 @@ class UserRoleController extends BaseController
     }
 
     #[Route(Method::GET, '~api/hydro2/identity/permissions')]
-    public function GetPermissions() : Response {
-        if (!$this->_databaseService->IsPrimaryConnected()) {
-            return new Response(status: StatusCode::NotFound);
-        }
+    public function GetPermissions(): Response
+    {
+        
+        // if current user doesn't have permission , return 404
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
         if (!(
-            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::ManageUserRoles->value) ||
-            $this->_identityService->GetRequestUser($this->request)->Role->HasPermission(Permissions::CreateUserRoles->value)
+            $requestUser->GetUserRole()->HasPermission(Permissions::ManageUserRoles->value) ||
+            $requestUser->GetUserRole()->HasPermission(Permissions::CreateUserRoles->value)
         )) {
             return new Response(status: StatusCode::NotFound);
         }

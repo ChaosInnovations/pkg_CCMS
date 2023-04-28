@@ -2,37 +2,43 @@
 
 namespace Pivel\Hydro2\Models\Identity;
 
-use Pivel\Hydro2\Extensions\Database\ChildTable;
-use Pivel\Hydro2\Extensions\Database\TableColumn;
-use Pivel\Hydro2\Extensions\Database\TableName;
-use Pivel\Hydro2\Extensions\Database\TablePrimaryKey;
-use Pivel\Hydro2\Models\Database\BaseObject;
+use Pivel\Hydro2\Attributes\Entity\Entity;
+use Pivel\Hydro2\Attributes\Entity\EntityField;
+use Pivel\Hydro2\Attributes\Entity\EntityPrimaryKey;
+use Pivel\Hydro2\Attributes\Entity\ForeignEntityOneToMany;
+use Pivel\Hydro2\Extensions\Query;
+use Pivel\Hydro2\Services\Entity\EntityCollection;
 
-#[TableName('hydro2_user_roles')]
-class UserRole extends BaseObject
+#[Entity(CollectionName: 'hydro2_user_roles')]
+class UserRole
 {
-    #[TableColumn('id', autoIncrement:true)]
-    #[TablePrimaryKey]
+    #[EntityField(FieldName: 'id', AutoIncrement: true)]
+    #[EntityPrimaryKey]
     public ?int $Id = null;
-    #[TableColumn('name')]
+    #[EntityField(FieldName: 'name')]
     public string $Name;
-    #[TableColumn('description')]
+    #[EntityField(FieldName: 'description')]
     public ?string $Description = null;
-    #[TableColumn('max_login_attempts')]
+    #[EntityField(FieldName: 'max_login_attempts')]
     public int $MaxLoginAttempts;
-    #[TableColumn('max_session_length')]
+    #[EntityField(FieldName: 'max_session_length')]
     public int $MaxSessionLengthMinutes;
-    #[TableColumn('max_password_age')]
+    #[EntityField(FieldName: 'max_password_age')]
     public ?int $MaxPasswordAgeDays;
-    #[TableColumn('days_until_2fa_setup_required')]
+    #[EntityField(FieldName: 'days_until_2fa_setup_required')]
     public int $DaysUntil2FASetupRequired;
-    #[TableColumn('challenge_interal')]
+    #[EntityField(FieldName: 'challenge_interval')]
     public int $ChallengeIntervalMinutes;
-    #[TableColumn('max_2fa_attempts')]
+    #[EntityField(FieldName: 'max_2fa_attempts')]
     public int $Max2FAAttempts;
-    /** @var UserPermission[] */
-    #[ChildTable(UserPermission::class)]
-    public array $Permissions;
+
+    /** @var EntityCollection<UserPermission> */
+    #[ForeignEntityOneToMany(OtherEntityClass: UserPermission::class)]
+    private EntityCollection $permissions;
+
+    /** @var EntityCollection<User> */
+    #[ForeignEntityOneToMany(OtherEntityClass: User::class)]
+    private EntityCollection $users;
 
     /** @param UserPermission[] $permissions */
     public function __construct(
@@ -43,7 +49,7 @@ class UserRole extends BaseObject
         int $daysUntil2FASetupRequired=3,
         int $challengeIntervalMinutes=21600,
         int $max2FAAttempts=5,
-        ) {
+    ) {
         $this->Name = $name;
         $this->Description = $description;
         $this->MaxLoginAttempts = $maxLoginAttempts;
@@ -52,58 +58,51 @@ class UserRole extends BaseObject
         $this->DaysUntil2FASetupRequired = $daysUntil2FASetupRequired;
         $this->ChallengeIntervalMinutes = $challengeIntervalMinutes;
         $this->Max2FAAttempts = $max2FAAttempts;
-        $this->Permissions = [];
     }
 
-    public function Save() : bool {
-        return $this->UpdateOrCreateEntry();
-    }
-
-    public function Delete() : bool {
-        // remove permissions first
-        foreach ($this->Permissions as $idx => $permission) {
-            $permission->Delete();
-            unset($this->Permissions[$idx]);
-            $this->Permissions = array_values($this->Permissions);
+    public function GetUserCount(): int
+    {
+        if (!isset($this->users)) {
+            return 0;
         }
-        return $this->DeleteEntry();
+
+        return count($this->users);
     }
 
-    public function AddPermission(string $permissionKey) : bool {
+    /**
+     * @return UserPermission[]
+     */
+    public function GetPermissions(): array
+    {
+        return $this->permissions->Read();
+    }
+
+    public function GrantPermission(string $permissionKey): bool
+    {
         if ($this->HasPermission($permissionKey)) {
             return true; // say we added it. more permissive than refusing to add because it was already added previously.
         }
-        $permission = new UserPermission($this->GetPrimaryKeyValue(), $permissionKey);
-        if (!$permission->Save()) {
-            return false;
-        }
 
-        $this->Permissions[] = $permission;
-        return true;
+        $permission = new UserPermission(
+            userRole: $this,
+            permissionKey: $permissionKey,
+        );
+
+        return $this->permissions->Create($permission);
     }
 
-    public function RemovePermission(string $permissionKey) : bool {
-        foreach ($this->Permissions as $idx => $permission) {
-            if ($permission->PermissionKey == $permissionKey) {
-                $permission->Delete();
-                unset($this->Permissions[$idx]);
-                $this->Permissions = array_values($this->Permissions);
-                // don't break the loop. if there are somehow multiple instances
-                //  of the same permission for this role, we should remove all
-                //  of them.
-            }
+    public function DenyPermission(string $permissionKey): bool
+    {
+        $matches = $this->permissions->Read((new Query())->Equal('permission_key', $permissionKey)->Limit(1));
+        if ($matches == 0) {
+            return true;
         }
 
-        return true;
+        return $this->permissions->Delete($matches[0]);
     }
 
     public function HasPermission(string $permissionKey) : bool {
-        foreach ($this->Permissions as $permission) {
-            if ($permission->PermissionKey == $permissionKey) {
-                return true;
-            }
-        }
-
-        return false;
+        $matches = $this->permissions->Read((new Query())->Equal('permission_key', $permissionKey)->Limit(1));
+        return count($matches) == 1;
     }
 }

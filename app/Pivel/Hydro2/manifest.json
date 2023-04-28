@@ -23,7 +23,7 @@
 
     "controllers": [
         "Pivel\\Hydro2\\Controllers\\FallbackController",
-        "Pivel\\Hydro2\\Controllers\\DatabaseSettingsController",
+        "Pivel\\Hydro2\\Controllers\\PersistenceProfilesController",
         "Pivel\\Hydro2\\Controllers\\OutboundEmailProfilesController",
         "Pivel\\Hydro2\\Controllers\\UserController",
         "Pivel\\Hydro2\\Controllers\\UserRoleController",
@@ -31,15 +31,23 @@
         "Pivel\\Hydro2\\Controllers\\AdminPanelController"
     ],
 
-    "services": [
+    "singletons": [
+        {"class":"Pivel\\Hydro2\\Services\\Entity\\EntityService","interface":"Pivel\\Hydro2\\Services\\Entity\\IEntityService"},
         {"class":"Pivel\\Hydro2\\Services\\IdentityService"},
+        {"class":"Pivel\\Hydro2\\Services\\UserNotificationService"},
         {"class":"Pivel\\Hydro2\\Services\\Database\\DatabaseService"},
         {"class":"Pivel\\Hydro2\\Services\\Email\\EmailService"}
     ],
 
+    "persistence_providers": [
+        "Pivel\\Hydro2\\Services\\Entity\\JsonPersistenceProvider",
+        "Pivel\\Hydro2\\Services\\Entity\\MySqlPersistenceProvider",
+        "Pivel\\Hydro2\\Services\\Entity\\SqlitePersistenceProvider"
+    ],
+
     "permissions": [
         {"key":"viewadminpanel","name":"View Admin Panel","description":"Allow the user to access the admin panel page at /admin."},
-        {"key":"managedatabaseconnections","requires":["pivel/hydro2/viewadminpanel"],"name":"Manage Database Connections","description":"Allow editing, adding, and deleting database connection profiles."},
+        {"key":"managepersistenceprofiles","requires":["pivel/hydro2/viewadminpanel"],"name":"Manage Persistence Profiles","description":"Allow editing, adding, and deleting persistence profiles."},
         {"key":"manageoutboundemailprofiles","requires":["pivel/hydro2/viewadminpanel"],"name":"Manage Outbound Email Profiles","description":"Allow editing, adding, and deleting outbound email profiles."},
         {"key":"viewusers","name":"View Users","requires":["pivel/hydro2/viewadminpanel"],"description":"Allow viewing a list of other users."},
         {"key":"manageusers","requires":["pivel/hydro2/viewusers"],"name":"Manage Users","description":"Allow editing/deleting other users."},
@@ -54,7 +62,7 @@
         {"key":"hydro2", "name":"Hydro2", "view":"Pivel\\Hydro2\\Views\\AdminPanel\\About"},
 
         {"key":"hydro2/config", "name":"Configuration"},
-        {"key":"hydro2/config/dbconnect", "name":"Database Connections", "view":"Pivel\\Hydro2\\Views\\AdminPanel\\ConnectionProfiles", "requires":"pivel/hydro2/managedatabaseconnections"},
+        {"key":"hydro2/config/persistence", "name":"Persistence Profiles", "view":"Pivel\\Hydro2\\Views\\AdminPanel\\PersistenceProfiles", "requires":"pivel/hydro2/managepersistenceprofiles"},
         {"key":"hydro2/config/email", "name":"Outbound Email Profiles", "view":"Pivel\\Hydro2\\Views\\AdminPanel\\OutboundEmailProfiles", "requires":"pivel/hydro2/manageoutboundemailprofiles"},
 
         {"key":"hydro2/identity", "name":"Users & Security"},

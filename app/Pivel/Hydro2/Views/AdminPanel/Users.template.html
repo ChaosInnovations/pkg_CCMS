@@ -21,7 +21,11 @@
                     for (var property of table._columns) {
                         // add <td>row[property]</td> to tbodyHtml
                         if (property == 'role') {
-                            var value = row['role']['name'];
+                            if (row['role'] != null) {
+                                var value = row['role']['name'];
+                            } else {
+                                var value = "Unassigned";
+                            }
                         } else if (property == 'created') {
                             var value = new Date(""+row['created']['date']+row['created']['timezone']).toLocaleString([],{"dateStyle":"long","timeStyle":"short","hour12":false});
                         } else {

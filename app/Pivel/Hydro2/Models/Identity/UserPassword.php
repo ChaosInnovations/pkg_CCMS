@@ -4,82 +4,50 @@ namespace Pivel\Hydro2\Models\Identity;
 
 use DateTime;
 use DateTimeZone;
-use Pivel\Hydro2\Extensions\Database\OrderBy;
-use Pivel\Hydro2\Extensions\Database\TableColumn;
-use Pivel\Hydro2\Extensions\Database\TableForeignKey;
-use Pivel\Hydro2\Extensions\Database\TableName;
-use Pivel\Hydro2\Extensions\Database\TablePrimaryKey;
-use Pivel\Hydro2\Extensions\Database\Where;
-use Pivel\Hydro2\Models\Database\BaseObject;
-use Pivel\Hydro2\Models\Database\Order;
+use Pivel\Hydro2\Attributes\Entity\Entity;
+use Pivel\Hydro2\Attributes\Entity\EntityField;
+use Pivel\Hydro2\Attributes\Entity\EntityPrimaryKey;
+use Pivel\Hydro2\Attributes\Entity\ForeignEntityManyToOne;
 use Pivel\Hydro2\Models\Database\ReferenceBehaviour;
 use Pivel\Hydro2\Models\Database\Type;
 
-#[TableName('hydro2_user_passwords')]
-class UserPassword extends BaseObject
+#[Entity(CollectionName: 'hydro2_user_passwords')]
+class UserPassword
 {
-    #[TableColumn('id', autoIncrement:true)]
-    #[TablePrimaryKey]
+    #[EntityField(FieldName: 'id', AutoIncrement: true)]
+    #[EntityPrimaryKey]
     public ?int $Id = null;
-    #[TableColumn('user_id')]
-    #[TableForeignKey(ReferenceBehaviour::CASCADE,ReferenceBehaviour::CASCADE,'hydro2_users','id')]
-    public ?int $UserId; // use int rather than User to avoid circular reference issues.
-    //session key hash
-
-    #[TableColumn('password_hash', sqlType:Type::TINYTEXT)]
+    #[EntityField(FieldName: 'user_id')]
+    #[ForeignEntityManyToOne(OnDelete: ReferenceBehaviour::CASCADE)]
+    private ?User $user;
+    #[EntityField(FieldName: 'password_hash', FieldType: Type::TINYTEXT)]
     public string $PasswordHash;
-    #[TableColumn('start')] // regardless of expire time, the password with the most recent start is the current one
+    #[EntityField(FieldName: 'start')]
     public ?DateTime $StartTime;
-    #[TableColumn('expire')] // if within 5 days, prompt to change on login. if past, require change on login. if null, doesn't expire
+    #[EntityField(FieldName: 'expire')] // if within 5 days, prompt to change on login. if past, require change on login. if null, doesn't expire
     public ?DateTime $ExpireTime;
 
     private const PASSWORD_COST = 11;
 
     public function __construct(
-        ?int $userId = null,
+        ?User $user = null,
         string $password = '',
         ?DateTime $startTime = null,
         ?DateTime $expireTime = null,
-        ) {
-        $this->UserId = $userId;
+    ) {
+        $this->user = $user;
         $this->SetPassword($password);
         $this->StartTime = $startTime;
         $this->ExpireTime = $expireTime;
     }
 
-    public static function LoadCurrentFromUser(User $user) : ?self {
-        $table = self::getTable();
-        $results = $table->Select(null, (new Where())->Equal('user_id', $user->Id), (new OrderBy())->Column('start', Order::Descending), 1);
-        if (count($results) != 1) {
-            return null;
-        }
-        
-        return self::CastFromRow($results[0]);
+    public function GetUser(): User
+    {
+        return $this->user;
     }
 
-    public static function Blank() : self {
-        return new self();
-    }
-
-    public function Save() : bool {
-        if ($this->UserId === null) {
-            return false;
-        }
-        return $this->UpdateOrCreateEntry();
-    }
-
-    public function Delete() : bool {
-        return $this->DeleteEntry();
-    }
-
-    public function GetUser() : ?User {
-        if ($this->UserId === null) {
-            return null;
-        }
-        return User::LoadFromId($this->UserId);
-    }
-
-    public function IsExpired() : bool {
+    public function IsExpired(): bool
+    {
         if ($this->ExpireTime === null) {
             return false;
         }
@@ -88,20 +56,23 @@ class UserPassword extends BaseObject
         return $now >= $this->ExpireTime;
     }
 
-    public function SetPassword(string $password) : void {
+    public function SetPassword(string $password): void
+    {
         $this->PasswordHash = password_hash($password, PASSWORD_DEFAULT, ['cost'=>self::PASSWORD_COST]);
     }
 
-    public function ComparePassword(string $password) : bool {
-        if (!password_verify($password, $this->PasswordHash)) {
+    public function ComparePassword(string $password): bool
+    {
+        return password_verify($password, $this->PasswordHash);
+    }
+
+    public function RehashPasswordIfRequired(string $password): bool
+    {
+        if (!password_needs_rehash($this->PasswordHash, PASSWORD_DEFAULT, ['cost'=>self::PASSWORD_COST])) {
             return false;
         }
 
-        if (password_needs_rehash($this->PasswordHash, PASSWORD_DEFAULT, ['cost'=>self::PASSWORD_COST])) {
-            $this->SetPassword($password);
-            $this->Save();
-        }
-
+        $this->SetPassword($password);
         return true;
     }
 }

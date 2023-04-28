@@ -2,131 +2,355 @@
 
 namespace Pivel\Hydro2\Services;
 
-use Pivel\Hydro2\Hydro2;
-use Pivel\Hydro2\Models\Email\EmailAddress;
-use Pivel\Hydro2\Models\Email\EmailMessage;
+use DateTime;
+use DateTimeZone;
+use Pivel\Hydro2\Extensions\Query;
 use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\Identity\PasswordResetToken;
 use Pivel\Hydro2\Models\Identity\Permission;
 use Pivel\Hydro2\Models\Identity\Session;
 use Pivel\Hydro2\Models\Identity\User;
 use Pivel\Hydro2\Models\Identity\UserRole;
-use Pivel\Hydro2\Models\Permissions;
-use Pivel\Hydro2\Services\Email\EmailService;
-use Pivel\Hydro2\Views\EmailViews\BaseEmailView;
+use Pivel\Hydro2\Services\Entity\IEntityRepository;
+use Pivel\Hydro2\Services\Entity\IEntityService;
 
 class IdentityService
 {
-    protected PackageManifestService $_manifestService;
-    protected EmailService $_emailService;
+    private PackageManifestService $_manifestService;
+    private ILoggerService $_logger;
+    private IEntityService $_entityService;
+
+    private IEntityRepository $userRepository;
+    private IEntityRepository $userRoleRepository;
+    private IEntityRepository $sessionRepository;
+    private IEntityRepository $resetTokenRepository;
 
     public function __construct(
         PackageManifestService $manifestService,
-        EmailService $emailService,
-    )
-    {
+        ILoggerService $logger,
+        IEntityService $entityService,
+    ) {
         $this->_manifestService = $manifestService;
-        $this->_emailService = $emailService;
+        $this->_logger = $logger;
+        $this->_entityService = $entityService;
+
+        $this->userRepository = $this->_entityService->GetRepository(User::class);
+        $this->userRoleRepository = $this->_entityService->GetRepository(UserRole::class);
+        $this->sessionRepository = $this->_entityService->GetRepository(Session::class);
+        $this->resetTokenRepository = $this->_entityService->GetRepository(PasswordResetToken::class);
     }
 
-    private ?User $requestUser = null;
-    public  function GetRequestUser(Request $request) : User {
-        if ($this->requestUser === null) {
-            $this->requestUser = self::GetDefaultVisitorUser();
-            $session = self::GetRequestSession($request);
-            if ($session !== false) {
-                $user = $session->GetUser();
-                if ($user !== null) {
-                    $this->requestUser = $user;
-                }
-            }
+    // ==== User-related methods ====
+
+    public function GetVisitorUser(): User
+    {
+        $role = $this->GetVisitorUserRole();
+
+        // TODO look up visitor user ID and get user with matching ID.
+        $user = new User(name: 'Site Visitor', role: $role);
+
+        return $user;
+    }
+
+    public function GetUserFromRequestOrVisitor(Request $request): User
+    {
+        $session = $this->GetSessionFromRequest($request);
+
+        if ($session == null) {
+            return $this->GetVisitorUser();
         }
 
-        return $this->requestUser;
+        return $session->GetUser();
     }
 
-    private Session|false $requestSession = false;
-    public function GetRequestSession(Request $request) : Session|false {
-        if ($this->requestSession === false) {
-            $this->requestSession = Session::LoadAndValidateFromRequest($request);
+    public function IsEmailInUseByUser(string $email): bool
+    {
+        $query = (new Query())->Equal('email', $email);
+        $qty = $this->userRepository->Count($query);
+
+        return $qty > 0;
+    }
+
+    public function CreateNewUser(string $email, string $name, bool $isEnabled, UserRole $role): ?User
+    {
+        $user = new User(email: $email, name: $name, enabled: $isEnabled, role: $role);
+        $user->GenerateEmailVerificationToken();
+
+        if (!$this->userRepository->Create($user)) {
+            $this->_logger->Error('Pivel/Hydro2', "Failed to create new user with email address {$email}.");
+            return null;
         }
 
-        if ($this->requestSession === false) {
-            setcookie('sridkey', '', time()-3600, '/');
+        $this->_logger->Info('Pivel/Hydro2', "Created new user with email address {$email}.");
+
+        return $user;
+    }
+
+    public function UpdateUser(User &$user): bool
+    {
+        $success = $this->userRepository->Update($user);
+
+        if ($success) {
+            $this->_logger->Info('Pivel/Hydro2', "Updated user {$user->RandomId}.");
+        } else {
+            $this->_logger->Error('Pivel/Hydro2', "Failed to update user {$user->RandomId}.");
         }
 
-        return $this->requestSession;
+        return $success;
     }
 
-    // TODO get this from some kind of settings/configuration
-    public function GetDefaultUserRole() : UserRole {
-        $role = UserRole::LoadFromId(1);
-        if ($role == null) {
-            $role = new UserRole('Default','Default Role');
-            $role->Id = 1;
-            $role->AddPermission(Permissions::ViewUsers->value);
-            $role->AddPermission(Permissions::ManageUsers->value);
-            $role->AddPermission(Permissions::CreateUsers->value);
-            $role->AddPermission(Permissions::CreateUserRoles->value);
-            $role->AddPermission(Permissions::ManageUserRoles->value);
-            $role->AddPermission(Permissions::ViewUserSessions->value);
-            $role->AddPermission(Permissions::EndUserSessions->value);
-            $role->Save();
+    public function DeleteUser(User $user): bool
+    {
+        // TODO check that this user is not:
+        //  a) the user currently set as the Site Visitor
+        //  b) the only remaining user with permission to both manage users and manage user roles (effectively, the global administrator)
+
+        $success = $this->userRepository->Delete($user);
+
+        if ($success) {
+            $this->_logger->Warn('Pivel/Hydro2', "Deleted user {$user->RandomId}.");
+        } else {
+            $this->_logger->Error('Pivel/Hydro2', "Failed to delete user {$user->RandomId}.");
         }
-        return $role;
+
+        return $success;
     }
 
-    public function GetDefaultVisitorUser() {
-        return new User(name:'Site Visitor',role:(new UserRole(name:'Site Visitor')));
+    /**
+     * @return User[]
+     */
+    public function GetUsersMatchingQuery(Query $query): array
+    {
+        return $this->userRepository->Read($query);
     }
 
-    public function GetEmailVerificationUrl(Request $request, User $user, bool $regenerate=false) {
+    public function GetEmailVerificationUrl(Request $request, User $user, bool $regenerate=false): string
+    {
         if ($regenerate) {
             $user->GenerateEmailVerificationToken();
+            $this->userRepository->Update($user);
+            $this->_logger->Info('Pivel/Hydro2', "Generated new email verification URL for user {$user->Email}.");
         }
         $token = $user->GetEmailVerificationToken();
-        echo 'Base URL: "'.$request->baseUrl.'"';
         $url = "{$request->baseUrl}/verifyuseremail/{$user->RandomId}?token={$token}";
         return $url;
     }
 
-    public function SendEmailToUser(User $user, BaseEmailView $emailView) : bool {
-        $emailProfileProvider = $this->_emailService->GetOutboundEmailProviderInstance('noreply');
-        if ($emailProfileProvider === null) {
-            return false;
+    public function GetUserFromRandomId(string $randomId): ?User
+    {
+        $users = $this->GetUsersMatchingQuery((new Query())->Equal('random_id', $randomId));
+
+        if (count($users) != 1) {
+            return null;
         }
 
-        $emailMessage = new EmailMessage($emailView, [new EmailAddress($user->Email, $user->Name)]);
-        return $emailProfileProvider->SendEmail($emailMessage);
+        return $users[0];
     }
 
-    public function IsPasswordResetTokenValid(string $token, User $user) : bool {
-        $token_obj = PasswordResetToken::LoadFromToken($token);
-        if ($token_obj === null) {
-            return false;
+    public function GetUserFromEmail(string $email): ?User
+    {
+        $users = $this->GetUsersMatchingQuery((new Query())->Equal('email', $email));
+
+        if (count($users) != 1) {
+            return null;
         }
 
-        if (!$token_obj->CompareToken($token)) {
-            return false;
-        }
-
-        if ($token_obj->UserId !== $user->Id) {
-            return false;
-        }
-
-        $token_obj->Used = true;
-        $token_obj->Save();
-
-        return true;
+        return $users[0];
     }
 
-    public function GetPasswordResetUrl(Request $request, User $user, PasswordResetToken $token) {
-        $url = "{$request->baseUrl}/resetpassword/{$user->RandomId}?token={$token->ResetToken}";
-        return $url;
+    // ==== Session-related methods ====
+
+    public function GetSessionFromRequest(Request $request): ?Session
+    {
+        $random_id_and_key = explode(';', $request->getCookie('sridkey', ''), 2);
+
+        if (count($random_id_and_key) != 2) {
+            setcookie('sridkey', '', time()-3600, '/');
+            return null;
+        }
+
+        $random_id = $random_id_and_key[0];
+        $key = $random_id_and_key[1];
+
+        /** @var Session[] */
+        $sessions = $this->sessionRepository->Read((new Query())->Equal('random_id', $random_id));
+        if (count($sessions) != 1) {
+            $this->_logger->Warn('Pivel/Hydro2', "A nonexistant Session ID was provided from {$request->getClientAddress()}.");
+            setcookie('sridkey', '', time()-3600, '/');
+            return null;
+        }
+        
+        if (!$sessions[0]->CompareKey($key)) {
+            $this->_logger->Warn('Pivel/Hydro2', "A Session ID with an incorrect key was provided from {$request->getClientAddress()}.");
+            setcookie('sridkey', '', time()-3600, '/');
+            return null;
+        }
+
+        if ($sessions[0]->Browser !== $request->UserAgent) {
+            $this->_logger->Warn('Pivel/Hydro2', "A session previously used on {$sessions[0]->Browser} was attempted to be used on {$request->UserAgent} by {$request->getClientAddress()}.");
+            setcookie('sridkey', '', time()-3600, '/');
+            return null;
+        }
+
+        if (!$sessions[0]->IsValid()) {
+            setcookie('sridkey', '', time()-3600, '/');
+            return null;
+        }
+
+        // check if rehash is required
+        $sessions[0]->RehashKeyIfRequired($key);
+        
+        $sessions[0]->LastAccessTime = new DateTime(timezone:new DateTimeZone('UTC'));
+        $sessions[0]->LastIP = $request->getClientAddress();
+        $this->sessionRepository->Update($sessions[0]);
+
+        return $sessions[0];
     }
+
+    public function GetSessionFromRandomId(string $randomId): ?Session
+    {
+        /** @var Session[] */
+        $sessions = $this->sessionRepository->Read((new Query())->Equal('random_id', $randomId));
+        if (count($sessions) != 1) {
+            return null;
+        }
+
+        return $sessions[0];
+    }
+
+    public function StartSession(User $user, Request $request): Session
+    {
+        $sessionStarts = new DateTime(timezone:new DateTimeZone('UTC'));
+        $sessionExpires = (clone $sessionStarts)->modify("+{$user->GetUserRole()->MaxSessionLengthMinutes} minutes");
+        $session2FAExpires = $user->GetUserRole()->ChallengeIntervalMinutes>0?(clone $sessionStarts):null;
+
+        // create new session
+        $session = new Session(
+            user: $user,
+            browser: $request->UserAgent,
+            startTime: $sessionStarts,
+            expireTime: $sessionExpires,
+            expire2FATime: $session2FAExpires,
+            lastAccessTime: $sessionStarts,
+            startIP: $request->getClientAddress(),
+            lastIP: $request->getClientAddress(),
+        );
+
+        if (!$this->sessionRepository->Create($session)) {
+            return null;
+        }
+
+        $this->_logger->Debug('Pivel/Hydro2', "User {$user->Email} started a new session.");
+
+        return $session;
+    }
+
+    public function ExpireSession(Session &$session): bool
+    {
+        $now = new DateTime(timezone:new DateTimeZone('UTC'));
+        $session->ExpireTime = $now;
+        $this->_logger->Debug('Pivel/Hydro2', "User {$session->GetUser()->Email}' session was terminated.");
+        return $this->sessionRepository->Update($session);
+    }
+
+    // ==== UserRole-related methods ====
+
+    public function GetVisitorUserRole(): UserRole
+    {
+        // TODO look up visitor user role and get role with matching ID.
+        $role = new UserRole(name: 'Site Visitor');
+
+        return $role;
+    }
+
+    public function GetDefaultNewUserRole(): UserRole
+    {
+        // TODO look up new user default user role and get role with matching ID.
+        $role = new UserRole(name: 'Site Visitor');
+
+        return $role;
+    }
+
+    public function GetUserRoleFromId(int $id): ?UserRole
+    {
+        return $this->userRoleRepository->ReadById($id);
+    }
+
+    /**
+     * @return UserRole[]
+     */
+    public function GetUserRolesMatchingQuery(Query $query): array
+    {
+        return $this->userRoleRepository->Read($query);
+    }
+
+    public function CreateNewUserRole(UserRole &$role): ?User
+    {
+        if (!$this->userRoleRepository->Create($role)) {
+            $this->_logger->Error('Pivel/Hydro2', "Failed to create new user role {$role->Name}.");
+            return null;
+        }
+
+        $this->_logger->Info('Pivel/Hydro2', "Created new user role {$role->Name}.");
+
+        return $role;
+    }
+
+    public function UpdateUserRole(UserRole &$role): bool
+    {
+        $success = $this->userRoleRepository->Update($role);
+
+        if ($success) {
+            $this->_logger->Info('Pivel/Hydro2', "Updated user role {$role->Name}.");
+        } else {
+            $this->_logger->Error('Pivel/Hydro2', "Failed to update user role {$role->Name}.");
+        }
+
+        return $success;
+    }
+
+    public function DeleteUserRole(UserRole $role): bool
+    {
+        // check that this user role is not:
+        //  a) in use by any users
+        if ($role->GetUserCount() != 0) {
+            return false;
+        }
+
+        $success = $this->userRoleRepository->Delete($role);
+
+        if ($success) {
+            $this->_logger->Warn('Pivel/Hydro2', "Deleted user role {$role->Name}.");
+        } else {
+            $this->_logger->Error('Pivel/Hydro2', "Failed to delete user role {$role->Name}.");
+        }
+
+        return $success;
+    }
+
+    // ==== PasswordResetToken-related methods ====
+
+    public function GetPasswordResetTokenFromString(string $token): ?PasswordResetToken
+    {
+        /** @var PasswordResetToken[] */
+        $tokenObjs = $this->resetTokenRepository->Read((new Query())->Equal('reset_token', $token)->Limit(1));
+        if (count($tokenObjs) != 1) {
+            return null;
+        }
+
+        return $tokenObjs[0];
+    }
+
+    public function GetPasswordResetUrl(Request $request, User $user, PasswordResetToken $token): string
+    {
+        return "{$request->baseUrl}/resetpassword/{$user->RandomId}?token={$token->ResetToken}";
+    }
+
+    // ============================
 
     /** @return Permission[] */
-    public function GetAvailablePermissions() : array {
+    public function GetAvailablePermissions(): array
+    {
         /** @var Permission[] $permissions */
         $permissions = [];
         $packageManifest = $this->_manifestService->GetPackageManifest();

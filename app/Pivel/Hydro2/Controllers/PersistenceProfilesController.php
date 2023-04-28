@@ -4,97 +4,110 @@ namespace Pivel\Hydro2\Controllers;
 
 use Pivel\Hydro2\Models\HTTP\Method;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
-use Pivel\Hydro2\Extensions\Database\OrderBy;
+use Pivel\Hydro2\Extensions\Query;
 use Pivel\Hydro2\Extensions\Route;
 use Pivel\Hydro2\Extensions\RoutePrefix;
 use Pivel\Hydro2\Models\Database\DatabaseConfigurationProfile;
 use Pivel\Hydro2\Models\Database\Order;
+use Pivel\Hydro2\Models\EntityPersistenceProfile;
 use Pivel\Hydro2\Models\HTTP\JsonResponse;
 use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
+use Pivel\Hydro2\Models\Identity\Permission;
+use Pivel\Hydro2\Models\Permissions;
 use Pivel\Hydro2\Services\Database\DatabaseService;
+use Pivel\Hydro2\Services\Entity\IEntityService;
 use Pivel\Hydro2\Services\IdentityService;
+use Pivel\Hydro2\Services\ILoggerService;
 
-#[RoutePrefix('api/hydro2/database')]
-class DatabaseSettingsController extends BaseController
+#[RoutePrefix('api/hydro2/persistence')]
+class PersistenceProfilesController extends BaseController
 {
-    protected IdentityService $_identityService;
-    protected DatabaseService $_databaseService;
+    private ILoggerService $_logger;
+    private IEntityService $_entityService;
+    private IdentityService $_identityService;
 
     public function __construct(
+        ILoggerService $logger,
+        IEntityService $entityService,
         IdentityService $identityService,
-        DatabaseService $databaseService,
         Request $request,
-    )
-    {
+    ) {
+        $this->_logger = $logger;
+        $this->_entityService = $entityService;
         $this->_identityService = $identityService;
-        $this->_databaseService = $databaseService;
         parent::__construct($request);
     }
 
     #[Route(Method::GET, 'profiles')]
-    public function GetAllProfiles() : Response
+    public function GetAllProfiles(): Response
     {
-        // if database has already been configured and not logged in as admin, return 404
-        if (!$this->_databaseService->IsPrimaryConnected() || !$this->_identityService->GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
             return new Response(
-                status: StatusCode::NotFound
+                status: StatusCode::Forbidden,
             );
         }
 
-        $order = null;
+        $query = new Query();
+        $query->Limit($this->request->Args['limit'] ?? -1);
+        $query->Offset($this->request->Args['offset'] ?? 0);
+
         if (isset($this->request->Args['sort_by'])) {
             $dir = Order::tryFrom(strtoupper($this->request->Args['sort_dir']??'asc'))??Order::Ascending;
-            $order = (new OrderBy)->Column($this->request->Args['sort_by']??'key', $dir);
+            $query->OrderBy($this->request->Args['sort_by']??'key', $dir);
         }
-        $limit = $this->request->Args['limit']??null;
-        $offset = $this->request->Args['offset']??null;
 
-        $profiles = DatabaseConfigurationProfile::GetAll($order, $limit, $offset);
+        $r = $this->_entityService->GetRepository(EntityPersistenceProfile::class);
+
+        /** @var EntityPersistenceProfile[] */
+        $profiles = $r->Read($query);
+
         $serializedProfiles = [];
         foreach ($profiles as $profile) {
             $serializedProfiles[] = [
-                'key' => $profile->Key,
-                'driver' => $profile->Driver,
-                'host' => $profile->Host,
-                'username' => $profile->Username,
+                'key' => $profile->GetKey(),
+                'persistenceProviderClass' => $profile->GetPersistenceProviderFriendlyName(),
+                'hostOrPath' => $profile->GetHostOrPath(),
+                'username' => $profile->GetUsername(),
                 // Don't return the password.
-                'database' => $profile->DatabaseSchema,
+                'databaseSchema' => $profile->GetDatabaseSchema(),
             ];
         }
 
         return new JsonResponse(
             data: [
-                'databaseprofiles' => $serializedProfiles,
+                'persistenceprofiles' => $serializedProfiles,
             ],
             status: StatusCode::OK,
         );
     }
 
-    #[Route(Method::GET, 'drivers')]
-    public function GetDrivers() : Response
+    #[Route(Method::GET, 'providers')]
+    public function GetDrivers(): Response
     {
-        // if database has already been configured and not logged in as admin, return 404
-        if (!$this->_databaseService->IsPrimaryConnected() || !$this->_identityService->GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
             return new Response(
-                status: StatusCode::NotFound
+                status: StatusCode::Forbidden,
             );
         }
 
         return new JsonResponse(
             data: [
-                'databasedrivers' => $this->_databaseService->GetAvailableDrivers(),
+                'persistenceproviders' => $this->_entityService->GetAvailableProviders(),
             ],
             status: StatusCode::OK,
         );
     }
 
     #[Route(Method::POST, 'validatehost')]
-    public function ValidateHost() : Response {
-        // if database has already been configured and not logged in as admin, return 404
-        if (!$this->_databaseService->IsPrimaryConnected() || !$this->_identityService->GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
+    public function ValidateHost(): Response
+    {
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
             return new Response(
-                status: StatusCode::NotFound
+                status: StatusCode::Forbidden,
             );
         }
 
@@ -135,7 +148,7 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if (!$this->_databaseService->CheckDriver($this->request->Args['driver'])) {
+        if (!$this->_entityService->IsProviderValid($this->request->Args['driver'])) {
             // invalid driver argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
@@ -153,32 +166,28 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        // check if host is a database server that matches selected driver
-        if (!$this->_databaseService->CheckHost($this->request->Args['driver'], $this->request->Args['host'])) {
-            return new JsonResponse(
-                data: [
-                    'databasehostcheck' => false,
-                ],
-                status: StatusCode::OK,
-            );
-        }
-
-        // driver and host are both valid.
+        $profile = new EntityPersistenceProfile();
+        $profile->SetProfile(
+            persistenceProviderClass: $this->request->Args['driver'],
+            hostOrPath: $this->request->Args['host'],
+        );
 
         return new JsonResponse(
             data: [
-                'databasehostcheck' => true,
+                'persistencehostcheck' => $this->_entityService->IsHostValid($profile),
             ],
             status: StatusCode::OK,
         );
     }
 
     #[Route(Method::POST, 'validateuser')]
-    public function ValidateUser() : Response {
-        // if database has already been configured and not logged in as admin, return 404
-        if (!$this->_databaseService->IsPrimaryConnected() || !$this->_identityService->GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
+    public function ValidateUser(): Response
+    {
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        // check whether the session/user is allowed to view the admin panel at all.
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
             return new Response(
-                status: StatusCode::NotFound
+                status: StatusCode::Forbidden,
             );
         }
 
@@ -219,7 +228,7 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if (!$this->_databaseService->CheckDriver($this->request->Args['driver'])) {
+        if (!$this->_entityService->IsProviderValid($this->request->Args['driver'])) {
             // invalid driver argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
@@ -237,7 +246,15 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if (!$this->_databaseService->CheckHost($this->request->Args['driver'], $this->request->Args['host'])) {
+        $profile = new EntityPersistenceProfile();
+        $profile->SetProfile(
+            persistenceProviderClass: $this->request->Args['driver'],
+            hostOrPath: $this->request->Args['host'],
+            username: $username = $this->request->Args['username'] ?? null,
+            password: $this->request->Args['password'] ?? null,
+        );
+
+        if (!$this->_entityService->IsHostValid($profile)) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -253,43 +270,25 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        $username = $this->request->Args['username'] ?? null;
-        $password = $this->request->Args['password'] ?? null;
-
-        // check if this is a valid user/password on the selected host
-        $privileges = $this->_databaseService->GetPrivileges(
-            $this->request->Args['driver'],
-            $this->request->Args['host'],
-            $username,
-            $password,
-        );
-
-        if ($privileges === false) {
-            return new JsonResponse(
-                data: [
-                    'databaseusercheck' => [
-                        'valid' => false,
-                    ],
-                ],
-                status: StatusCode::OK,
-            );
-        }
-
-        // return list of user's privileges
         return new JsonResponse(
             data: [
-                'databaseusercheck' => $privileges,
+                'persistenceusercheck' => [
+                    'valid' => $this->_entityService->IsUserValid($profile),
+                    'cancreatedb' => $profile->GetPersistenceProvider()->CanCreateDatabaseSchemas(),
+                ],
             ],
             status: StatusCode::OK,
         );
     }
 
     #[Route(Method::POST, 'getdatabases')]
-    public function GetDatabases() : Response {
-        // if database has already been configured and not logged in as admin, return 404
-        if (!$this->_databaseService->IsPrimaryConnected() || !$this->_identityService->GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
+    public function GetDatabases(): Response
+    {
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        // check whether the session/user is allowed to view the admin panel at all.
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
             return new Response(
-                status: StatusCode::NotFound
+                status: StatusCode::Forbidden,
             );
         }
 
@@ -330,7 +329,7 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if (!$this->_databaseService->CheckDriver($this->request->Args['driver'])) {
+        if (!$this->_entityService->IsProviderValid($this->request->Args['driver'])) {
             // invalid driver argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
@@ -348,7 +347,15 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if (!$this->_databaseService->CheckHost($this->request->Args['driver'], $this->request->Args['host'])) {
+        $profile = new EntityPersistenceProfile();
+        $profile->SetProfile(
+            persistenceProviderClass: $this->request->Args['driver'],
+            hostOrPath: $this->request->Args['host'],
+            username: $username = $this->request->Args['username'] ?? null,
+            password: $this->request->Args['password'] ?? null,
+        );
+
+        if (!$this->_entityService->IsHostValid($profile)) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -364,18 +371,7 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        $username = $this->request->Args['username'] ?? null;
-        $password = $this->request->Args['password'] ?? null;
-
-        // check if this is a valid user/password on the selected host
-        $privileges = $this->_databaseService->GetPrivileges(
-            $this->request->Args['driver'],
-            $this->request->Args['host'],
-            $username,
-            $password,
-        );
-
-        if ($privileges === false) {
+        if (!$this->_entityService->IsUserValid($profile)) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -396,19 +392,10 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        // get a list of databases which this user has privileges on
-        // can't be false because that would mean the user is invalid, which we've already checked.
-        $databases = $this->_databaseService->GetDatabases(
-            $this->request->Args['driver'],
-            $this->request->Args['host'],
-            $username,
-            $password,
-        );
-
         // return list of databases
         return new JsonResponse(
             data: [
-                'availabledatabases' => $databases,
+                'availabledatabaseschemas' => $profile->GetPersistenceProvider()->GetDatabaseSchemas(),
             ],
             status: StatusCode::OK,
         );
@@ -416,11 +403,13 @@ class DatabaseSettingsController extends BaseController
 
     #[Route(Method::POST, 'profiles/{key}')]
     #[Route(Method::POST, 'profiles')]
-    public function SaveConfiguration() : Response {
-        // if database has already been configured and not logged in as admin, return 404
-        if (!$this->_databaseService->IsPrimaryConnected() || !$this->_identityService->GetRequestUser($this->request)->Role->HasPermission("pivel/hydro2/managedatabaseconnections")) {
+    public function SaveConfiguration(): Response
+    {
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        // check whether the session/user is allowed to view the admin panel at all.
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
             return new Response(
-                status: StatusCode::NotFound
+                status: StatusCode::Forbidden,
             );
         }
 
@@ -461,7 +450,7 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if (!$this->_databaseService->CheckDriver($this->request->Args['driver'])) {
+        if (!$this->_entityService->IsProviderValid($this->request->Args['driver'])) {
             // invalid driver argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
@@ -479,7 +468,16 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if (!$this->_databaseService->CheckHost($this->request->Args['driver'], $this->request->Args['host'])) {
+        $profile = new EntityPersistenceProfile($this->request->Args['key']??'primary');
+        $profile->SetProfile(
+            persistenceProviderClass: $this->request->Args['driver'],
+            hostOrPath: $this->request->Args['host'],
+            username: $username = $this->request->Args['username'] ?? null,
+            password: $this->request->Args['password'] ?? null,
+            databaseSchema: $this->request->Args['database'] ?? null,
+        );
+
+        if (!$this->_entityService->IsHostValid($profile)) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -495,18 +493,7 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        $username = $this->request->Args['username'] ?? null;
-        $password = $this->request->Args['password'] ?? null;
-
-        // check if this is a valid user/password on the selected host
-        $privileges = $this->_databaseService->GetPrivileges(
-            $this->request->Args['driver'],
-            $this->request->Args['host'],
-            $username,
-            $password,
-        );
-
-        if ($privileges === false) {
+        if (!$this->_entityService->IsUserValid($profile)) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -527,19 +514,11 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        $database = $this->request->Args['database'] ?? null;
-
-        // get a list of databases which this user has privileges on
-        // can't be false because that would mean the user is invalid, which we've already checked.
-        $databases = $this->_databaseService->GetDatabases(
-            $this->request->Args['driver'],
-            $this->request->Args['host'],
-            $username,
-            $password,
-        );
+        $canCreateDatabaseSchemas = $profile->GetPersistenceProvider()->CanCreateDatabaseSchemas();
+        $databaseSchemas = $profile->GetPersistenceProvider()->GetDatabaseSchemas();
 
         // check that selected database is valid, or create a new one if selected
-        if (!$privileges['cancreatedb'] && !in_array($database, $databases)) {
+        if (!$canCreateDatabaseSchemas && !in_array($profile->GetDatabaseSchema(), $databaseSchemas)) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -555,14 +534,8 @@ class DatabaseSettingsController extends BaseController
             );
         }
 
-        if ($privileges['cancreatedb'] && !in_array($database, $databases)) {
-            if (!$this->_databaseService->CreateDatabase(
-                $this->request->Args['driver'],
-                $this->request->Args['host'],
-                $username,
-                $password,
-                $database,
-            )) {
+        if ($canCreateDatabaseSchemas && !in_array($profile->GetDatabaseSchema(), $databaseSchemas)) {
+            if (!$profile->GetPersistenceProvider()->CreateDatabaseSchema($profile->GetDatabaseSchema())) {
                 return new JsonResponse(
                     data: [
                         'validation_errors' => [
@@ -577,24 +550,15 @@ class DatabaseSettingsController extends BaseController
                     error_message: 'One or more arguments are invalid.'
                 ); 
             }
+
+            $this->_logger->Debug('Pivel/Hydro2', "Database schema {$profile->GetDatabaseSchema()} created.");
         }
 
-        $configurationKey = $this->request->Args['key']??'primary';
-
-        $profile = DatabaseConfigurationProfile::LoadFromKey($configurationKey)??new DatabaseConfigurationProfile($configurationKey,'','');
-
-        $profile->Driver = $this->request->Args['driver'];
-        $profile->Host = $this->request->Args['host'];
-        $profile->Username = $username;
-        $profile->Password = $password;
-        $profile->DatabaseSchema = $database;
-
-        // save configuration settings
-        $profile->Save();
+        
         
         return new JsonResponse(
             data: [
-                'result' => true,
+                'result' => $this->_entityService->SavePersistenceProfile($profile),
             ],
             status: StatusCode::OK,
         );

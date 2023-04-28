@@ -4,45 +4,56 @@ namespace Pivel\Hydro2\Models\Identity;
 
 use DateTime;
 use DateTimeZone;
-use Pivel\Hydro2\Extensions\Database\TableColumn;
-use Pivel\Hydro2\Extensions\Database\TableForeignKey;
-use Pivel\Hydro2\Extensions\Database\TableName;
-use Pivel\Hydro2\Extensions\Database\TablePrimaryKey;
-use Pivel\Hydro2\Extensions\Database\Where;
-use Pivel\Hydro2\Models\Database\BaseObject;
+use Pivel\Hydro2\Attributes\Entity\Entity;
+use Pivel\Hydro2\Attributes\Entity\EntityField;
+use Pivel\Hydro2\Attributes\Entity\EntityPrimaryKey;
+use Pivel\Hydro2\Attributes\Entity\ForeignEntityManyToOne;
+use Pivel\Hydro2\Attributes\Entity\ForeignEntityOneToMany;
+use Pivel\Hydro2\Extensions\Query;
+use Pivel\Hydro2\Models\Database\Order;
+use Pivel\Hydro2\Services\Entity\EntityCollection;
 
-#[TableName('hydro2_users')]
-class User extends BaseObject
+#[Entity(CollectionName: 'hydro2_users')]
+class User
 {
-    #[TableColumn('id', autoIncrement:true)]
-    #[TablePrimaryKey]
+    #[EntityField(FieldName: 'id', AutoIncrement: true)]
+    #[EntityPrimaryKey]
     public ?int $Id = null;
-    #[TableColumn('random_id')]
+    #[EntityField(FieldName: 'random_id')]
     public ?string $RandomId = null;
-    #[TableColumn('inserted')]
+    #[EntityField(FieldName: 'inserted')]
     public ?DateTime $InsertedTime = null;
-    #[TableColumn('email')]
+    #[EntityField(FieldName: 'email')]
     public string $Email;
-    #[TableColumn('email_verified')]
+    #[EntityField(FieldName: 'email_verified')]
     public bool $EmailVerified;
-    #[TableColumn('email_verification_token')]
+    #[EntityField(FieldName: 'email_verification_token')]
     public ?string $EmailVerificationToken = null;
-    #[TableColumn('name')]
+    #[EntityField(FieldName: 'name')]
     public string $Name;
-    #[TableColumn('user_role_id')]
-    #[TableForeignKey()]
-    public ?UserRole $Role;
-    #[TableColumn('needs_review')]
+    #[EntityField(FieldName: 'user_role_id')]
+    #[ForeignEntityManyToOne()]
+    private ?UserRole $role;
+    #[EntityField(FieldName: 'needs_review')]
     public bool $NeedsReview;
-    #[TableColumn('enabled')]
+    #[EntityField(FieldName: 'enabled')]
     public bool $Enabled;
-    #[TableColumn('failed_login_attempts')]
+    #[EntityField(FieldName: 'failed_login_attempts')]
     public int $FailedLoginAttempts;
-    #[TableColumn('failed_2FA_attempts')]
+    #[EntityField('failed_2FA_attempts')]
     public int $Failed2FAAttempts;
-    //#[ChildTable('hydro2_user_sessions')]
-    ///** @var Session[] */
-    //public array $Sessions;
+    
+    /** @var EntityCollection<Session> */
+    #[ForeignEntityOneToMany(OtherEntityClass: Session::class)]
+    private EntityCollection $userSessions;
+
+    /** @var EntityCollection<UserPassword> */
+    #[ForeignEntityOneToMany(OtherEntityClass: UserPassword::class)]
+    private EntityCollection $userPasswords;
+
+    /** @var EntityCollection<PasswordResetToken> */
+    #[ForeignEntityOneToMany(OtherEntityClass: PasswordResetToken::class)]
+    private EntityCollection $userPasswordResetTokens;
 
     public function __construct(
         string $email='',
@@ -52,7 +63,7 @@ class User extends BaseObject
         int $failedLoginAttempts=0,
         int $failed2FAAttempts=0,
         ?UserRole $role=null,
-        ) {
+    ) {
         $this->Email = $email;
         $this->EmailVerified = false;
         $this->Name = $name;
@@ -60,78 +71,52 @@ class User extends BaseObject
         $this->Enabled = $enabled;
         $this->FailedLoginAttempts = $failedLoginAttempts;
         $this->Failed2FAAttempts = $failed2FAAttempts;
-        $this->Role = $role;
-        
-        parent::__construct();
+        $this->role = $role;
     }
 
-    public static function LoadFromRandomId(string $randomId) : ?User {
-        // 1. need to run a query like:
-        //     SELECT * FROM [tablename] WHERE [idcolumnname] = [id];
-        $table = self::getTable();
-        $results = $table->Select(null, (new Where())->Equal('random_id', $randomId));
-        // 2. check that there is a single result
-        if (count($results) != 1) {
-            return null;
-        }
-        // 3. 'cast' result to an instance of User
-        // 4. return instance
-        return self::CastFromRow($results[0]);
-    }
-
-    public static function LoadFromEmail(string $email) : ?User {
-        // 1. need to run a query like:
-        //     SELECT * FROM [tablename] WHERE [idcolumnname] = [id];
-        $table = self::getTable();
-        $results = $table->Select(null, (new Where())->Equal('email', $email));
-        // 2. check that there is a single result
-        if (count($results) != 1) {
-            return null;
-        }
-        // 3. 'cast' result to an instance of User
-        // 4. return instance
-        return self::CastFromRow($results[0]);
-    }
-
-    /** @return User[] */
-    public static function GetAllWithRole(UserRole $role) : array {
-        $table = self::getTable();
-        $results = $table->Select(null, (new Where())->Equal('user_role_id', $role->Id));
-        return array_map(fn($row)=>self::CastFromRow($row), $results);
-    }
-
-    public static function Blank() : self {
-        return new self();
-    }
-
-    public function Save() : bool {
-        if ($this->RandomId === null) {
-            $this->RandomId = md5(uniqid($this->Email, true));
-        }
-        if ($this->InsertedTime === null) {
-            $this->InsertedTime = new DateTime(timezone:new DateTimeZone('UTC'));
-        }
-
-        return $this->UpdateOrCreateEntry();
-    }
-
-    public function Delete() : bool {
-        return $this->DeleteEntry();
-    }
-    
-    public function isValidUser()
+    public function GetSessionCount(): int
     {
-        return $this->Id !== null;
+        if (!isset($this->userSessions)) {
+            return 0;
+        }
+
+        return count($this->userSessions);
     }
 
-    public function GetEmailVerificationToken() : string
+    /**
+     * @return Session[]
+     */
+    public function GetSessions(): array
+    {
+        return $this->userSessions->Read();
+    }
+
+    public function GetPasswordCount(): int
+    {
+        if (!isset($this->userPasswords)) {
+            return 0;
+        }
+
+        return count($this->userPasswords);
+    }
+
+    public function GetUserRole(): UserRole
+    {
+        return $this->role;
+    }
+
+    public function SetUserRole(UserRole $role): void
+    {
+        $this->role = $role;
+    }
+
+    public function GetEmailVerificationToken(): string
     {
         return $this->EmailVerificationToken??$this->GenerateEmailVerificationToken();
     }
 
-    public function GenerateEmailVerificationToken() : string {
+    public function GenerateEmailVerificationToken(): string {
         $this->EmailVerificationToken = bin2hex(random_bytes(16));
-        $this->Save();
         return $this->EmailVerificationToken;
     }
 
@@ -143,10 +128,84 @@ class User extends BaseObject
         
         return $token === $this->EmailVerificationToken;
     }
-
-    public function GetCurrentPassword() : ?UserPassword
-    {
-        return UserPassword::LoadCurrentFromUser($this);
-    }
     
+    public function CheckPassword(string $password): bool
+    {
+        // get current password
+        /** @var UserPassword[] */
+        $currentPasswords = $this->userPasswords->Read((new Query())->OrderBy('start', Order::Descending)->Limit(1));
+        if (count($currentPasswords) != 1) {
+            return false;
+        }
+
+        if (!$currentPasswords[0]->ComparePassword($password)) {
+            return false;
+        }
+
+        // Check if password should be re-hashed, and persist it if it was.
+        if ($currentPasswords[0]->RehashPasswordIfRequired($password)) {
+            $this->userPasswords->Update($currentPasswords[0]);
+        }
+
+        return true;
+    }
+
+    public function SetNewPassword(string $password): bool {
+        // TODO add enforcement for minimum length, complexity, not matching previous x passwords.
+        $now = new DateTime(timezone: new DateTimeZone('UTC'));
+        $expiry = null;
+        if ($this->role->MaxPasswordAgeDays !== null) {
+            $expiry = clone $now;
+            $expiry->modify("+{$this->role->MaxPasswordAgeDays} days");
+        }
+
+        $newPassword = new UserPassword(
+            user: $this,
+            password: $password,
+            startTime: $now,
+            expireTime: $expiry,
+        );
+
+        return $this->userPasswords->Create($newPassword);
+    }
+
+    public function IsPasswordChangeRequired(): bool
+    {
+        // get current password
+        /** @var UserPassword[] */
+        $currentPasswords = $this->userPasswords->Read((new Query())->OrderBy('start', Order::Descending)->Limit(1));
+        return count($currentPasswords) != 1 || $currentPasswords[0]->IsExpired();
+    }
+
+    public function CheckPasswordResetToken(string $token): bool
+    {
+        /** @var PasswordResetToken[] */
+        $tokenObjs = $this->userPasswordResetTokens->Read((new Query())->Equal('reset_token', $token)->Limit(1));
+        if (count($tokenObjs) != 1) {
+            return false;
+        }
+
+        if (!$tokenObjs[0]->CompareToken($token)) {
+            return false;
+        }
+
+        // update token since it is now used.
+        $tokenObjs[0]->Used = true;
+        $this->userPasswordResetTokens->Update($tokenObjs[0]);
+
+        return true;
+    }
+
+    public function CreateNewPasswordResetToken(): ?PasswordResetToken
+    {
+        $newToken = new PasswordResetToken(
+            user: $this,
+        );
+
+        if (!$this->userPasswordResetTokens->Create($newToken)) {
+            return null;
+        }
+
+        return $newToken;
+    }
 }

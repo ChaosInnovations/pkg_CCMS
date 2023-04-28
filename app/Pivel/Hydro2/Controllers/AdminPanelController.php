@@ -7,6 +7,7 @@ use Pivel\Hydro2\Models\HTTP\StatusCode;
 use Pivel\Hydro2\Extensions\Route;
 use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
+use Pivel\Hydro2\Models\Permissions;
 use Pivel\Hydro2\Services\IdentityService;
 use Pivel\Hydro2\Services\PackageManifestService;
 use Pivel\Hydro2\Views\AdminPanel\AdminPanelView;
@@ -31,7 +32,7 @@ class AdminPanelController extends BaseController
     #[Route(Method::GET, 'admin/{*path}')]
     #[Route(Method::GET, 'admin')]
     public function GetAdminPanelView() : Response {
-        if ($this->_identityService->GetRequestSession($this->request) === false) {
+        if ($this->_identityService->GetSessionFromRequest($this->request) === false) {
             return new Response(
                 status: StatusCode::Found,
                 headers: [
@@ -40,8 +41,10 @@ class AdminPanelController extends BaseController
             );
         }
 
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+
         // check whether the session/user is allowed to view the admin panel at all.
-        if (!$this->_identityService->GetRequestUser($this->request)->Role->HasPermission('pivel/hydro2/viewadminpanel')) {
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ViewAdminPanel->value)) {
             return new Response(
                 status: StatusCode::Forbidden,
             );
@@ -63,7 +66,7 @@ class AdminPanelController extends BaseController
                         }
                         $permitted = false;
                         foreach ($node['requires'] as $requiredPermission) {
-                            $permitted |= $this->_identityService->GetRequestUser($this->request)->Role->HasPermission($requiredPermission);
+                            $permitted = $permitted || $requestUser->GetUserRole()->HasPermission($requiredPermission);
                             if ($permitted) {
                                 break;
                             }

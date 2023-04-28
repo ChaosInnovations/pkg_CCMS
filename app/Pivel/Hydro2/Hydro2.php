@@ -2,9 +2,15 @@
 
 namespace Pivel\Hydro2;
 
+use Error;
+use Exception;
+use Pivel\Hydro2\Models\EntityPersistenceProfile;
 use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Services\AutoloadService;
+use Pivel\Hydro2\Services\Entity\EntityRepository;
+use Pivel\Hydro2\Services\Entity\EntityService;
+use Pivel\Hydro2\Services\Entity\IEntityService;
 use Pivel\Hydro2\Services\ILoggerService;
 use Pivel\Hydro2\Services\LoggerService;
 use Pivel\Hydro2\Services\PackageManifestService;
@@ -87,6 +93,8 @@ class Hydro2
     public function RegisterSingleton(string $class, ?string $interface = null) : void
     {
         $classOrInterface = $interface??$class;
+        if (isset($this->_loggerService)) {
+        }
         $this->diClasses[$classOrInterface] = [
             'class' => $class,
             'isSingleton' => true,
@@ -179,9 +187,10 @@ class Hydro2
                     }
                 }
 
-                if (isset($pkg_info['services'])) {
-                    foreach ($pkg_info['services'] as $c) {
+                if (isset($pkg_info['singletons'])) {
+                    foreach ($pkg_info['singletons'] as $c) {
                         $this->RegisterSingleton($c['class'], $c['interface']??null);
+                        $i = $c['interface']??'null';
                     }
                 }
             }
@@ -263,6 +272,31 @@ class Hydro2
 
     public function Run() : self
     {
+        // Test entity service
+        /*
+        $this->_loggerService->Debug('Pivel/Hydro2', "Starting tests for new entity service...");
+        /** @var ?IEntityService /
+        $entityService = null;
+        try {
+            /** @var ?IEntityService /
+            $entityService = $this->ResolveDependency(IEntityService::class);
+        } catch (Exception $e) {
+            $this->_loggerService->Error('Pivel/Hydro2', "Exception while starting entity service: {$e->getMessage()}");
+        }/* catch (Error $e) {
+            $this->_loggerService->Error('Pivel/Hydro2', "Error while starting entity service: {$e->getMessage()}");
+        }/
+
+        if ($entityService == null) {
+            $this->_loggerService->Error('Pivel/Hydro2', "Couldn't obtain entity service.");
+        } else {
+            /** @var EntityRepository<EntityPersistenceProfile> /
+            $r = $entityService->GetRepository(EntityPersistenceProfile::class);
+            $c = $r->Count();
+            $this->_loggerService->Debug('Pivel/Hydro2', "There are {$c} persistence profiles.");
+            $newProfile = new EntityPersistenceProfile('primary');
+            $r->Update($newProfile);
+        }*/
+
         // Process incoming request
         $request = $this->buildRequest();
         $this->_loggerService->Info('Pivel/Hydro2', "{$request->method->value} {$request->getClientAddress()} {$request->endpoint}");

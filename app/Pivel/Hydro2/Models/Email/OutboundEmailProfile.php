@@ -2,39 +2,42 @@
 
 namespace Pivel\Hydro2\Models\Email;
 
+use Pivel\Hydro2\Attributes\Entity\Entity;
+use Pivel\Hydro2\Attributes\Entity\EntityField;
+use Pivel\Hydro2\Attributes\Entity\EntityPrimaryKey;
 use Pivel\Hydro2\Extensions\Database\TableColumn;
 use Pivel\Hydro2\Extensions\Database\TableName;
 use Pivel\Hydro2\Extensions\Database\TablePrimaryKey;
 use Pivel\Hydro2\Extensions\Database\Where;
 use Pivel\Hydro2\Models\Database\BaseObject;
 
-#[TableName('hydro2_outbound_email_profiles')]
-class OutboundEmailProfile extends BaseObject
+#[Entity('hydro2_outbound_email_profiles')]
+class OutboundEmailProfile
 {
-    #[TableColumn('id', autoIncrement:true)]
-    #[TablePrimaryKey]
+    #[EntityField('id', AutoIncrement: true)]
+    #[EntityPrimaryKey]
     public ?int $Id;
-    #[TableColumn('key')]
+    #[EntityField('key')]
     public string $Key;
-    #[TableColumn('label')]
+    #[EntityField('label')]
     public string $Label;
-    #[TableColumn('type')]
+    #[EntityField('type')]
     public string $Type;
-    #[TableColumn('sender_address')]
+    #[EntityField('sender_address')]
     public string $SenderAddress;
-    #[TableColumn('sender_name')]
+    #[EntityField('sender_name')]
     public string $SenderName;
-    #[TableColumn('require_auth')]
+    #[EntityField('require_auth')]
     public bool $RequireAuth;
-    #[TableColumn('username')]
+    #[EntityField('username')]
     public ?string $Username;
-    #[TableColumn('password')]
+    #[EntityField('password')]
     public ?string $Password;
-    #[TableColumn('host')]
+    #[EntityField('host')]
     public string $Host;
-    #[TableColumn('port')]
+    #[EntityField('port')]
     public int $Port;
-    #[TableColumn('secure')]
+    #[EntityField('secure')]
     public string $Secure;
 
     public const SECURE_NONE = '';
@@ -68,31 +71,6 @@ class OutboundEmailProfile extends BaseObject
         $this->Host = $host;
         $this->Port = $port;
         $this->Secure = $secure;
-
-        parent::__construct();
-    }
-
-    public static function LoadFromKey(string $key) : ?self {
-        $table = self::getTable();
-        $results = $table->Select(null, (new Where())->Equal('key', $key));
-        
-        if (count($results) != 1) {
-            return null;
-        }
-
-        return self::CastFromRow($results[0], className:get_called_class());
-    }
-
-    public static function Blank() : self {
-        return new self();
-    }
-
-    public function Save() : bool {
-        return $this->UpdateOrCreateEntry();
-    }
-
-    public function Delete() : bool {
-        return $this->DeleteEntry();
     }
 
     public function GetSender() : EmailAddress {

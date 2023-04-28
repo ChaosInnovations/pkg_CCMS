@@ -4,6 +4,9 @@ namespace Pivel\Hydro2\Models;
 
 enum Permissions : string
 {
+    case ViewAdminPanel = 'pivel/hydro2/viewadminpanel';
+    case ManagePersistenceProfiles = 'pivel/hydro2/managepersistenceprofiles';
+    case ManageOutboundEmailProfiles = 'pivel/hydro2/manageoutboundemailprofiles';
     case ViewUsers = 'pivel/hydro2/viewusers';
     case ManageUsers = 'pivel/hydro2/manageusers';
     case CreateUsers = 'pivel/hydro2/createusers';

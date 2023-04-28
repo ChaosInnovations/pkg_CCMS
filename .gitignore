@@ -1,5 +1,6 @@
 *.code-workspace
 app/dbconfig.json
 app/routes.json
+app/persistenceprofiles.json
 *.sqlite3
 *.log

@@ -8,6 +8,7 @@ use Pivel\Hydro2\Exceptions\Email\EmailHostNotFoundException;
 use Pivel\Hydro2\Exceptions\Email\NotAuthenticatedException;
 use Pivel\Hydro2\Exceptions\Email\TLSUnavailableException;
 use Pivel\Hydro2\Extensions\Database\OrderBy;
+use Pivel\Hydro2\Extensions\Query;
 use Pivel\Hydro2\Models\HTTP\Method;
 use Pivel\Hydro2\Extensions\Route;
 use Pivel\Hydro2\Extensions\RoutePrefix;
@@ -20,22 +21,27 @@ use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
 use Pivel\Hydro2\Services\Email\EmailService;
+use Pivel\Hydro2\Services\Entity\IEntityService;
 use Pivel\Hydro2\Services\IdentityService;
 use Pivel\Hydro2\Views\EmailViews\TestEmailView;
 
 #[RoutePrefix('api/hydro2/email/outboundprofiles')]
 class OutboundEmailProfilesController extends BaseController
 {
+    protected IEntityService $_entityService;
     protected IdentityService $_identityService;
     protected EmailService $_emailService;
 
     public function __construct(
+        IEntityService $entityService,
         IdentityService $identityService,
         EmailService $emailService,
         Request $request,
     )
     {
+        $this->_entityService = $entityService;
         $this->_identityService = $identityService;
+        $this->_emailService = $emailService;
         parent::__construct($request);
     }
     
@@ -54,21 +60,22 @@ class OutboundEmailProfilesController extends BaseController
             );
         }
 
-        $order = null;
+        $query = new Query();
+        $query->Limit($this->request->Args['limit'] ?? -1);
+        $query->Offset($this->request->Args['offset'] ?? 0);
+        
         if (isset($this->request->Args['sort_by'])) {
             if ($this->request->Args['sort_by'] == 'sender') {
                 $this->request->Args['sort_by'] = 'sender_address';
             }
             $dir = Order::tryFrom(strtoupper($this->request->Args['sort_dir']??'asc'))??Order::Ascending;
-            $order = (new OrderBy)->Column($this->request->Args['sort_by']??'key', $dir);
+            $query->OrderBy($this->request->Args['sort_by']??'key', $dir);
         }
-        $limit = $this->request->Args['limit']??null;
-        $offset = $this->request->Args['offset']??null;
 
-        /**
-         * @var OutboundEmailProfile[]
-         */
-        $profiles = OutboundEmailProfile::GetAll($order, $limit, $offset);
+        $r = $this->_entityService->GetRepository(OutboundEmailProfile::class);
+
+        /** @var OutboundEmailProfile[] */
+        $profiles = $r->Read($query);
         $serializedProfiles = [];
         foreach ($profiles as $profile) {
             $serializedProfiles[] = [
@@ -135,7 +142,9 @@ class OutboundEmailProfilesController extends BaseController
             );
         }
 
-        if (OutboundEmailProfile::LoadFromKey($this->request->Args['key']) !== null) {
+        $r = $this->_entityService->GetRepository(OutboundEmailProfile::class);
+
+        if ($r->Count((new Query)->Equal('key', $this->request->Args['key'])) !== 0) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -177,7 +186,9 @@ class OutboundEmailProfilesController extends BaseController
             secure: $secure,
         );
 
-        if (!$profile->Save()) {
+        $r = $this->_entityService->GetRepository(OutboundEmailProfile::class);
+
+        if (!$r->Update($profile)) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database."
@@ -196,8 +207,10 @@ class OutboundEmailProfilesController extends BaseController
             );
         }
 
-        $profile = OutboundEmailProfile::LoadFromKey($this->request->Args['key']);
-        if ($profile === null) {
+        $r = $this->_entityService->GetRepository(OutboundEmailProfile::class);
+
+        $profiles = $r->Read((new Query)->Equal('key', $this->request->Args['key']));
+        if (count($profiles) != 1) {
             return new JsonResponse(
                 data: [
                     'outboundemailprofiles' => [],
@@ -205,6 +218,8 @@ class OutboundEmailProfilesController extends BaseController
                 status: StatusCode::OK,
             );
         }
+
+        $profile = $profiles[0];
 
         $serializedProfiles = [
             [
@@ -237,11 +252,15 @@ class OutboundEmailProfilesController extends BaseController
             );
         }
 
-        $profile = OutboundEmailProfile::LoadFromKey($this->request->Args['key']);
-        if ($profile === null) {
+        $r = $this->_entityService->GetRepository(OutboundEmailProfile::class);
+
+        $profiles = $r->Read((new Query)->Equal('key', $this->request->Args['key']));
+        if (count($profiles) != 1) {
             $profile = new OutboundEmailProfile(
                 key: $this->request->Args['key'],
             );
+        } else {
+            $profile = $profiles[0];
         }
 
         $secure = $this->request->Args['secure']??OutboundEmailProfile::SECURE_NONE;
@@ -266,7 +285,7 @@ class OutboundEmailProfilesController extends BaseController
         $profile->Port = $this->request->Args['port']??465;
         $profile->Secure = $secure;
 
-        if (!$profile->Save()) {
+        if (!$r->Update($profile)) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database."
@@ -284,9 +303,11 @@ class OutboundEmailProfilesController extends BaseController
             );
         }
 
-        $profile = OutboundEmailProfile::LoadFromKey($this->request->Args['key']);
+        $r = $this->_entityService->GetRepository(OutboundEmailProfile::class);
 
-        if ($profile !== null && !$profile->Delete()) {
+        $profiles = $r->Read((new Query)->Equal('key', $this->request->Args['key']));
+
+        if (count($profiles) == 1 && !$r->Delete($profiles[0])) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database."
@@ -320,9 +341,11 @@ class OutboundEmailProfilesController extends BaseController
             );
         }
 
-        $profile = OutboundEmailProfile::LoadFromKey($this->request->Args['key']);
+        $r = $this->_entityService->GetRepository(OutboundEmailProfile::class);
 
-        if ($profile === null) {
+        $profiles = $r->Read((new Query)->Equal('key', $this->request->Args['key']));
+
+        if (count($profiles) != 1) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -337,6 +360,7 @@ class OutboundEmailProfilesController extends BaseController
                 error_message: 'One or more arguments are invalid.'
             );
         }
+        $profile = $profiles[0];
 
         $provider = $this->_emailService->GetOutboundEmailProvider($profile);
 

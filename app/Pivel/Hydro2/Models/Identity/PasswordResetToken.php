@@ -4,81 +4,54 @@ namespace Pivel\Hydro2\Models\Identity;
 
 use DateTime;
 use DateTimeZone;
-use Pivel\Hydro2\Extensions\Database\TableColumn;
-use Pivel\Hydro2\Extensions\Database\TableForeignKey;
-use Pivel\Hydro2\Extensions\Database\TableName;
-use Pivel\Hydro2\Extensions\Database\TablePrimaryKey;
-use Pivel\Hydro2\Extensions\Database\Where;
-use Pivel\Hydro2\Models\Database\BaseObject;
+use Pivel\Hydro2\Attributes\Entity\Entity;
+use Pivel\Hydro2\Attributes\Entity\EntityField;
+use Pivel\Hydro2\Attributes\Entity\EntityPrimaryKey;
+use Pivel\Hydro2\Attributes\Entity\ForeignEntityManyToOne;
 use Pivel\Hydro2\Models\Database\ReferenceBehaviour;
 
-#[TableName('hydro2_user_password_reset_tokens')]
-class PasswordResetToken extends BaseObject
+#[Entity(CollectionName: 'hydro2_user_password_reset_tokens')]
+class PasswordResetToken
 {
-    #[TableColumn('id', autoIncrement:true)]
-    #[TablePrimaryKey]
+    #[EntityField(FieldName: 'id', AutoIncrement: true)]
+    #[EntityPrimaryKey]
     public ?int $Id = null;
-    #[TableColumn('user_id')]
-    #[TableForeignKey(ReferenceBehaviour::CASCADE,ReferenceBehaviour::CASCADE,'hydro2_users','id')]
-    public ?int $UserId; // use int rather than User to avoid circular reference issues.
-    #[TableColumn('reset_token')]
+    #[EntityField(FieldName: 'user_id')]
+    #[ForeignEntityManyToOne(OnDelete: ReferenceBehaviour::CASCADE)]
+    private ?User $user;
+    #[EntityField(FieldName: 'reset_token')]
     public string $ResetToken;
-    #[TableColumn('start')]
+    #[EntityField(FieldName: 'start')]
     public ?DateTime $StartTime;
-    #[TableColumn('expire')]
+    #[EntityField(FieldName: 'expire')]
     public ?DateTime $ExpireTime;
-    #[TableColumn('used')]
+    #[EntityField(FieldName: 'used')]
     public bool $Used;
 
     public function __construct(
-        ?int $userId = null,
+        ?User $user = null,
         ?DateTime $startTime = null,
         int $expireAfterMinutes = 10,
         ) {
-        $this->UserId = $userId;
+        $this->user = $user;
         $this->GenerateToken();
         $this->StartTime = $startTime??new DateTime(timezone:new DateTimeZone('UTC'));
         $this->ExpireTime = (clone $this->StartTime)->modify("+{$expireAfterMinutes} minutes");
         $this->Used = false;
     }
 
-    public static function LoadFromToken(string $token) : ?self {
-        $table = self::getTable();
-        $results = $table->Select(null, (new Where())->Equal('reset_token', $token));
-        if (count($results) != 1) {
-            return null;
-        }
-        
-        return self::CastFromRow($results[0]);
+    public function GetUser(): User
+    {
+        return $this->user;
     }
 
-    public static function Blank() : self {
-        return new self();
-    }
-
-    public function Save() : bool {
-        if ($this->UserId === null) {
-            return false;
-        }
-        return $this->UpdateOrCreateEntry();
-    }
-
-    public function Delete() : bool {
-        return $this->DeleteEntry();
-    }
-
-    public function GetUser() : ?User {
-        if ($this->UserId === null) {
-            return null;
-        }
-        return User::LoadFromId($this->UserId);
-    }
-
-    private function GenerateToken() {
+    private function GenerateToken(): void
+    {
         $this->ResetToken = bin2hex(random_bytes(16));
     }
 
-    public function CompareToken(string $token) : bool {
+    public function CompareToken(string $token): bool
+    {
         if ($this->Used) {
             return false;
         }
