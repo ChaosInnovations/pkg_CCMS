@@ -141,8 +141,31 @@ class UserRoleController extends BaseController
             }
         }
 
+        $permissions = $this->_identityService->GetAvailablePermissions();
+
+        $userRoleResults = [[
+            'id' => $userRole->Id,
+            'name' => $userRole->Name,
+            'description' => $userRole->Description,
+            'max_login_attempts' => $userRole->MaxLoginAttempts,
+            'max_session_length' => $userRole->MaxSessionLengthMinutes,
+            'max_password_age' => $userRole->MaxPasswordAgeDays,
+            'days_until_2fa_setup_required' => $userRole->DaysUntil2FASetupRequired,
+            'challenge_interval' => $userRole->ChallengeIntervalMinutes,
+            'max_2fa_attempts' => $userRole->Max2FAAttempts,
+            'permissions' => array_map(function ($p) use ($permissions) {
+                /** @var UserPermission $p */
+                return [
+                    'key' => $p->PermissionKey,
+                    'name' => (isset($permissions[$p->PermissionKey]) ? $permissions[$p->PermissionKey]->Name : 'Unknown Permission'),
+                ];
+            }, $userRole->GetPermissions()),
+        ]];
+
         return new JsonResponse(
-            status:StatusCode::OK
+            data:[
+                'user_roles' => $userRoleResults,
+            ],
         );
     }
 

@@ -74,11 +74,19 @@ class UserRole
      */
     public function GetPermissions(): array
     {
+        if (!isset($this->permissions)) {
+            return [];
+        }
+
         return $this->permissions->Read();
     }
 
     public function GrantPermission(string $permissionKey): bool
     {
+        if (!isset($this->permissions)) {
+            return false;
+        }
+
         if ($this->HasPermission($permissionKey)) {
             return true; // say we added it. more permissive than refusing to add because it was already added previously.
         }
@@ -93,6 +101,10 @@ class UserRole
 
     public function DenyPermission(string $permissionKey): bool
     {
+        if (!isset($this->permissions)) {
+            return false;
+        }
+
         $matches = $this->permissions->Read((new Query())->Equal('permission_key', $permissionKey)->Limit(1));
         if ($matches == 0) {
             return true;
@@ -101,7 +113,13 @@ class UserRole
         return $this->permissions->Delete($matches[0]);
     }
 
-    public function HasPermission(string $permissionKey) : bool {
+    public function HasPermission(string $permissionKey): bool
+    {
+        
+        if (!isset($this->permissions)) {
+            return false;
+        }
+
         $matches = $this->permissions->Read((new Query())->Equal('permission_key', $permissionKey)->Limit(1));
         return count($matches) == 1;
     }

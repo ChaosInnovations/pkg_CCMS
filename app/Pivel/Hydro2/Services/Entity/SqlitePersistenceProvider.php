@@ -229,7 +229,11 @@ class SqlitePersistenceProvider implements IEntityPersistenceProvider
             return null;
         }
 
-        return intval($this->pdo->lastInsertId());
+        $lastInsertId = $this->pdo->lastInsertId();
+        if ($lastInsertId == 0) {
+            return null;
+        }
+        return $lastInsertId ? null : intval($lastInsertId);
     }
 
     public function Delete(EntityDefinition $collection, Query $query) : int

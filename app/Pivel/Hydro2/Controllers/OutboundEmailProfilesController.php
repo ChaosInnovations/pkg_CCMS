@@ -20,6 +20,7 @@ use Pivel\Hydro2\Models\HTTP\JsonResponse;
 use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
+use Pivel\Hydro2\Models\Permissions;
 use Pivel\Hydro2\Services\Email\EmailService;
 use Pivel\Hydro2\Services\Entity\IEntityService;
 use Pivel\Hydro2\Services\IdentityService;
@@ -37,26 +38,20 @@ class OutboundEmailProfilesController extends BaseController
         IdentityService $identityService,
         EmailService $emailService,
         Request $request,
-    )
-    {
+    ) {
         $this->_entityService = $entityService;
         $this->_identityService = $identityService;
         $this->_emailService = $emailService;
         parent::__construct($request);
     }
-    
-    // TODO replace with real permission check
-    private function UserHasPermission(string $permission) : bool {
-        return true;
-    }
 
     #[Route(Method::GET, '')]
-    public function GetAllProfiles() : Response
+    public function GetAllProfiles(): Response
     {
-        // if database has already been configured and not logged in as admin, return 404
-        if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManageOutboundEmailProfiles->value)) {
             return new Response(
-                status: StatusCode::NotFound
+                status: StatusCode::NotFound,
             );
         }
 
@@ -101,12 +96,12 @@ class OutboundEmailProfilesController extends BaseController
     }
 
     #[Route(Method::GET, '~api/hydro2/email/outboundprofileproviders')]
-    public function GetProviders() : Response
+    public function GetProviders(): Response
     {
-        // if not logged in as admin, return 404
-        if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManageOutboundEmailProfiles->value)) {
             return new Response(
-                status: StatusCode::NotFound
+                status: StatusCode::NotFound,
             );
         }
 
@@ -119,10 +114,12 @@ class OutboundEmailProfilesController extends BaseController
     }
 
     #[Route(Method::POST, '')]
-    public function CreateProfile() : Response {
-        if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
+    public function CreateProfile(): Response
+    {
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManageOutboundEmailProfiles->value)) {
             return new Response(
-                status: StatusCode::NotFound
+                status: StatusCode::NotFound,
             );
         }
 
@@ -199,11 +196,12 @@ class OutboundEmailProfilesController extends BaseController
     }
 
     #[Route(Method::GET, '{key}')]
-    public function GetProfile() : Response {
-        // if database has already been configured and not logged in as admin, return 404
-        if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
+    public function GetProfile(): Response
+    {
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManageOutboundEmailProfiles->value)) {
             return new Response(
-                status: StatusCode::NotFound
+                status: StatusCode::NotFound,
             );
         }
 
@@ -245,10 +243,12 @@ class OutboundEmailProfilesController extends BaseController
     }
 
     #[Route(Method::POST, '{key}')]
-    public function UpdateProfile() : Response {
-        if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
+    public function UpdateProfile(): Response
+    {
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManageOutboundEmailProfiles->value)) {
             return new Response(
-                status: StatusCode::NotFound
+                status: StatusCode::NotFound,
             );
         }
 
@@ -296,10 +296,12 @@ class OutboundEmailProfilesController extends BaseController
     }
 
     #[Route(Method::DELETE, '{key}')]
-    public function DeleteProfile() : Response {
-        if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
+    public function DeleteProfile(): Response
+    {
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManageOutboundEmailProfiles->value)) {
             return new Response(
-                status: StatusCode::NotFound
+                status: StatusCode::NotFound,
             );
         }
 
@@ -318,10 +320,12 @@ class OutboundEmailProfilesController extends BaseController
     }
 
     #[Route(Method::POST, '{key}/test')]
-    public function TestProfile() : Response {
-        if (!$this->UserHasPermission("manageoutboundemailprofiles")) {
+    public function TestProfile(): Response
+    {
+        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
+        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManageOutboundEmailProfiles->value)) {
             return new Response(
-                status: StatusCode::NotFound
+                status: StatusCode::NotFound,
             );
         }
 

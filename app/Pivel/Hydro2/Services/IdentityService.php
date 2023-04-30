@@ -284,7 +284,7 @@ class IdentityService
         return $this->userRoleRepository->Read($query);
     }
 
-    public function CreateNewUserRole(UserRole &$role): ?User
+    public function CreateNewUserRole(UserRole &$role): ?UserRole
     {
         if (!$this->userRoleRepository->Create($role)) {
             $this->_logger->Error('Pivel/Hydro2', "Failed to create new user role {$role->Name}.");

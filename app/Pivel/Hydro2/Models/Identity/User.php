@@ -65,6 +65,10 @@ class User
         ?UserRole $role=null,
     ) {
         $this->Email = $email;
+        if ($this->Email !== '') {
+            $this->GenerateRandomId();
+            $this->InsertedTime = new DateTime(timezone: new DateTimeZone('UTC'));
+        }
         $this->EmailVerified = false;
         $this->Name = $name;
         $this->NeedsReview = $needsReview;
@@ -108,6 +112,11 @@ class User
     public function SetUserRole(UserRole $role): void
     {
         $this->role = $role;
+    }
+
+    private function GenerateRandomId(): void
+    {
+        $this->RandomId = md5(uniqid($this->Email, true));
     }
 
     public function GetEmailVerificationToken(): string

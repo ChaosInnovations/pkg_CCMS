@@ -45,7 +45,7 @@ class PersistenceProfilesController extends BaseController
         $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
         if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
             return new Response(
-                status: StatusCode::Forbidden,
+                status: StatusCode::NotFound,
             );
         }
 
@@ -84,12 +84,12 @@ class PersistenceProfilesController extends BaseController
     }
 
     #[Route(Method::GET, 'providers')]
-    public function GetDrivers(): Response
+    public function GetProviders(): Response
     {
         $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
         if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
             return new Response(
-                status: StatusCode::Forbidden,
+                status: StatusCode::NotFound,
             );
         }
 
@@ -107,20 +107,20 @@ class PersistenceProfilesController extends BaseController
         $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
         if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
             return new Response(
-                status: StatusCode::Forbidden,
+                status: StatusCode::NotFound,
             );
         }
 
         // validate args
-        if (!isset($this->request->Args['driver'])) {
+        if (!isset($this->request->Args['provider'])) {
             // missing argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
                         [
-                            'name' => 'driver',
-                            'description' => 'Database driver name',
+                            'name' => 'provider',
+                            'description' => 'Database provider name',
                             'message' => 'Argument is missing.',
                         ],
                     ],
@@ -148,16 +148,16 @@ class PersistenceProfilesController extends BaseController
             );
         }
 
-        if (!$this->_entityService->IsProviderValid($this->request->Args['driver'])) {
-            // invalid driver argument
+        if (!$this->_entityService->IsProviderValid($this->request->Args['provider'])) {
+            // invalid provider argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
                         [
-                            'name' => 'driver',
-                            'description' => 'Database driver name',
-                            'message' => 'Selected driver is not supported.',
+                            'name' => 'provider',
+                            'description' => 'Database provider name',
+                            'message' => 'Selected provider is not supported.',
                         ],
                     ],
                 ],
@@ -168,7 +168,7 @@ class PersistenceProfilesController extends BaseController
 
         $profile = new EntityPersistenceProfile();
         $profile->SetProfile(
-            persistenceProviderClass: $this->request->Args['driver'],
+            persistenceProviderClass: $this->request->Args['provider'],
             hostOrPath: $this->request->Args['host'],
         );
 
@@ -187,20 +187,20 @@ class PersistenceProfilesController extends BaseController
         // check whether the session/user is allowed to view the admin panel at all.
         if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
             return new Response(
-                status: StatusCode::Forbidden,
+                status: StatusCode::NotFound,
             );
         }
 
         // validate args
-        if (!isset($this->request->Args['driver'])) {
+        if (!isset($this->request->Args['provider'])) {
             // missing argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
                         [
-                            'name' => 'driver',
-                            'description' => 'Database driver name',
+                            'name' => 'provider',
+                            'description' => 'Database provider name',
                             'message' => 'Argument is missing.',
                         ],
                     ],
@@ -228,16 +228,16 @@ class PersistenceProfilesController extends BaseController
             );
         }
 
-        if (!$this->_entityService->IsProviderValid($this->request->Args['driver'])) {
-            // invalid driver argument
+        if (!$this->_entityService->IsProviderValid($this->request->Args['provider'])) {
+            // invalid provider argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
                         [
-                            'name' => 'driver',
-                            'description' => 'Database driver name',
-                            'message' => 'Selected driver is not supported.',
+                            'name' => 'provider',
+                            'description' => 'Database provider name',
+                            'message' => 'Selected provider is not supported.',
                         ],
                     ],
                 ],
@@ -248,7 +248,7 @@ class PersistenceProfilesController extends BaseController
 
         $profile = new EntityPersistenceProfile();
         $profile->SetProfile(
-            persistenceProviderClass: $this->request->Args['driver'],
+            persistenceProviderClass: $this->request->Args['provider'],
             hostOrPath: $this->request->Args['host'],
             username: $username = $this->request->Args['username'] ?? null,
             password: $this->request->Args['password'] ?? null,
@@ -288,20 +288,20 @@ class PersistenceProfilesController extends BaseController
         // check whether the session/user is allowed to view the admin panel at all.
         if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
             return new Response(
-                status: StatusCode::Forbidden,
+                status: StatusCode::NotFound,
             );
         }
 
         // validate args
-        if (!isset($this->request->Args['driver'])) {
+        if (!isset($this->request->Args['provider'])) {
             // missing argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
                         [
-                            'name' => 'driver',
-                            'description' => 'Database driver name',
+                            'name' => 'provider',
+                            'description' => 'Database provider name',
                             'message' => 'Argument is missing.',
                         ],
                     ],
@@ -329,16 +329,16 @@ class PersistenceProfilesController extends BaseController
             );
         }
 
-        if (!$this->_entityService->IsProviderValid($this->request->Args['driver'])) {
-            // invalid driver argument
+        if (!$this->_entityService->IsProviderValid($this->request->Args['provider'])) {
+            // invalid provider argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
                         [
-                            'name' => 'driver',
-                            'description' => 'Database driver name',
-                            'message' => 'Selected driver is not supported.',
+                            'name' => 'provider',
+                            'description' => 'Database provider name',
+                            'message' => 'Selected provider is not supported.',
                         ],
                     ],
                 ],
@@ -349,7 +349,7 @@ class PersistenceProfilesController extends BaseController
 
         $profile = new EntityPersistenceProfile();
         $profile->SetProfile(
-            persistenceProviderClass: $this->request->Args['driver'],
+            persistenceProviderClass: $this->request->Args['provider'],
             hostOrPath: $this->request->Args['host'],
             username: $username = $this->request->Args['username'] ?? null,
             password: $this->request->Args['password'] ?? null,
@@ -409,20 +409,20 @@ class PersistenceProfilesController extends BaseController
         // check whether the session/user is allowed to view the admin panel at all.
         if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
             return new Response(
-                status: StatusCode::Forbidden,
+                status: StatusCode::NotFound,
             );
         }
 
         // validate args
-        if (!isset($this->request->Args['driver'])) {
+        if (!isset($this->request->Args['provider'])) {
             // missing argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
                         [
-                            'name' => 'driver',
-                            'description' => 'Database driver name',
+                            'name' => 'provider',
+                            'description' => 'Database provider name',
                             'message' => 'Argument is missing.',
                         ],
                     ],
@@ -450,16 +450,16 @@ class PersistenceProfilesController extends BaseController
             );
         }
 
-        if (!$this->_entityService->IsProviderValid($this->request->Args['driver'])) {
-            // invalid driver argument
+        if (!$this->_entityService->IsProviderValid($this->request->Args['provider'])) {
+            // invalid provider argument
             // return response with code 400 (Bad Request)
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
                         [
-                            'name' => 'driver',
-                            'description' => 'Database driver name',
-                            'message' => 'Selected driver is not supported.',
+                            'name' => 'provider',
+                            'description' => 'Database provider name',
+                            'message' => 'Selected provider is not supported.',
                         ],
                     ],
                 ],
@@ -470,7 +470,7 @@ class PersistenceProfilesController extends BaseController
 
         $profile = new EntityPersistenceProfile($this->request->Args['key']??'primary');
         $profile->SetProfile(
-            persistenceProviderClass: $this->request->Args['driver'],
+            persistenceProviderClass: $this->request->Args['provider'],
             hostOrPath: $this->request->Args['host'],
             username: $username = $this->request->Args['username'] ?? null,
             password: $this->request->Args['password'] ?? null,
@@ -517,8 +517,8 @@ class PersistenceProfilesController extends BaseController
         $canCreateDatabaseSchemas = $profile->GetPersistenceProvider()->CanCreateDatabaseSchemas();
         $databaseSchemas = $profile->GetPersistenceProvider()->GetDatabaseSchemas();
 
-        // check that selected database is valid, or create a new one if selected
-        if (!$canCreateDatabaseSchemas && !in_array($profile->GetDatabaseSchema(), $databaseSchemas)) {
+        // check that selected database is valid, or create a new one if selected, unless there are none because then this is probably Sqlite
+        if (count($databaseSchemas) != 0 && !$canCreateDatabaseSchemas && !in_array($profile->GetDatabaseSchema(), $databaseSchemas)) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [

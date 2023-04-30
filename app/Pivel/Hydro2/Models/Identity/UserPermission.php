@@ -4,6 +4,7 @@ namespace Pivel\Hydro2\Models\Identity;
 
 use Pivel\Hydro2\Attributes\Entity\Entity;
 use Pivel\Hydro2\Attributes\Entity\EntityField;
+use Pivel\Hydro2\Attributes\Entity\EntityPrimaryKey;
 use Pivel\Hydro2\Attributes\Entity\ForeignEntityManyToOne;
 use Pivel\Hydro2\Models\Database\ReferenceBehaviour;
 
@@ -11,6 +12,7 @@ use Pivel\Hydro2\Models\Database\ReferenceBehaviour;
 class UserPermission
 {
     #[EntityField(FieldName: 'id', AutoIncrement: true)]
+    #[EntityPrimaryKey]
     public ?int $Id = null;
     #[EntityField(FieldName: 'user_role_id')]
     #[ForeignEntityManyToOne(OnDelete: ReferenceBehaviour::CASCADE)]
@@ -18,7 +20,8 @@ class UserPermission
     #[EntityField(FieldName: 'permission_key')]
     public ?string $PermissionKey;
 
-    public function __construct(?UserRole $userRole=null, ?string $permissionKey=null) {
+    public function __construct(?UserRole $userRole=null, ?string $permissionKey=null)
+    {
         $this->userRole = $userRole;
         $this->PermissionKey = $permissionKey;
     }

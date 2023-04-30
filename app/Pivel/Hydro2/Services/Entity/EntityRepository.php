@@ -124,6 +124,7 @@ class EntityRepository implements IEntityRepository
 
         if ($pk !== null) {
             $this->SetEntityPrimaryKey($entity, $pk);
+            $this->SetEntityCollections($entity);
         }
 
         return true;
@@ -153,6 +154,7 @@ class EntityRepository implements IEntityRepository
 
         if ($pk !== null) {
             $this->SetEntityPrimaryKey($entity, $pk);
+            $this->SetEntityCollections($entity);
         }
 
         return true;

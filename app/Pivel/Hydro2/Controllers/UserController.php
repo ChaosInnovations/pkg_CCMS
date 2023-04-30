@@ -197,12 +197,7 @@ class UserController extends BaseController
         }
 
         $view = new NewUserVerificationEmailView($this->_identityService->GetEmailVerificationUrl($this->request, $newUser, true), $newUser->Name);
-        if (!$this->_userNotificationService->SendEmailToUser($newUser, $view)) {
-            return new JsonResponse(
-                status: StatusCode::InternalServerError,
-                error_message: "Unable to send validation email."
-            );
-        }
+        $this->_userNotificationService->SendEmailToUser($newUser, $view);
 
         return new JsonResponse(
             data: [

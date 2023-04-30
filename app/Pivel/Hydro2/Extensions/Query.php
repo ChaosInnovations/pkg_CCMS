@@ -124,19 +124,20 @@ class Query
     }
 
     /**
-     * Combines the filter tree of another query with AND. The other query's offset, limit, and order are discarded.
+     * Combines the filter tree of another query with AND. The other query's offset, limit, and order are used.
      */
     public function And(Query $query): Query
     {
         $newQuery = clone $this;
         $newQuery->filterParameters = array_merge($this->filterParameters, $query->GetFilterParameters());
         $newQuery->filterTree['operands'] = array_merge($this->filterTree['operands'], $query->GetFilterTree()['operands']);
+        $newQuery->Slice($query->GetOffset(), $query->GetLimit());
 
         return $newQuery;
     }
 
     /**
-     * Combines the filter tree of another query with OR. The other query's offset, limit, and order are discarded.
+     * Combines the filter tree of another query with OR. The other query's offset, limit, and order are used.
      */
     public function Or(Query $query): Query
     {
@@ -154,6 +155,7 @@ class Query
                 ],
             ],
         ];
+        $newQuery->Slice($query->GetOffset(), $query->GetLimit());
 
         return $newQuery;
     }

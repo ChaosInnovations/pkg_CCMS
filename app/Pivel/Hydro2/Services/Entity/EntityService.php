@@ -25,6 +25,7 @@ class EntityService implements IEntityService
         PackageManifestService $manifestService,
     ) {
         $this->_logger = $logger;
+        $this->_manifestService = $manifestService;
         //$this->_logger->Debug('Pivel/Hydro2', 'Starting entity service...');
 
         $profile = new EntityPersistenceProfile('persistence_profile_store');

@@ -17,6 +17,7 @@ use Pivel\Hydro2\Models\Identity\UserPassword;
 use Pivel\Hydro2\Models\Permissions;
 use Pivel\Hydro2\Services\Database\DatabaseService;
 use Pivel\Hydro2\Services\IdentityService;
+use Pivel\Hydro2\Services\ILoggerService;
 use Pivel\Hydro2\Services\UserNotificationService;
 use Pivel\Hydro2\Views\EmailViews\Identity\NewUserVerificationEmailView;
 use Pivel\Hydro2\Views\Identity\LoginView;
@@ -24,15 +25,18 @@ use Pivel\Hydro2\Views\Identity\LoginView;
 #[RoutePrefix('api/hydro2/identity')]
 class SessionController extends BaseController
 {
+    private ILoggerService $_logger;
     private IdentityService $_identityService;
     private UserNotificationService $_userNotificationService;
 
     public function __construct(
+        ILoggerService $logger,
         IdentityService $identityService,
         UserNotificationService $userNotificationService,
         Request $request,
     )
     {
+        $this->_logger = $logger;
         $this->_identityService = $identityService;
         parent::__construct($request);
     }
@@ -179,6 +183,10 @@ class SessionController extends BaseController
                 error_message: 'One or more arguments are invalid.'
             );
         }
+
+        // reset failed login attempts
+        $user->FailedLoginAttempts = 0;
+        $this->_identityService->UpdateUser($user);
 
         $session = $this->_identityService->StartSession($user, $this->request);
 
@@ -335,8 +343,9 @@ class SessionController extends BaseController
     {
         $session = $this->_identityService->GetSessionFromRequest($this->request);
 
-        if ($session !== false) {
+        if ($session !== null) {
             $this->_identityService->ExpireSession($session);
+            setcookie('sridkey', '', time()-3600, '/');
         }
 
         return new Response(

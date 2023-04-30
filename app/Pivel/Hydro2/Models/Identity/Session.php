@@ -59,7 +59,10 @@ class Session
         ?string $lastIP = null,
     ) {
         $this->user = $user;
-        $this->GenerateKey();
+        if ($this->user !== null) {
+            $this->GenerateRandomId();
+            $this->GenerateKey();
+        }
         $this->Browser = $browser;
         $this->StartTime = $startTime??new DateTime(timezone:new DateTimeZone('UTC'));
         $this->ExpireTime = $expireTime;
@@ -86,6 +89,11 @@ class Session
         }
 
         return true;
+    }
+
+    private function GenerateRandomId(): void
+    {
+        $this->RandomId = md5(uniqid($this->GetUser()->Email, true));
     }
 
     private function GenerateKey(): void
