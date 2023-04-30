@@ -19,28 +19,10 @@ DirectoryIndex index.php index.html index.htm
 AddType image/svg+xml svg svgz
 AddEncoding gzip svgz
 
-# Most of the following PHP settings cannot be changed at runtime.
-
-# PHP 5, Apache 1 and 2.
-<IfModule mod_php5.c>
-  php_value assert.active                   0
-  php_flag session.auto_start               off
-  php_value mbstring.http_input             pass
-  php_value mbstring.http_output            pass
-  php_flag mbstring.encoding_translation    off
-  # PHP 5.6 has deprecated $HTTP_RAW_POST_DATA and produces warnings if this is
-  # not set.
-  php_value always_populate_raw_post_data   -1
-</IfModule>
-
-# Requires mod_expires to be enabled.
 <IfModule mod_expires.c>
-  # Enable expirations.
-  ExpiresActive On
-
   # Cache all files for 2 weeks after access (A).
+  ExpiresActive On
   ExpiresDefault A1209600
-
   <FilesMatch \.php$>
     # Do not allow PHP scripts to be cached unless they explicitly send cache
     # headers themselves.
@@ -57,47 +39,26 @@ AddEncoding gzip svgz
 <IfModule mod_rewrite.c>
   RewriteEngine on
 
-  # Set "protossl" to "s" if we were accessed via https://.  This is used later
-  # if you enable "www." stripping or enforcement, in order to ensure that
-  # you don't bounce between http and https.
+  # Set "protossl" to "s" if we were accessed via https://.
   RewriteRule ^ - [E=protossl]
   RewriteCond %{HTTPS} on
   RewriteRule ^ - [E=protossl:s]
 
   # Make sure Authorization HTTP header is available to PHP
-  # even when running as CGI or FastCGI.
   RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
   RewriteRule "/\.|^\.(?!well-known/)" - [F]
-
-  # To redirect all users to access the site WITH the 'www.' prefix,
-  # (http://example.com/foo will be redirected to http://www.example.com/foo)
-  # uncomment the following:
-  # RewriteCond %{HTTP_HOST} .
-  # RewriteCond %{HTTP_HOST} !^www\. [NC]
-  # RewriteRule ^ http%{ENV:protossl}://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-  #
-  # To redirect all users to access the site WITHOUT the 'www.' prefix,
-  # (http://www.example.com/foo will be redirected to http://example.com/foo)
-  # uncomment the following:
+  # Redirect all users to access the site WITHOUT the 'www.' prefix
   RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
   RewriteRule ^ http%{ENV:protossl}://%1%{REQUEST_URI} [L,R=301]
 
-  # Pass all requests not referring directly to files in the filesystem to
-  # index.php.
+  # Pass all requests not referring directly to files in the filesystem to index.php.
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !=/favicon.ico
   RewriteRule ^ index.php [QSA]
-  
-  # Hidden files/folders (starts with .) and autoload.php sent to index.php
-  RewriteRule ^(.+/.*|autoload)\.php($|/) index.php [NC,QSA,L]
-
-  # Hide maintenance.html and send to index.php
-  RewriteRule maintenance.html / [NC,QSA,L,R=301]
 
   # Rules to correctly serve gzip compressed CSS and JS files.
-  # Requires both mod_rewrite and mod_headers to be enabled.
   <IfModule mod_headers.c>
     # Serve gzip compressed CSS files if they exist and the client accepts gzip.
     RewriteCond %{HTTP:Accept-encoding} gzip
@@ -122,7 +83,6 @@ AddEncoding gzip svgz
   </IfModule>
 </IfModule>
 
-# Various header fixes.
 <IfModule mod_headers.c>
   # Disable content sniffing, since it's an attack vector.
   Header always set X-Content-Type-Options nosniff
