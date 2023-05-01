@@ -4,3 +4,6 @@ app/routes.json
 app/persistenceprofiles.json
 *.sqlite3
 *.log
+*.bat
+tools/
+.phpunit.cache/

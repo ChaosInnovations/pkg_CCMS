@@ -29,22 +29,10 @@ class Hydro2
      * @param string $appDir
      * @param string[] $additionalAppDirs
      */
-    public static function CreateHydro2App(string $webDir, string $appDir, array $additionalAppDirs) : Hydro2
+    public static function CreateHydro2App(?string $webDir = null, ?string $appDir = null, array $additionalAppDirs = []) : Hydro2
     {
-        // set up dependency injection container
-            // if manifestcache.json is available, use that
-            // otherwise scan for available packages
-            // based on manifests, add:
-                // Singleton classes, which are lazy-instantiated when that class is requested by another class and re-use the same instance
-                // Transient classes, which are instantiated when requested then discarded
-                // can either be added with class name directly, or registered with an interface name
-        // set up routing service
-            // if routes.json is available, use that
-
-        // in Run:
-        // find requested controller(s) based on routing service
-        // instantiate each controller from DI container and execute it, merge with Response
-        // once the Response's IsFinal flag is set, send the response to the client
+        $appDir ??= dirname(__FILE__, 3);
+        $webDir ??= dirname(__FILE__, 4) . DIRECTORY_SEPARATOR . '/web';
 
         self::$Current = new Hydro2($webDir, $appDir, $additionalAppDirs);
         self::$Current->RegisterAutoloader();
