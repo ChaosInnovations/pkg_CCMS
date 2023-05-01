@@ -2,6 +2,7 @@
 
 namespace Pivel\Hydro2\Views;
 
+use Pivel\Hydro2\Hydro2;
 use ReflectionClass;
 use ReflectionException;
 
@@ -357,7 +358,7 @@ class BaseView
                     // -> instantiate the View object, render, and return result.
                     // TODO prevent circular inclusion
                     try {
-                        $instance = $viewClass->newInstance(...$viewArgs);
+                        $instance = Hydro2::$Current->ResolveDependency($viewClass->name, $viewArgs);
                     } catch (ReflectionException) {
                         // there are more that 0 args and the class does not have a public constructor
                         $result = '';

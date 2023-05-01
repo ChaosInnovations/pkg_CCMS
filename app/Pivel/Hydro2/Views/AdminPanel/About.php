@@ -21,11 +21,10 @@ class About extends BaseAdminPanelViewPage
     protected array $EnvironmentVariableTableRows = [];
 
     public function __construct(
+        private PackageManifestService $manifestService,
+        private IEnvironmentService $environmentService,
         protected ?string $Content = null,
     ) {
-        $manifestService = Hydro2::$Current->ResolveDependency(PackageManifestService::class);
-        /** @var IEnvironmentService */
-        $environmentService = Hydro2::$Current->ResolveDependency(IEnvironmentService::class);
         $manifest = $manifestService->GetPackageManifest();
         $h2manifest = $manifest['Pivel']['Hydro2'];
 
