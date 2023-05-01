@@ -11,6 +11,8 @@ use Pivel\Hydro2\Services\AutoloadService;
 use Pivel\Hydro2\Services\Entity\EntityRepository;
 use Pivel\Hydro2\Services\Entity\EntityService;
 use Pivel\Hydro2\Services\Entity\IEntityService;
+use Pivel\Hydro2\Services\EnvironmentService;
+use Pivel\Hydro2\Services\IEnvironmentService;
 use Pivel\Hydro2\Services\ILoggerService;
 use Pivel\Hydro2\Services\LoggerService;
 use Pivel\Hydro2\Services\PackageManifestService;
@@ -49,6 +51,7 @@ class Hydro2
         self::$Current->RegisterSingleton(PackageManifestService::class);
         self::$Current->RegisterSingleton(RouterService::class);
         self::$Current->RegisterSingleton(LoggerService::class, ILoggerService::class);
+        self::$Current->RegisterSingleton(EnvironmentService::class, IEnvironmentService::class);
 
         
         self::$Current->ResolveLoggerService(ILoggerService::class);
