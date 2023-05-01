@@ -9,6 +9,7 @@
             <dt>PHP Version</dt><dd>{$PHPVersion$}</dd>
             <dt>Web Server</dt><dd>{$WebServer$}</dd>
             <dt>Installation Date</dt><dd>{$InstallDate$}</dd>
+            <dt>Environment Type</dt><dd>{$EnvironmentType$}</dd>
         </dl>
         <h3>Installed Packages</h3>
         <p>There {#if $NumPackagesPlural}are{#}{#else}is{#} {$NumPackages$} package{#if $NumPackagesPlural}s{#} installed:</p>
@@ -23,6 +24,18 @@
             </thead>
             <tbody>
                 {$PackageTableRows[]$}
+            </tbody>
+        </table>
+        <h3>Environment Variables</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable Name</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {$EnvironmentVariableTableRows[]$}
             </tbody>
         </table>
     {#}
