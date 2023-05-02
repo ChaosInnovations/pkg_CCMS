@@ -5,6 +5,7 @@ namespace Mocks\Services;
 use Pivel\Hydro2\Extensions\Query;
 use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\Identity\PasswordResetToken;
+use Pivel\Hydro2\Models\Identity\Permission;
 use Pivel\Hydro2\Models\Identity\Session;
 use Pivel\Hydro2\Models\Identity\User;
 use Pivel\Hydro2\Models\Identity\UserRole;
@@ -17,6 +18,10 @@ class MockIdentityService implements IIdentityService
     public array $allUsers;
     /** @var UserRole[] */
     public array $allUserRoles;
+    /** @var Permission[] */
+    public array $availPermissions;
+
+    public ?UserRole $userRole;
 
     public ?Query $lastRequestedQuery = null;
 
@@ -24,6 +29,9 @@ class MockIdentityService implements IIdentityService
     {
         $this->user = new User(role: $this->GetVisitorUserRole());
         $this->allUsers = [];
+        $this->allUserRoles = [];
+        $this->availPermissions = [];
+        $this->userRole = null;
     }
 
     // ==== User-related methods ====
@@ -98,7 +106,7 @@ class MockIdentityService implements IIdentityService
     }
     public function GetUserRoleFromId(int $id): ?UserRole
     {
-        return null;
+        return $this->userRole;
     }
     public function GetUserRolesMatchingQuery(Query $query): array
     {
@@ -131,6 +139,6 @@ class MockIdentityService implements IIdentityService
     // ============================
     public function GetAvailablePermissions(): array
     {
-        return [];
+        return $this->availPermissions;
     }
 }

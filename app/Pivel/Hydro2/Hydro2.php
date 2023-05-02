@@ -189,7 +189,6 @@ class Hydro2
                 if (isset($pkg_info['singletons'])) {
                     foreach ($pkg_info['singletons'] as $c) {
                         $this->RegisterSingleton($c['class'], $c['interface']??null);
-                        $i = $c['interface']??'null';
                     }
                 }
             }

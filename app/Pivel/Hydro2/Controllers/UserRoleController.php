@@ -14,7 +14,6 @@ use Pivel\Hydro2\Models\HTTP\StatusCode;
 use Pivel\Hydro2\Models\Identity\UserRole;
 use Pivel\Hydro2\Models\Permissions;
 use Pivel\Hydro2\Services\Identity\IIdentityService;
-use Pivel\Hydro2\Services\IdentityService;
 
 #[RoutePrefix('api/hydro2/identity/userroles')]
 class UserRoleController extends BaseController
