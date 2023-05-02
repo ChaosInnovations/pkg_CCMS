@@ -13,6 +13,7 @@ use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
 use Pivel\Hydro2\Models\Identity\User;
 use Pivel\Hydro2\Models\Permissions;
+use Pivel\Hydro2\Services\Identity\IIdentityService;
 use Pivel\Hydro2\Services\IdentityService;
 use Pivel\Hydro2\Services\ILoggerService;
 use Pivel\Hydro2\Services\UserNotificationService;
@@ -27,12 +28,12 @@ use Pivel\Hydro2\Views\Identity\VerifyView;
 class UserController extends BaseController
 {
     private ILoggerService $_logger;
-    private IdentityService $_identityService;
+    private IIdentityService $_identityService;
     private UserNotificationService $_userNotificationService;
 
     public function __construct(
         ILoggerService $logger,
-        IdentityService $identityService,
+        IIdentityService $identityService,
         UserNotificationService $userNotificationService,
         Request $request,
     ) {

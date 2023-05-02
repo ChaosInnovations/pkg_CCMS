@@ -7,6 +7,8 @@
         cacheDirectory=".phpunit.cache"
         requireCoverageMetadata="true"
         bootstrap="tests/autoload.php"
+        displayDetailsOnTestsThatTriggerDeprecations="true"
+        displayDetailsOnTestsThatTriggerWarnings="true"
 >
     <testsuites>
         <testsuite name="Hydro2 Test Suite">

@@ -7,17 +7,14 @@ use Pivel\Hydro2\Models\HTTP\StatusCode;
 use Pivel\Hydro2\Extensions\Query;
 use Pivel\Hydro2\Extensions\Route;
 use Pivel\Hydro2\Extensions\RoutePrefix;
-use Pivel\Hydro2\Models\Database\DatabaseConfigurationProfile;
 use Pivel\Hydro2\Models\Database\Order;
 use Pivel\Hydro2\Models\EntityPersistenceProfile;
 use Pivel\Hydro2\Models\HTTP\JsonResponse;
 use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
-use Pivel\Hydro2\Models\Identity\Permission;
 use Pivel\Hydro2\Models\Permissions;
-use Pivel\Hydro2\Services\Database\DatabaseService;
 use Pivel\Hydro2\Services\Entity\IEntityService;
-use Pivel\Hydro2\Services\IdentityService;
+use Pivel\Hydro2\Services\Identity\IIdentityService;
 use Pivel\Hydro2\Services\ILoggerService;
 
 #[RoutePrefix('api/hydro2/persistence')]
@@ -25,12 +22,12 @@ class PersistenceProfilesController extends BaseController
 {
     private ILoggerService $_logger;
     private IEntityService $_entityService;
-    private IdentityService $_identityService;
+    private IIdentityService $_identityService;
 
     public function __construct(
         ILoggerService $logger,
         IEntityService $entityService,
-        IdentityService $identityService,
+        IIdentityService $identityService,
         Request $request,
     ) {
         $this->_logger = $logger;

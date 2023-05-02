@@ -33,6 +33,7 @@
 
     "singletons": [
         {"class":"Pivel\\Hydro2\\Services\\Entity\\EntityService","interface":"Pivel\\Hydro2\\Services\\Entity\\IEntityService"},
+        {"class":"Pivel\\Hydro2\\Services\\IdentityService","interface":"Pivel\\Hydro2\\Services\\IIdentityService"},
         {"class":"Pivel\\Hydro2\\Services\\IdentityService"},
         {"class":"Pivel\\Hydro2\\Services\\UserNotificationService"},
         {"class":"Pivel\\Hydro2\\Services\\Database\\DatabaseService"},

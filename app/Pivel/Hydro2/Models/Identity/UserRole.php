@@ -35,10 +35,14 @@ class UserRole
     /** @var EntityCollection<UserPermission> */
     #[ForeignEntityOneToMany(OtherEntityClass: UserPermission::class)]
     private EntityCollection $permissions;
+    /** @var UserPermission[] */
+    private array $tempPermissions = [];
 
     /** @var EntityCollection<User> */
     #[ForeignEntityOneToMany(OtherEntityClass: User::class)]
     private EntityCollection $users;
+    /** @var User[] */
+    private array $tempUsers = [];
 
     /** @param UserPermission[] $permissions */
     public function __construct(
@@ -63,7 +67,7 @@ class UserRole
     public function GetUserCount(): int
     {
         if (!isset($this->users)) {
-            return 0;
+            return count($this->tempUsers);
         }
 
         return count($this->users);
@@ -75,7 +79,7 @@ class UserRole
     public function GetPermissions(): array
     {
         if (!isset($this->permissions)) {
-            return [];
+            return $this->tempPermissions;
         }
 
         return $this->permissions->Read();
@@ -84,6 +88,7 @@ class UserRole
     public function GrantPermission(string $permissionKey): bool
     {
         if (!isset($this->permissions)) {
+            $this->tempPermissions[$permissionKey] = new UserPermission(userRole: $this, permissionKey: $permissionKey);
             return false;
         }
 
@@ -102,6 +107,7 @@ class UserRole
     public function DenyPermission(string $permissionKey): bool
     {
         if (!isset($this->permissions)) {
+            unset($this->tempPermissions[$permissionKey]);
             return false;
         }
 
@@ -117,7 +123,7 @@ class UserRole
     {
         
         if (!isset($this->permissions)) {
-            return false;
+            return isset($this->tempPermissions[$permissionKey]);
         }
 
         $matches = $this->permissions->Read((new Query())->Equal('permission_key', $permissionKey)->Limit(1));

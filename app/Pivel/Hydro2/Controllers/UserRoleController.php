@@ -13,15 +13,16 @@ use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
 use Pivel\Hydro2\Models\Identity\UserRole;
 use Pivel\Hydro2\Models\Permissions;
+use Pivel\Hydro2\Services\Identity\IIdentityService;
 use Pivel\Hydro2\Services\IdentityService;
 
 #[RoutePrefix('api/hydro2/identity/userroles')]
 class UserRoleController extends BaseController
 {
-    protected IdentityService $_identityService;
+    protected IIdentityService $_identityService;
 
     public function __construct(
-        IdentityService $identityService,
+        IIdentityService $identityService,
         Request $request,
     )
     {
