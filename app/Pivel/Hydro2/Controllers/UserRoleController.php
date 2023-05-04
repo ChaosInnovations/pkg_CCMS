@@ -114,7 +114,7 @@ class UserRoleController extends BaseController
                             [
                                 'name' => 'permissions',
                                 'description' => 'User Role\'s permissions',
-                                'message' => "The permission '{$permission}' doesn\'t exist.",
+                                'message' => "The permission '{$permission}' doesn't exist.",
                             ],
                         ],
                     ],
@@ -124,7 +124,7 @@ class UserRoleController extends BaseController
             }
         }
 
-        if (!$this->_identityService->CreateNewUserRole($userRole)) {
+        if ($this->_identityService->CreateNewUserRole($userRole) === null) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database."

@@ -87,13 +87,13 @@ class UserRole
 
     public function GrantPermission(string $permissionKey): bool
     {
+        if ($this->HasPermission($permissionKey)) {
+            return true; // say we added it. more permissive than refusing to add because it was already added previously.
+        }
+
         if (!isset($this->permissions)) {
             $this->tempPermissions[$permissionKey] = new UserPermission(userRole: $this, permissionKey: $permissionKey);
             return false;
-        }
-
-        if ($this->HasPermission($permissionKey)) {
-            return true; // say we added it. more permissive than refusing to add because it was already added previously.
         }
 
         $permission = new UserPermission(

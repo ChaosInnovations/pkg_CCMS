@@ -16,6 +16,7 @@ use Pivel\Hydro2\Models\Identity\Permission;
 use Pivel\Hydro2\Models\Identity\User;
 use Pivel\Hydro2\Models\Identity\UserRole;
 use Pivel\Hydro2\Models\Permissions;
+use ReflectionClass;
 
 #[CoversClass(UserRoleController::class)]
 #[CoversClass(BaseController::class)]
@@ -127,6 +128,112 @@ class UserRoleControllerTest extends TestCase
         $this->assertEquals(StatusCode::NotFound, $response->getStatus());
     }
 
+    public function testCreateUserRoleShouldReturnBadRequestIfInvalidPermission()
+    {
+        $mockIdentityService = new MockIdentityService();
+        $mockRequest = new Request([], post: ['permissions' => ['fakeValue']]);
+
+        $role = new UserRole();
+        $role->GrantPermission(Permissions::CreateUserRoles->value);
+
+        $mockIdentityService->user = new User(
+            role: $role,
+        );
+        $mockIdentityService->userRole = null;
+
+        $result = new UserRoleController(
+            $mockIdentityService,
+            $mockRequest,
+        );
+
+        $response = $result->CreateUserRole();
+
+        $this->assertEquals(StatusCode::BadRequest, $response->getStatus());
+        $responseValue = json_decode($response->getContent(), true);
+        $this->assertEquals("The permission 'fakeValue' doesn't exist.", $responseValue['data']['validation_errors'][0]['message']);
+    }
+
+    public function testCreateUserRoleShouldReturnServerErrorIfCantCreate()
+    {
+        $mockIdentityService = new MockIdentityService();
+        $mockRequest = new Request([], post: ['permissions' => ['vendor/package/fakeValue']]);
+
+        $role = new UserRole();
+        $role->GrantPermission(Permissions::CreateUserRoles->value);
+
+        $mockIdentityService->user = new User(
+            role: $role,
+        );
+        $mockIdentityService->userRole = null;
+        $mockIdentityService->availPermissions = ['vendor/package/fakeValue' => new Permission('vendor','package','fakeValue','','')];
+
+        $result = new UserRoleController(
+            $mockIdentityService,
+            $mockRequest,
+        );
+
+        $response = $result->CreateUserRole();
+
+        $this->assertEquals(StatusCode::InternalServerError, $response->getStatus());
+        $responseValue = json_decode($response->getContent(), true);
+        $this->assertEquals("There was a problem with the database.", $responseValue['message']);
+    }
+
+    public function testCreateUserRoleShouldReturnServerErrorIfCantGrantPermissions()
+    {
+        $mockIdentityService = new MockIdentityService();
+        $mockRequest = new Request([], post: ['permissions' => ['vendor/package/fakeValue']]);
+
+        $role = new UserRole();
+        $role->GrantPermission(Permissions::CreateUserRoles->value);
+
+        $mockIdentityService->user = new User(
+            role: $role,
+        );
+        $mockIdentityService->userRole = null;
+        $mockIdentityService->availPermissions = ['vendor/package/fakeValue' => new Permission('vendor','package','fakeValue','','')];
+        $mockIdentityService->beSuccessful = true;
+
+        $result = new UserRoleController(
+            $mockIdentityService,
+            $mockRequest,
+        );
+
+        $response = $result->CreateUserRole();
+
+        $this->assertEquals(StatusCode::InternalServerError, $response->getStatus());
+        $responseValue = json_decode($response->getContent(), true);
+        $this->assertEquals("The UserRole was generated, but there was a problem with the database while adding permissions.", $responseValue['message']);
+    }
+
+    public function testCreateUserRoleShouldReturnArray()
+    {
+        $mockIdentityService = new MockIdentityService();
+        $mockRequest = new Request([], post: ['permissions' => ['vendor/package/fakeValue']]);
+
+        $role = new UserRole();
+        $role->GrantPermission(Permissions::CreateUserRoles->value);
+
+        $mockIdentityService->user = new User(
+            role: $role,
+        );
+        $mockIdentityService->userRole = null;
+        $mockIdentityService->availPermissions = ['vendor/package/fakeValue' => new Permission('vendor','package','fakeValue','','')];
+        $mockIdentityService->beSuccessful = true;
+        $mockIdentityService->fakePermissionToGrantNewRole = 'vendor/package/fakeValue';
+
+        $result = new UserRoleController(
+            $mockIdentityService,
+            $mockRequest,
+        );
+
+        $response = $result->CreateUserRole();
+
+        $this->assertEquals(StatusCode::OK, $response->getStatus());
+        $responseValue = json_decode($response->getContent(), true);
+        $this->assertIsArray($responseValue['data']['user_roles']);
+    }
+
     // ==== GetUserRole ====
 
     public function testGetUserRoleShouldReturnNotFoundWithoutAuthentication()
@@ -226,6 +333,108 @@ class UserRoleControllerTest extends TestCase
         $response = $result->DeleteUserRole();
 
         $this->assertEquals(StatusCode::NotFound, $response->getStatus());
+    }
+
+    public function testDeleteUserRoleShouldReturnBadRequestIfInvalidRoleId()
+    {
+        $mockIdentityService = new MockIdentityService();
+        $mockRequest = new Request([], post: ['id' => 1]);
+
+        $role = new UserRole();
+        $role->GrantPermission(Permissions::ManageUserRoles->value);
+
+        $mockIdentityService->user = new User(
+            role: $role,
+        );
+        $mockIdentityService->userRole = null;
+
+        $result = new UserRoleController(
+            $mockIdentityService,
+            $mockRequest,
+        );
+
+        $response = $result->DeleteUserRole();
+
+        $this->assertEquals(StatusCode::BadRequest, $response->getStatus());
+        $responseValue = json_decode($response->getContent(), true);
+        $this->assertEquals("This user role doesn't exist.", $responseValue['data']['validation_errors'][0]['message']);
+    }
+
+    public function testDeleteUserRoleShouldReturnBadRequestIfUsersExist()
+    {
+        $mockIdentityService = new MockIdentityService();
+        $mockRequest = new Request([], post: ['id' => 1]);
+
+        $role = new UserRole();
+        $role->GrantPermission(Permissions::ManageUserRoles->value);
+
+        $mockIdentityService->user = new User(
+            role: $role,
+        );
+        $mockIdentityService->userRole = new UserRole();
+        $rc = new ReflectionClass(UserRole::class);
+        $p = $rc->getProperty('tempUsers');
+        $p->setValue($mockIdentityService->userRole, [$mockIdentityService->user]);
+
+        $result = new UserRoleController(
+            $mockIdentityService,
+            $mockRequest,
+        );
+
+        $response = $result->DeleteUserRole();
+
+        $this->assertEquals(StatusCode::BadRequest, $response->getStatus());
+        $responseValue = json_decode($response->getContent(), true);
+        $this->assertEquals("Cannot delete a role while there are users with this role.", $responseValue['data']['validation_errors'][0]['message']);
+    }
+
+    public function testDeleteUserRoleShouldReturnServerErrorIfCantDelete()
+    {
+        $mockIdentityService = new MockIdentityService();
+        $mockRequest = new Request([], post: ['id' => 1]);
+
+        $role = new UserRole();
+        $role->GrantPermission(Permissions::ManageUserRoles->value);
+
+        $mockIdentityService->user = new User(
+            role: $role,
+        );
+        $mockIdentityService->userRole = new UserRole();
+
+        $result = new UserRoleController(
+            $mockIdentityService,
+            $mockRequest,
+        );
+
+        $response = $result->DeleteUserRole();
+
+        $this->assertEquals(StatusCode::InternalServerError, $response->getStatus());
+        $responseValue = json_decode($response->getContent(), true);
+        $this->assertEquals("There was a problem with the database.", $responseValue['message']);
+    }
+
+    public function testDeleteUserRoleShouldReturnStatusOk()
+    {
+        $mockIdentityService = new MockIdentityService();
+        $mockRequest = new Request([], post: ['id' => 1]);
+
+        $role = new UserRole();
+        $role->GrantPermission(Permissions::ManageUserRoles->value);
+
+        $mockIdentityService->user = new User(
+            role: $role,
+        );
+        $mockIdentityService->userRole = new UserRole();
+        $mockIdentityService->beSuccessful = true;
+
+        $result = new UserRoleController(
+            $mockIdentityService,
+            $mockRequest,
+        );
+
+        $response = $result->DeleteUserRole();
+
+        $this->assertEquals(StatusCode::OK, $response->getStatus());
     }
 
     // ==== GetPermissions ====

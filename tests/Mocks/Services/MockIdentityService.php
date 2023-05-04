@@ -25,6 +25,12 @@ class MockIdentityService implements IIdentityService
 
     public ?Query $lastRequestedQuery = null;
 
+    public bool $beSuccessful = false;
+
+    public int $pkNextId = 1;
+
+    public string $fakePermissionToGrantNewRole = '';
+
     public function __construct()
     {
         $this->user = new User(role: $this->GetVisitorUserRole());
@@ -49,6 +55,7 @@ class MockIdentityService implements IIdentityService
     }
     public function CreateNewUser(string $email, string $name, bool $isEnabled, UserRole $role): ?User
     {
+        //$role->Id = $this->pkNextId++;
         return null;
     }
     public function UpdateUser(User &$user): bool
@@ -115,7 +122,12 @@ class MockIdentityService implements IIdentityService
     }
     public function CreateNewUserRole(UserRole &$role): ?UserRole
     {
-        return null;
+        $role->Id = $this->pkNextId++;
+        if ($this->beSuccessful) {
+            $role->GrantPermission($this->fakePermissionToGrantNewRole);
+        }
+
+        return $this->beSuccessful ? $role : null;
     }
     public function UpdateUserRole(UserRole &$role): bool
     {
@@ -123,7 +135,7 @@ class MockIdentityService implements IIdentityService
     }
     public function DeleteUserRole(UserRole $role): bool
     {
-        return false;
+        return $this->beSuccessful;
     }
 
     // ==== PasswordResetToken-related methods ====
