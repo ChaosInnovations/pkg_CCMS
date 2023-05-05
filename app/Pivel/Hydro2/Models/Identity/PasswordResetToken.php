@@ -32,7 +32,7 @@ class PasswordResetToken
         ?User $user = null,
         ?DateTime $startTime = null,
         int $expireAfterMinutes = 10,
-        ) {
+    ) {
         $this->user = $user;
         $this->GenerateToken();
         $this->StartTime = $startTime??new DateTime(timezone:new DateTimeZone('UTC'));

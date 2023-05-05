@@ -17,8 +17,6 @@ class Entity
         public string $CollectionName,
         public string $RepositoryClass = EntityRepository::class,
         public string $PersistenceProfile = 'primary',
-    )
-    {
-        
+    ) {
     }
 }

@@ -13,15 +13,15 @@ use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
 use Pivel\Hydro2\Models\Identity\UserRole;
 use Pivel\Hydro2\Models\Permissions;
-use Pivel\Hydro2\Services\IdentityService;
+use Pivel\Hydro2\Services\Identity\IIdentityService;
 
 #[RoutePrefix('api/hydro2/identity/userroles')]
 class UserRoleController extends BaseController
 {
-    protected IdentityService $_identityService;
+    protected IIdentityService $_identityService;
 
     public function __construct(
-        IdentityService $identityService,
+        IIdentityService $identityService,
         Request $request,
     )
     {
@@ -114,7 +114,7 @@ class UserRoleController extends BaseController
                             [
                                 'name' => 'permissions',
                                 'description' => 'User Role\'s permissions',
-                                'message' => "The permission '{$permission}' doesn\'t exist.",
+                                'message' => "The permission '{$permission}' doesn't exist.",
                             ],
                         ],
                     ],
@@ -124,7 +124,7 @@ class UserRoleController extends BaseController
             }
         }
 
-        if (!$this->_identityService->CreateNewUserRole($userRole)) {
+        if ($this->_identityService->CreateNewUserRole($userRole) === null) {
             return new JsonResponse(
                 status: StatusCode::InternalServerError,
                 error_message: "There was a problem with the database."
@@ -275,7 +275,7 @@ class UserRoleController extends BaseController
                             [
                                 'name' => 'permissions',
                                 'description' => 'User Role\'s permissions',
-                                'message' => "The permission '{$permissionKey}' doesn\'t exist.",
+                                'message' => "The permission '{$permissionKey}' doesn't exist.",
                             ],
                         ],
                     ],

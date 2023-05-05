@@ -12,10 +12,10 @@ class EntityFieldDefinition
     public function __construct(
         public string $FieldName,
         public Type $FieldType,
+        public ReflectionProperty $Property,
         public bool $IsNullable = false,
         public bool $AutoIncrement = false,
-        public ReflectionProperty $Property,
-        public bool $IsPrimaryKey,
+        public bool $IsPrimaryKey = false,
         public bool $IsForeignKey = false,
         public ?string $ForeignKeyClassName = null,
         public ?string $ForeignKeyCollectionName = null,

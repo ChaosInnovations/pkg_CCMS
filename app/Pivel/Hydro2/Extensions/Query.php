@@ -132,6 +132,7 @@ class Query
         $newQuery->filterParameters = array_merge($this->filterParameters, $query->GetFilterParameters());
         $newQuery->filterTree['operands'] = array_merge($this->filterTree['operands'], $query->GetFilterTree()['operands']);
         $newQuery->Slice($query->GetOffset(), $query->GetLimit());
+        $newQuery->order = $query->GetOrderTree();
 
         return $newQuery;
     }
@@ -156,6 +157,7 @@ class Query
             ],
         ];
         $newQuery->Slice($query->GetOffset(), $query->GetLimit());
+        $newQuery->order = $query->GetOrderTree();
 
         return $newQuery;
     }

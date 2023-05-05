@@ -5,6 +5,7 @@ namespace Pivel\Hydro2\Controllers;
 use Pivel\Hydro2\Models\HTTP\Method;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
 use Pivel\Hydro2\Extensions\Route;
+use Pivel\Hydro2\Hydro2;
 use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Models\Permissions;
@@ -15,15 +16,18 @@ use Pivel\Hydro2\Views\AdminPanel\BaseAdminPanelViewPage;
 
 class AdminPanelController extends BaseController
 {
+    private Hydro2 $_app;
     protected PackageManifestService $_manifestService;
     protected IdentityService $_identityService;
 
     public function __construct(
+        Hydro2 $app,
         PackageManifestService $manifestService,
         IdentityService $identityService,
         Request $request,
     )
     {
+        $this->_app = $app;
         $this->_manifestService = $manifestService;
         $this->_identityService = $identityService;
         parent::__construct($request);
@@ -32,7 +36,7 @@ class AdminPanelController extends BaseController
     #[Route(Method::GET, 'admin/{*path}')]
     #[Route(Method::GET, 'admin')]
     public function GetAdminPanelView() : Response {
-        if ($this->_identityService->GetSessionFromRequest($this->request) === false) {
+        if ($this->_identityService->GetSessionFromRequest($this->request) === null) {
             return new Response(
                 status: StatusCode::Found,
                 headers: [
@@ -85,9 +89,9 @@ class AdminPanelController extends BaseController
                     }
 
                     if (!is_subclass_of($node['view'], BaseAdminPanelViewPage::class)) {
-                        $nodes[$node['key']]['view'] = new BaseAdminPanelViewPage();
+                        $nodes[$node['key']]['view'] = BaseAdminPanelViewPage::class;
                     } else {
-                        $nodes[$node['key']]['view'] = new $node['view']();
+                        $nodes[$node['key']]['view'] = $this->_app->ResolveDependency($node['view']);
                     }
                 }
             }

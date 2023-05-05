@@ -19,8 +19,6 @@ class EntityField
         public ?Type $FieldType = null,
         public bool $IsNullable = false,
         public bool $AutoIncrement = false,
-    )
-    {
-        
+    ) {
     }
 }

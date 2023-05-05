@@ -4,6 +4,7 @@ namespace Pivel\Hydro2;
 
 use Error;
 use Exception;
+use JetBrains\PhpStorm\Deprecated;
 use Pivel\Hydro2\Models\EntityPersistenceProfile;
 use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
@@ -11,6 +12,8 @@ use Pivel\Hydro2\Services\AutoloadService;
 use Pivel\Hydro2\Services\Entity\EntityRepository;
 use Pivel\Hydro2\Services\Entity\EntityService;
 use Pivel\Hydro2\Services\Entity\IEntityService;
+use Pivel\Hydro2\Services\EnvironmentService;
+use Pivel\Hydro2\Services\IEnvironmentService;
 use Pivel\Hydro2\Services\ILoggerService;
 use Pivel\Hydro2\Services\LoggerService;
 use Pivel\Hydro2\Services\PackageManifestService;
@@ -26,22 +29,10 @@ class Hydro2
      * @param string $appDir
      * @param string[] $additionalAppDirs
      */
-    public static function CreateHydro2App(string $webDir, string $appDir, array $additionalAppDirs) : Hydro2
+    public static function CreateHydro2App(?string $webDir = null, ?string $appDir = null, array $additionalAppDirs = []) : Hydro2
     {
-        // set up dependency injection container
-            // if manifestcache.json is available, use that
-            // otherwise scan for available packages
-            // based on manifests, add:
-                // Singleton classes, which are lazy-instantiated when that class is requested by another class and re-use the same instance
-                // Transient classes, which are instantiated when requested then discarded
-                // can either be added with class name directly, or registered with an interface name
-        // set up routing service
-            // if routes.json is available, use that
-
-        // in Run:
-        // find requested controller(s) based on routing service
-        // instantiate each controller from DI container and execute it, merge with Response
-        // once the Response's IsFinal flag is set, send the response to the client
+        $appDir ??= dirname(__FILE__, 3);
+        $webDir ??= dirname(__FILE__, 4) . DIRECTORY_SEPARATOR . '/web';
 
         self::$Current = new Hydro2($webDir, $appDir, $additionalAppDirs);
         self::$Current->RegisterAutoloader();
@@ -49,6 +40,7 @@ class Hydro2
         self::$Current->RegisterSingleton(PackageManifestService::class);
         self::$Current->RegisterSingleton(RouterService::class);
         self::$Current->RegisterSingleton(LoggerService::class, ILoggerService::class);
+        self::$Current->RegisterSingleton(EnvironmentService::class, IEnvironmentService::class);
 
         
         self::$Current->ResolveLoggerService(ILoggerService::class);
@@ -60,6 +52,7 @@ class Hydro2
         return self::$Current;
     }
 
+    #[Deprecated(reason: 'use dependency injection with arg type Hydro2 instead.')]
     public static Hydro2 $Current;
 
     private AutoloadService $_autoloadService;
@@ -75,6 +68,13 @@ class Hydro2
     )
     {
         date_default_timezone_set("UTC");
+
+        // register self in DI registry
+        $this->diClasses[self::class] = [
+            'class' => self::class,
+            'isSingleton' => true,
+            'instance' => $this,
+        ];
     }
 
     public function RegisterAutoloader() : void
@@ -120,17 +120,15 @@ class Hydro2
      */
     public function ResolveDependency(string $classOrInterface, array $args = []) : ?object
     {
-        if (!isset($this->diClasses[$classOrInterface])) {
-            return null;
-        }
-
-        if ($this->diClasses[$classOrInterface]['isSingleton'] && $this->diClasses[$classOrInterface]['instance'] !== null) {
+        if (isset($this->diClasses[$classOrInterface]) && $this->diClasses[$classOrInterface]['isSingleton'] && $this->diClasses[$classOrInterface]['instance'] !== null) {
             return $this->diClasses[$classOrInterface]['instance'];
         }
+
+        $className = isset($this->diClasses[$classOrInterface]) ? $this->diClasses[$classOrInterface]['class'] : $classOrInterface;
         
         // need to use reflection to find a list of the class or interface's constructor's arguments
         $dependencyArgs = [];
-        $rc = new ReflectionClass($this->diClasses[$classOrInterface]['class']);
+        $rc = new ReflectionClass($className);
         $constructor = $rc->getConstructor();
         if ($constructor != null) {
             $parameters = $constructor->getParameters();
@@ -141,6 +139,7 @@ class Hydro2
                 }
 
                 $class = $type->getName();
+
                 if (!isset($this->diClasses[$class])) {
                     break;
                 }
@@ -150,9 +149,9 @@ class Hydro2
             }
         }
 
-        $instance = new $this->diClasses[$classOrInterface]['class'](...$dependencyArgs, ...$args);
+        $instance = new $className(...$dependencyArgs, ...$args);
 
-        if ($this->diClasses[$classOrInterface]['isSingleton']) {
+        if (isset($this->diClasses[$classOrInterface]) && $this->diClasses[$classOrInterface]['isSingleton']) {
             $this->diClasses[$classOrInterface]['instance'] = $instance;
         }
         
@@ -190,7 +189,6 @@ class Hydro2
                 if (isset($pkg_info['singletons'])) {
                     foreach ($pkg_info['singletons'] as $c) {
                         $this->RegisterSingleton($c['class'], $c['interface']??null);
-                        $i = $c['interface']??'null';
                     }
                 }
             }
