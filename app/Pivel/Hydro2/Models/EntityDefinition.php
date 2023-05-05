@@ -148,9 +148,9 @@ class EntityDefinition implements Iterator, Countable
             $field = new EntityFieldDefinition(
                 $pFieldAttribute->FieldName,
                 $pFieldAttribute->FieldType,
+                $property,
                 $pFieldAttribute->IsNullable,
                 $pFieldAttribute->AutoIncrement,
-                $property,
                 $pk,
                 $isForeignKey,
                 $fkClass,

@@ -13,8 +13,7 @@ class ForeignEntityManyToOne
         public ?string $OtherEntityFieldName = null,
         public ReferenceBehaviour $OnUpdate = ReferenceBehaviour::CASCADE,
         public ReferenceBehaviour $OnDelete = ReferenceBehaviour::RESTRICT,
-    )
-    {
+    ) {
         
     }
 }

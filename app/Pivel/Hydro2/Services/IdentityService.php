@@ -13,8 +13,9 @@ use Pivel\Hydro2\Models\Identity\User;
 use Pivel\Hydro2\Models\Identity\UserRole;
 use Pivel\Hydro2\Services\Entity\IEntityRepository;
 use Pivel\Hydro2\Services\Entity\IEntityService;
+use Pivel\Hydro2\Services\Identity\IIdentityService;
 
-class IdentityService
+class IdentityService implements IIdentityService
 {
     private PackageManifestService $_manifestService;
     private ILoggerService $_logger;

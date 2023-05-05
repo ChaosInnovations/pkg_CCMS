@@ -47,14 +47,14 @@ class Request
 
         $this->baseUrl = "http" . ($this->isHttps ? "s" : "") . "://" . $this->hostname;
         
-        $url = trim($server["REQUEST_URI"], "/");
+        $url = trim($server["REQUEST_URI"] ?? '', "/");
         $this->fullUrl = $this->baseUrl . '/' . $url;
         if (strstr($url, '?')) {
             $url = substr($url, 0, strpos($url, '?'));
         }
         $this->endpoint = $url;
 
-        $method = $server['REQUEST_METHOD'];
+        $method = $server['REQUEST_METHOD'] ?? 'GET';
         $this->method = Method::tryFrom($method) ?? Method::GET;
 
         $this->cookies = $cookies;
@@ -74,7 +74,7 @@ class Request
             }
         }
 
-        $this->UserAgent = $_SERVER['HTTP_USER_AGENT'];
+        $this->UserAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
     }
     
     public function getEndpoint()
