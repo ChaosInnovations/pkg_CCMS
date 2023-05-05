@@ -275,7 +275,7 @@ class UserRoleController extends BaseController
                             [
                                 'name' => 'permissions',
                                 'description' => 'User Role\'s permissions',
-                                'message' => "The permission '{$permissionKey}' doesn\'t exist.",
+                                'message' => "The permission '{$permissionKey}' doesn't exist.",
                             ],
                         ],
                     ],

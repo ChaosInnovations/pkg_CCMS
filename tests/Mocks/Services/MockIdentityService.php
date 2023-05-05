@@ -131,7 +131,7 @@ class MockIdentityService implements IIdentityService
     }
     public function UpdateUserRole(UserRole &$role): bool
     {
-        return false;
+        return $this->beSuccessful;
     }
     public function DeleteUserRole(UserRole $role): bool
     {
