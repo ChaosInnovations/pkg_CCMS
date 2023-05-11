@@ -1,7 +1,7 @@
 {#parent}
     {#arg Content}
         <h2>User Roles</h2>
-        {#view Pivel\Hydro2\Views\Components\SortableTable(Id:"user_roles_table")}
+        {#view Pivel\Hydro2\Views\Components\RichTable\RichTable(Id:"user_roles_table",IsSearchEnabled:true)}
             {#arg Headers[]}<th class="sortable" data-property="id">Id</th>{#}
             {#arg Headers[]}<th class="sortable" data-property="name">Name</th>{#}
             {#arg Headers[]}<th class="sortable" data-property="description">Description</th>{#}
@@ -47,7 +47,7 @@
                 table._e.Nodes("tbody").HTML(tbodyHtml);
             }
 
-            var user_roles_table = new SortableTable("#user_roles_table", "/api/hydro2/identity/userroles", "user_roles", user_roles_table_renderer);
+            var user_roles_table = new RichTable("#user_roles_table", "/api/hydro2/identity/userroles", "user_roles", user_roles_table_renderer);
         </script>
     {#}
 {#}

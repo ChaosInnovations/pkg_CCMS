@@ -60,7 +60,6 @@ class SortableTable {
     }
 
     Load() {
-        // TODO display spinner/loading indicator
         this._showSpinner();
         var request = new H.AjaxRequest("GET", this._apiEndpoint);
         request.SetQueryData({
@@ -74,7 +73,6 @@ class SortableTable {
         if (response.Status == H.StatusCode.OK) {
             this._data = response.Data[this._apiResponseKey];
             console.log(response);
-            // TODO hide spinner/loading indicator
             this._hideSpinner();
             if (this._customRenderer !== null) {
                 this._customRenderer(this);

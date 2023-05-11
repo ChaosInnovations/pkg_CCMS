@@ -1,0 +1,65 @@
+<div id="{$Id$}" class="rich-table sortable-table">
+    {#if $HasControls}
+        <div class="rich-table-controls">
+            {#if $IsSearchEnabled}
+                {#view Pivel\Hydro2\Views\Components\Form\Form($SearchFormId)}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"q", Type:"text", IdPrefix:$SearchFormId, Label:"Search",)}
+                            {#arg Input}
+                                {#view Pivel\Hydro2\Views\Components\Form\FormInputGroup}
+                                    {#arg Inputs[]}
+                                        <input name="{$Name$}" type="text" id="{$SearchFormId$}_q" title="Search" placeholder="Search" />
+                                    {#}
+                                    {#arg Inputs[]}
+                                        <button type="button" id="{$SearchFormId$}_submit" title="Search">Search</button>
+                                    {#}
+                                {#}
+                            {#}
+                        {#}
+                    {#}
+                {#}
+            {#}
+            {#if $IsFilterEnabled}
+            {#}
+            {#if $IsCreateEnabled}
+            {#}
+        </div>
+    {#}
+    <table class="sortable">
+        <thead>
+            <tr>
+                {$Headers[]}
+                    <th>Empty Table</th>
+                {$}
+                {#if $HasContextMenu}
+                    <th class="context-header"></th>
+                {#}
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td class="placeholder" colspan="20">No data</td></tr>
+        </tbody>
+    </table>
+    <div class="spinner-container">
+        {#view Pivel\Hydro2\Views\Components\Spinner#}
+    </div>
+    {#if $HasContextMenu}
+        <div id="{$Id$}_context" class="context-menu"></div>
+    {#}
+    {#if $IsDetailEnabled}
+        <div class="rich-table-detail-overlay">
+            {$DetailOverlay$}
+        </div>
+    {#}
+    {#if $IsEditEnabled}
+        <div class="rich-table-edit-overlay">
+            {$EditOverlay$}
+        </div>
+    {#}
+    {#if $IsCreateEnabled}
+        <div class="rich-table-create-overlay">
+            {$CreateOverlay$}
+        </div>
+    {#}
+</div>
