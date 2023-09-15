@@ -208,7 +208,7 @@ var H = {
             var values = [];
             this._nodeList.forEach(element => {
                 values.push(element.innerText);
-                if (newHTML != null) {
+                if (newText != null) {
                     element.innerText = element.textContent = newText;
                 }
             });

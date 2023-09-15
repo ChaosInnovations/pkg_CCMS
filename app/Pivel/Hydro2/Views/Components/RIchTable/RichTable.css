@@ -1,0 +1,73 @@
+.rich-table-overlay {
+    position: fixed;
+    transition: bottom ease-in-out 0.5s, right ease-in-out 0.5s;
+    bottom: -90%;
+    height: 90%;
+    border-top-left-radius: 2rem;
+    border-top-right-radius: 2rem;
+    width: 100%;
+    left: 0;
+    background-color: #ffffff;
+    box-shadow: 0rem 0rem 2px 2px #cccccc;
+}
+
+.rich-table-overlay.active {
+    bottom: 0;
+}
+
+@media (min-width: 64em) {
+    .rich-table-overlay {
+        height: 100%;
+        width: 30em;
+        left: auto;
+        right: -30em;
+        top: 0;
+        border-top-right-radius: 0;
+        border-bottom-left-radius: 2rem;
+    }
+
+    .rich-table-overlay.active {
+        right: 0;
+    }
+}
+
+.rich-table-toast {
+    display: block;
+    position: fixed;
+    top: 2rem;
+    left: 50%;
+    width: 0;
+    overflow-x: hidden;
+    white-space: nowrap;
+    z-index: 1000;
+    transition: width ease 1s;
+    text-align: center;
+    padding: 5px 0;
+    height: 2rem;
+    border-radius: 0.75rem;
+    transform: translateX(-50%);
+}
+
+.rich-table-toast.default {
+    background-color: #555555;
+    color: #ffffff;
+}
+
+.rich-table-toast.error {
+    background-color: #ff0000;
+    color: #ffffff;
+}
+
+.rich-table-toast.success {
+    background-color: #007700;
+    color: #ffffff;
+}
+
+.rich-table-toast.popped {
+    display: block;
+    max-width: calc(100% - 4rem);
+}
+
+.rich-table-toast > span {
+    padding: 0 20px;
+}

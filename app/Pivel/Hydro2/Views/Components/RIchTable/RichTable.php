@@ -24,9 +24,9 @@ class RichTable extends SortableTable
         protected bool $IsDetailEnabled = false,
         protected bool $IsEditEnabled = false,
         protected bool $IsDeleteEnabled = false,
-        protected ?BaseWebView $DetailOverlay = null,
-        protected ?BaseWebView $EditOverlay = null,
-        protected ?BaseWebView $CreateOverlay = null,
+        protected BaseWebView|string|null $DetailOverlay = null,
+        protected BaseWebView|string|null $EditOverlay = null,
+        protected BaseWebView|string|null $CreateOverlay = null,
     ) {
         $this->SearchFormId = $Id . '_search_form';
         $this->HasControls = $IsSearchEnabled || $IsFilterEnabled || $IsCreateEnabled;

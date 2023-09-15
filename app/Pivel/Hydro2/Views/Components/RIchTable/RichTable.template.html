@@ -23,6 +23,7 @@
             {#if $IsFilterEnabled}
             {#}
             {#if $IsCreateEnabled}
+                <button type="button" id="{$Id$}_create" title="New">New</button>
             {#}
         </div>
     {#}
@@ -48,18 +49,21 @@
         <div id="{$Id$}_context" class="context-menu"></div>
     {#}
     {#if $IsDetailEnabled}
-        <div class="rich-table-detail-overlay">
+        <div id="{$Id$}_detail_overlay" class="rich-table-overlay">
             {$DetailOverlay$}
         </div>
     {#}
     {#if $IsEditEnabled}
-        <div class="rich-table-edit-overlay">
+        <div id="{$Id$}_edit_overlay" class="rich-table-overlay">
             {$EditOverlay$}
         </div>
     {#}
     {#if $IsCreateEnabled}
-        <div class="rich-table-create-overlay">
+        <div id="{$Id$}_create_overlay" class="rich-table-overlay">
             {$CreateOverlay$}
         </div>
     {#}
+    <div id="{$Id$}_toast" class="rich-table-toast">
+        <span></span>
+    </div>
 </div>

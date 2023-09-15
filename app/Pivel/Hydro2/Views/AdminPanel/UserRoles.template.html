@@ -1,11 +1,14 @@
 {#parent}
     {#arg Content}
         <h2>User Roles</h2>
-        {#view Pivel\Hydro2\Views\Components\RichTable\RichTable(Id:"user_roles_table",IsSearchEnabled:true)}
+        {#view Pivel\Hydro2\Views\Components\RichTable\RichTable(Id:"user_roles_table",IsSearchEnabled:true,IsCreateEnabled:true)}
             {#arg Headers[]}<th class="sortable" data-property="id">Id</th>{#}
             {#arg Headers[]}<th class="sortable" data-property="name">Name</th>{#}
             {#arg Headers[]}<th class="sortable" data-property="description">Description</th>{#}
             {#arg Headers[]}<th data-property="permissions">Permissions</th>{#}
+            {#arg CreateOverlay}
+                <button type="button" id="user_roles_table_create_cancel" class="close-overlay" title="Cancel">Cancel</button>
+            {#}
         {#}
         <script>
             var user_roles_table_renderer = function(table) {
