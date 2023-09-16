@@ -11,11 +11,10 @@ use Pivel\Hydro2\Models\HTTP\Method;
 use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
+use Pivel\Hydro2\Models\Identity\UserPermission;
 use Pivel\Hydro2\Models\Identity\UserRole;
 use Pivel\Hydro2\Models\Permissions;
 use Pivel\Hydro2\Services\Identity\IIdentityService;
-
-use function PHPUnit\Framework\isEmpty;
 
 #[RoutePrefix('api/hydro2/identity/userroles')]
 class UserRoleController extends BaseController
@@ -399,6 +398,7 @@ class UserRoleController extends BaseController
                 'vendor' => $permission->Vendor,
                 'package' => $permission->Package,
                 'key' => $permission->Key,
+                'fullkey' => $permission->FullKey,
                 'name' => $permission->Name,
                 'description' => $permission->Description,
                 'requires' => $permission->Requires,

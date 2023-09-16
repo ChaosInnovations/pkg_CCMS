@@ -7,6 +7,24 @@
             {#arg Headers[]}<th class="sortable" data-property="description">Description</th>{#}
             {#arg Headers[]}<th data-property="permissions">Permissions</th>{#}
             {#arg CreateOverlay}
+                <h2>New User Role</h2>
+                {#view Pivel\Hydro2\Views\Components\Form\Form("user_role_create_form")}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"name", Type:"text", IdPrefix:"user_role_create_form", Label:"Role Name")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"description", Type:"text", IdPrefix:"user_role_create_form", Label:"Description")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\RichMultiSelect(
+                            Name:"permissions", IdPrefix:"user_role_create_form", Label:"Permissions")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\FormSubmitField(IdPrefix:"user_role_create_form", Content:"Create")#}
+                    {#}
+                {#}
                 <button type="button" id="user_roles_table_create_cancel" class="close-overlay" title="Cancel">Cancel</button>
             {#}
         {#}
@@ -51,6 +69,83 @@
             }
 
             var user_roles_table = new RichTable("#user_roles_table", "/api/hydro2/identity/userroles", "user_roles", user_roles_table_renderer);
+
+            var user_roles_create_name = new FormField("#user_role_create_form_name");
+            var user_roles_create_description = new FormField("#user_role_create_form_description");
+            var user_roles_create_permissions = new RichMultiSelect("#user_role_create_form_permissions");
+
+            fillUserRolePermissions();
+
+            H.Nodes("#user_role_create_form").AddEventHandler("submit", onUserRoleCreateFormSubmit);
+
+            function fillUserRolePermissions() {
+                var request = new H.AjaxRequest("GET", "/api/hydro2/identity/permissions");
+                request.Send(this._fillUserRolePermissionsCallback);
+            }
+
+            function _fillUserRolePermissionsCallback(response) {
+                if (response.Status == H.StatusCode.OK) {
+                    var options = [];
+                    for (const p of response.Data["permissions"]) {
+                        options.push({
+                            "value": p["fullkey"],
+                            "text": p["vendor"] + " / " + p["package"] + " / " + p["key"],
+                            "selected": false,
+                        })
+                    }
+
+                    user_roles_create_permissions.SetOptions(options);
+                }
+            }
+
+            function onUserRoleCreateFormSubmit(event) {
+                event.preventDefault();
+                console.log("create clicked");
+                SubmitUserRoleCreateForm();
+                return false;
+            }
+
+            function SubmitUserRoleCreateForm() {
+                // disable submit button and change contents to spinner
+                H.Nodes("#user_role_create_form_submit").Disable();
+                var request = new H.AjaxRequest("POST", "/api/hydro2/identity/userroles");
+                request.SetJsonData({
+                    "name": user_roles_create_name.input.Value(),
+                    "description": user_roles_create_description.input.Value(),
+                    "permissions": user_roles_create_permissions.Value(),
+                });
+                request.Send(this._submitUserRoleCreateCallback);
+            }
+
+            function _submitUserRoleCreateCallback(response) {
+                if (response.Status == H.StatusCode.OK) {
+                    // display toast (success)
+                    user_roles_table.ShowToast("User role created successfully!", false, "success");
+                    // trigger table refresh
+                    user_roles_table.Load();
+                    // hide overlay
+                    user_roles_table.HideOverlays();
+                    // clear forms
+                    user_roles_create_name.input.Value("");
+                    user_roles_create_description.input.Value("");
+                    user_roles_create_permissions.Clear();
+                    H.Nodes("#user_role_create_form_submit").Enable();
+                    return;
+                }
+
+                if (response.Status == H.StatusCode.InternalServerError) {
+                    user_roles_table.ShowToast("There was a problem with the server.", false, "error");
+                } else if (response.Data["validation_errors"][0]["name"] == "permissions") {
+                    user_roles_create_permissions.SetValidation(false, response.Data["validation_errors"][0]["message"]);
+                    user_roles_table.ShowToast(response.Data["validation_errors"][0]["message"], false, "error");
+                } else {
+                    console.log(response);
+                    user_roles_table.ShowToast("There was an unknown error.", false, "error");
+                }
+                
+                //  restore submit button
+                H.Nodes("#user_role_create_form_submit").Enable();
+            }
         </script>
     {#}
 {#}

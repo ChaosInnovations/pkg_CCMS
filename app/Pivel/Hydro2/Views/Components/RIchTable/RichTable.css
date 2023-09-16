@@ -9,6 +9,7 @@
     left: 0;
     background-color: #ffffff;
     box-shadow: 0rem 0rem 2px 2px #cccccc;
+    padding: 2rem;
 }
 
 .rich-table-overlay.active {

@@ -18,8 +18,7 @@ class LoginCard extends MultiPageCard {
         this._e.Nodes(id+"_loginform").AddEventHandler("submit", this._onLoginFormSubmit.bind(this));
         this._e.Nodes(id+"_requestresetpasswordform").AddEventHandler("submit", this._onResetFormSubmit.bind(this));
         this._e.Nodes(id+"_changepasswordform").AddEventHandler("submit", this._onChangePasswordFormSubmit.bind(this));
-        // check whether we are connected via https. If not, display a warning to use
-        //  https
+        // check whether we are connected via https. If not, display a warning to use https
     }
 
     _onLoginFormSubmit(event) {
