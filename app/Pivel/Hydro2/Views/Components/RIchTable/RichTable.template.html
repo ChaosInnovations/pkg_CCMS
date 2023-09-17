@@ -34,7 +34,7 @@
                     <th>Empty Table</th>
                 {$}
                 {#if $HasContextMenu}
-                    <th class="context-header"></th>
+                    <th class="context-header">...</th>
                 {#}
             </tr>
         </thead>
@@ -46,7 +46,9 @@
         {#view Pivel\Hydro2\Views\Components\Spinner#}
     </div>
     {#if $HasContextMenu}
-        <div id="{$Id$}_context" class="context-menu"></div>
+        <div id="{$Id$}_context" class="context-menu">
+            Hello!
+        </div>
     {#}
     {#if $IsDetailEnabled}
         <div id="{$Id$}_detail_overlay" class="rich-table-overlay">

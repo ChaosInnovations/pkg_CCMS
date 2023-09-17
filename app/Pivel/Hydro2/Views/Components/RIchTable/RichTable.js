@@ -2,6 +2,10 @@ class RichTable extends SortableTable {
     _searchField;
     _searchButton;
     _contextMenu;
+    _contextButtons;
+    _hasContextMenu = false;
+    _nextRowId = 0;
+    _contextSelectedRowId;
 
     _query;
     constructor(selector, apiEndpoint, apiResponseKey, renderer=null) {
@@ -12,6 +16,7 @@ class RichTable extends SortableTable {
         this._createButton = this._e.Nodes(selector + "_create");
         this._createOverlay = this._e.Nodes(selector + "_create_overlay");
         this._contextMenu = this._e.Nodes(selector + "_context");
+        this._hasContextMenu = this._contextMenu.Count() == 1;
         this._toast = this._e.Nodes(selector + "_toast");
         this._overlayCloseButtons = this._e.Nodes(".close-overlay");
 
@@ -21,6 +26,13 @@ class RichTable extends SortableTable {
         this._createButton.AddEventHandler("click", this._createClick.bind(this));
         // add overlay close event handler(s)
         this._overlayCloseButtons.AddEventHandler("click", this._overlayCloseClick.bind(this));
+
+        if (this._hasContextMenu) {
+            // add event handlers for closing context menu - click, scroll, esc
+            H.Nodes(document).AddEventHandler("click", this._closeContextMenuClick.bind(this));
+            H.Nodes(document).AddEventHandler("wheel", this._closeContextMenuScroll.bind(this));
+            H.Nodes(document).AddEventHandler("keydown", this._closeContextMenuKeydown.bind(this));
+        }
     }
 
     _searchClick(event) {
@@ -79,5 +91,115 @@ class RichTable extends SortableTable {
         setTimeout(function() {
             t.RemoveClass(statusClass);
         }, long ? 30000 + 1000 : 5000 + 1000);
+    }
+
+    RenderData() {
+        this._nextRowId = 0;
+        // if no data, display placeholder
+        if (this._data.length == 0) {
+            if (this._hasContextMenu) {
+                this._table.Nodes("tbody").HTML("<tr><td class=\"placeholder\" colspan=\"20\">No data</td><td></td></tr>");
+            } else {
+                this._table.Nodes("tbody").HTML("<tr><td class=\"placeholder\" colspan=\"20\">No data</td></tr>");   
+            }
+            return;
+        }
+        var tbodyHtml = "";
+        // for each row in this._data:
+        for (var row of this._data) {
+            // add <tr>
+            if (this._hasContextMenu) {
+                tbodyHtml += "<tr data-row=\"" + this._nextRowId + "\">";
+            } else {
+                tbodyHtml += "<tr>";
+            }
+            // for each property in this._columns:
+            for (var property of this._columns) {
+                // add <td>row[property]</td> to tbodyHtml
+                var value = row[property];
+                if (value === true) {
+                    value = "Yes";
+                }
+                if (value === false) {
+                    value = "No";
+                }
+                if (value === null) {
+                    value = "N/A";
+                }
+                tbodyHtml += "<td>" + H.HtmlEncode(value) + "</td>";
+            }
+            if (this._hasContextMenu) {
+                tbodyHtml += "<td><button class=\"rich-table-context-btn\" title=\"More...\" data-row=\"" + this._nextRowId + "\">...</button></td>";
+                this._nextRowId++;
+            }
+            // add </tr>
+            tbodyHtml += "</tr>";
+        }
+        this._table.Nodes("tbody").HTML(tbodyHtml);
+
+        if (this._hasContextMenu) {
+            // attach event handlers to buttons
+            this._contextButtons = this._table.Nodes(".rich-table-context-btn");
+            this._contextButtons.AddEventHandler("click", this._contextMenuClick.bind(this));
+            // attach event handlers to rows
+            this._table.Nodes("tbody > tr").AddEventHandler("contextmenu", this._contextMenuClick.bind(this));
+        }
+    }
+
+    /**
+     * 
+     * @param {PointerEvent} event 
+     * @returns 
+     */
+    _contextMenuClick(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        this._contextSelectedRowId = H.Nodes(event.currentTarget).Data("row");
+        console.log("rowId: " + this._contextSelectedRowId);
+        console.log(event);
+
+        // display context menu
+        this._contextMenu.AddClass("active");
+        this._contextMenu._nodeList[0].style.top = "";
+        this._contextMenu._nodeList[0].style.bottom = "";
+        this._contextMenu._nodeList[0].style.left = "";
+        this._contextMenu._nodeList[0].style.right = "";
+        var h = this._contextMenu._nodeList[0].offsetHeight;
+        var w = this._contextMenu._nodeList[0].offsetWidth;
+        var y = event.clientY;
+        var x = event.clientX;
+        // if y + height > screen height, then use bottom = screen height - y instead.
+        if (y + h >= window.innerHeight) {
+            this._contextMenu._nodeList[0].style.bottom = (window.innerHeight - y)+"px";
+        } else {
+            this._contextMenu._nodeList[0].style.top = y+"px";
+        }
+        // if x + width > screen width, then use right = screen width - x instead.
+        if (x + w >= window.innerWidth) {
+            this._contextMenu._nodeList[0].style.right = (window.innerWidth - x)+"px";
+        } else {
+            this._contextMenu._nodeList[0].style.left = x+"px";
+        }
+
+        return false;
+    }
+
+    _closeContextMenuClick(event) {
+        this.CloseContextMenu();
+    }
+
+    _closeContextMenuScroll(event) {
+        this.CloseContextMenu();
+    }
+
+    _closeContextMenuKeydown(event) {
+        if (event.key != "Escape") {
+            return;
+        }
+        this.CloseContextMenu();
+    }
+
+    CloseContextMenu() {
+        this._contextMenu.RemoveClass("active");
     }
 }

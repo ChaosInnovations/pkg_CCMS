@@ -267,5 +267,9 @@ var H = {
             // TODO how to handle when we have multiple nodes?
             return H.Nodes(this._nodeList[0].parentElement);
         }
+
+        Count() {
+            return this._nodeList.length;
+        }
     }
 }
