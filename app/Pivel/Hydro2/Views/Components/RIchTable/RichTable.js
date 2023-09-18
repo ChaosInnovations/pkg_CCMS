@@ -6,15 +6,20 @@ class RichTable extends SortableTable {
     _hasContextMenu = false;
     _nextRowId = 0;
     _contextSelectedRowId;
+    _contextOptionHandlers = {};
+    _idKey;
 
     _query;
-    constructor(selector, apiEndpoint, apiResponseKey, renderer=null) {
+    constructor(selector, apiEndpoint, apiResponseKey, renderer=null, idKey="id") {
         super(selector + ".rich-table", apiEndpoint, apiResponseKey, renderer);
 
+        this._idKey = idKey;
         this._searchField = this._e.Nodes(selector + "_search_form_q");
         this._searchButton = this._e.Nodes(selector + "_search_form_submit");
         this._createButton = this._e.Nodes(selector + "_create");
         this._createOverlay = this._e.Nodes(selector + "_create_overlay");
+        this._detailOverlay = this._e.Nodes(selector + "_detail_overlay");
+        this._editOverlay = this._e.Nodes(selector + "_edit_overlay");
         this._contextMenu = this._e.Nodes(selector + "_context");
         this._hasContextMenu = this._contextMenu.Count() == 1;
         this._toast = this._e.Nodes(selector + "_toast");
@@ -31,7 +36,13 @@ class RichTable extends SortableTable {
             // add event handlers for closing context menu - click, scroll, esc
             H.Nodes(document).AddEventHandler("click", this._closeContextMenuClick.bind(this));
             H.Nodes(document).AddEventHandler("wheel", this._closeContextMenuScroll.bind(this));
+            H.Nodes(document).AddEventHandler("touchmove", this._closeContextMenuTouch.bind(this));
             H.Nodes(document).AddEventHandler("keydown", this._closeContextMenuKeydown.bind(this));
+            // handle clicking context menu options
+            this._contextMenu.Nodes(".context-menu-item").AddEventHandler("click", this._contextMenuOptionClick.bind(this));
+            this._registerContextOptionHandler("details", this.ContextOptionDetails.bind(this));
+            this._registerContextOptionHandler("edit", this.ContextOptionEdit.bind(this));
+            this._registerContextOptionHandler("delete", this.ContextOptionDelete.bind(this));
         }
     }
 
@@ -52,6 +63,67 @@ class RichTable extends SortableTable {
         event.preventDefault();
         this.HideOverlays();
         return false;
+    }
+
+    _contextMenuOptionClick(event) {
+        event.preventDefault();
+        var optionKey = H.Nodes(event.currentTarget).Data("option");
+        var a = {"a":1,"b":2};
+        if (!Object.keys(this._contextOptionHandlers).includes(optionKey)) {
+            console.error("No context option handler is registered for option \"" + optionKey + "\"");
+            return false;
+        }
+        this._contextOptionHandlers[optionKey].call();
+        return false;
+    }
+
+    _registerContextOptionHandler(key, callback) {
+        this._contextOptionHandlers[key] = callback;
+    }
+
+    ContextOptionDetails() {
+        console.log("Details: row " + this._contextSelectedRowId);
+    }
+
+    ContextOptionEdit() {
+        console.log("Edit: row " + this._contextSelectedRowId);
+    }
+
+    ContextOptionDelete() {
+        this._showSpinner();
+        console.log("Delete: row " + this._contextSelectedRowId);
+        console.log(this._data[this._contextSelectedRowId]);
+        console.log(this._data[this._contextSelectedRowId][this._idKey]);
+        // show confirmation, with callback to send DELETE request.
+        if (!confirm("Are you sure you want to delete the selected item?")) {
+            return;
+        }
+        var request = new H.AjaxRequest("DELETE", this._apiEndpoint + "/" + this._data[this._contextSelectedRowId][this._idKey]);
+        request.Send(this._dataDeletedCallback.bind(this));
+    }
+
+    _dataDeletedCallback(response) {
+        if (response.Status == H.StatusCode.OK) {
+            // display toast (success)
+            user_roles_table.ShowToast("Item deleted.", false, "success");
+            // trigger table refresh. this will automatically hide the spinner.
+            user_roles_table.Load();
+            // clear forms
+            return;
+        }
+
+        this._hideSpinner();
+
+        if (response.Status == H.StatusCode.InternalServerError) {
+            user_roles_table.ShowToast("There was a problem with the server.", false, "error");
+        } else if (response.Status == H.StatusCode.NotFound) {
+            user_roles_table.ShowToast("You don't have permission to delete this item.", false, "error");
+        } else if (response.Data["validation_errors"][0]["name"] == "id") {
+            user_roles_table.ShowToast(response.Data["validation_errors"][0]["message"], false, "error");
+        } else {
+            console.error(response);
+            user_roles_table.ShowToast("There was an unknown error.", false, "error");
+        }
     }
 
     Load() {
@@ -155,8 +227,6 @@ class RichTable extends SortableTable {
         event.preventDefault();
         event.stopPropagation();
         this._contextSelectedRowId = H.Nodes(event.currentTarget).Data("row");
-        console.log("rowId: " + this._contextSelectedRowId);
-        console.log(event);
 
         // display context menu
         this._contextMenu.AddClass("active");
@@ -189,6 +259,10 @@ class RichTable extends SortableTable {
     }
 
     _closeContextMenuScroll(event) {
+        this.CloseContextMenu();
+    }
+    
+    _closeContextMenuTouch(event) {
         this.CloseContextMenu();
     }
 

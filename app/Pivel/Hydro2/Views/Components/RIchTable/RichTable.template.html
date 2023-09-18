@@ -47,7 +47,23 @@
     </div>
     {#if $HasContextMenu}
         <div id="{$Id$}_context" class="context-menu">
-            Hello!
+            <ul>
+                {#if $IsDetailEnabled}
+                <li>
+                    <button class="context-menu-item" data-option="details">View details</button>
+                </li>
+                {#}
+                {#if $IsEditEnabled}
+                <li>
+                    <button class="context-menu-item" data-option="edit">Edit</button>
+                </li>
+                {#}
+                {#if $IsDeleteEnabled}
+                <li>
+                    <button class="context-menu-item" data-option="delete">Delete</button>
+                </li>
+                {#}
+            </ul>
         </div>
     {#}
     {#if $IsDetailEnabled}
