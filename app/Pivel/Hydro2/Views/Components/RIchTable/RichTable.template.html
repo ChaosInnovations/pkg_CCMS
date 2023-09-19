@@ -68,17 +68,23 @@
     {#}
     {#if $IsDetailEnabled}
         <div id="{$Id$}_detail_overlay" class="rich-table-overlay">
-            {$DetailOverlay$}
+            <div class="rich-table-overlay-inner">
+                {$DetailOverlay$}
+            </div>
         </div>
     {#}
     {#if $IsEditEnabled}
         <div id="{$Id$}_edit_overlay" class="rich-table-overlay">
-            {$EditOverlay$}
+            <div class="rich-table-overlay-inner">
+                {$EditOverlay$}
+            </div>
         </div>
     {#}
     {#if $IsCreateEnabled}
         <div id="{$Id$}_create_overlay" class="rich-table-overlay">
-            {$CreateOverlay$}
+            <div class="rich-table-overlay-inner">
+                {$CreateOverlay$}
+            </div>
         </div>
     {#}
     <div id="{$Id$}_toast" class="rich-table-toast">

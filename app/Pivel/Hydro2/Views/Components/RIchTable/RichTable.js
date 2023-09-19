@@ -8,6 +8,8 @@ class RichTable extends SortableTable {
     _contextSelectedRowId;
     _contextOptionHandlers = {};
     _idKey;
+    _showDetailHandler = null;
+    _showEditHandler = null;
 
     _query;
     constructor(selector, apiEndpoint, apiResponseKey, renderer=null, idKey="id") {
@@ -55,6 +57,7 @@ class RichTable extends SortableTable {
 
     _createClick(event) {
         event.preventDefault();
+        this.HideOverlays();
         this.ShowCreateOverlay();
         return false;
     }
@@ -82,22 +85,22 @@ class RichTable extends SortableTable {
     }
 
     ContextOptionDetails() {
-        console.log("Details: row " + this._contextSelectedRowId);
+        this.HideOverlays();
+        this.ShowDetailOverlay();
     }
 
     ContextOptionEdit() {
-        console.log("Edit: row " + this._contextSelectedRowId);
+        this.HideOverlays();
+        this.ShowEditOverlay();
     }
 
     ContextOptionDelete() {
-        this._showSpinner();
-        console.log("Delete: row " + this._contextSelectedRowId);
-        console.log(this._data[this._contextSelectedRowId]);
-        console.log(this._data[this._contextSelectedRowId][this._idKey]);
+        this.HideOverlays();
         // show confirmation, with callback to send DELETE request.
         if (!confirm("Are you sure you want to delete the selected item?")) {
             return;
         }
+        this._showSpinner();
         var request = new H.AjaxRequest("DELETE", this._apiEndpoint + "/" + this._data[this._contextSelectedRowId][this._idKey]);
         request.Send(this._dataDeletedCallback.bind(this));
     }
@@ -144,8 +147,24 @@ class RichTable extends SortableTable {
         this._createOverlay.AddClass("active");
     }
 
+    ShowDetailOverlay() {
+        if (this._showDetailHandler != null) {
+            this._showDetailHandler(this._data[this._contextSelectedRowId]);
+        }
+        this._detailOverlay.AddClass("active");
+    }
+
+    ShowEditOverlay() {
+        if (this._showEditHandler != null) {
+            this._showEditHandler(this._data[this._contextSelectedRowId]);
+        }
+        this._editOverlay.AddClass("active");
+    }
+
     HideOverlays() {
         this._createOverlay.RemoveClass("active");
+        this._detailOverlay.RemoveClass("active");
+        this._editOverlay.RemoveClass("active");
     }
 
     ShowToast(message, long=false, statusClass="default") {

@@ -8,12 +8,12 @@
     width: 100%;
     left: 0;
     background-color: #ffffff;
-    box-shadow: 0rem 0rem 2px 2px #cccccc;
     padding: 2rem;
 }
 
 .rich-table-overlay.active {
     bottom: 0;
+    box-shadow: 0rem 0rem 2px 2px #cccccc;
 }
 
 @media (min-width: 64em) {
@@ -30,6 +30,15 @@
     .rich-table-overlay.active {
         right: 0;
     }
+}
+
+.rich-table-overlay-inner {
+    overflow-y: auto;
+    height: 100%;
+}
+
+.rich-table-overlay h3 {
+    margin-top: 0;
 }
 
 .rich-table-toast {
