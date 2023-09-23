@@ -67,6 +67,13 @@ class UserController extends BaseController
             $query->OrderBy($this->request->Args['sort_by']??'email', $dir);
         }
 
+        if (isset($this->request->Args['q']) && !empty($this->request->Args['q'])) {
+            $query->Like('email', '%' . str_replace('%', '\\%', str_replace('_', '\\_', $this->request->Args['q'])) . '%');
+            $query = (new Query())
+                ->Like('name', '%' . str_replace('%', '\\%', str_replace('_', '\\_', $this->request->Args['q'])) . '%')
+                ->Or($query);
+        }
+
         // TODO implement filtering for more fields?
         if (isset($this->request->Args['role_id'])) {
             $query->Equal('user_role_id', $this->request->Args['role_id']);
@@ -111,7 +118,7 @@ class UserController extends BaseController
         }
 
         // need to provide email, name, and role (optional)
-        if (!isset($this->request->Args['email'])) {
+        if (empty($this->request->Args['email'])) {
             return new JsonResponse(
                 data: [
                     'validation_errors' => [
@@ -173,7 +180,7 @@ class UserController extends BaseController
                     'validation_errors' => [
                         [
                             'name' => 'email',
-                            'description' => "New User's name.",
+                            'description' => "New User's email.",
                             'message' => 'A user already exists with this email.',
                         ],
                     ],
@@ -186,9 +193,11 @@ class UserController extends BaseController
         $newUser = $this->_identityService->CreateNewUser(
             email: $this->request->Args['email'],
             name: $this->request->Args['name'],
-            isEnabled: true,
+            isEnabled: $this->request->Args['enabled']??true,
             role: $role,
         );
+
+        $newUser->NeedsReview = $this->request->Args['needs_review']??false;
 
         if ($newUser === null) {
             return new JsonResponse(
@@ -198,7 +207,12 @@ class UserController extends BaseController
         }
 
         $view = new NewUserVerificationEmailView($this->_identityService->GetEmailVerificationUrl($this->request, $newUser, true), $newUser->Name);
-        $this->_userNotificationService->SendEmailToUser($newUser, $view);
+        if (!$this->_userNotificationService->SendEmailToUser($newUser, $view)) {
+            return new JsonResponse(
+                status: StatusCode::InternalServerError,
+                error_message: "Unable to send validation email."
+            );
+        }
 
         return new JsonResponse(
             data: [
@@ -296,8 +310,24 @@ class UserController extends BaseController
             );
         }
 
-        $email = $this->request->Args['email']??$user->Email;
+        $email = empty($this->request->Args['email'])?$user->Email:$this->request->Args['email'];
         $emailChanged = $email !== $user->Email;
+        // check that there isn't already a User with this email
+        if ($emailChanged && $this->_identityService->IsEmailInUseByUser($email)) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'email',
+                            'description' => "User's email address.",
+                            'message' => 'A user already exists with this email.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
         $oldEmail = $user->Email;
         $user->Email = $email;
         $user->EmailVerified = $user->EmailVerified && (!$emailChanged);
@@ -318,7 +348,7 @@ class UserController extends BaseController
                             'validation_errors' => [
                                 [
                                     'name' => 'role_id',
-                                    'description' => "New User's Role.",
+                                    'description' => "User's Role.",
                                     'message' => "This user role doesn't exist.",
                                 ],
                             ],

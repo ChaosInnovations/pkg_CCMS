@@ -30,19 +30,19 @@ class EmailService
      * @var IOutboundEmailProvider[]
      */
     public function GetOutboundEmailProviderInstance(string $key) : ?IOutboundEmailProvider {
-        if (!isset(self::$outboundEmailProviders[$key])) {
+        if (!isset($this->outboundEmailProviders[$key])) {
             $profiles = $this->_emailProfileRepository->Read((new Query())->Equal('key', $key));
             if (count($profiles) != 1) {
                 return null;
             }
-            self::$outboundEmailProviders[$key] = self::GetOutboundEmailProvider($profiles[0]);
+            $this->outboundEmailProviders[$key] = self::GetOutboundEmailProvider($profiles[0]);
         }
 
-        if (!(self::$outboundEmailProviders[$key] instanceof IOutboundEmailProvider)) {
+        if (!($this->outboundEmailProviders[$key] instanceof IOutboundEmailProvider)) {
             return null;
         }
 
-        return self::$outboundEmailProviders[$key];
+        return $this->outboundEmailProviders[$key];
     }
 
     // TODO move to manifest

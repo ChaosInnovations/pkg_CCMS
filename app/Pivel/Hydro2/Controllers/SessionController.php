@@ -111,6 +111,22 @@ class SessionController extends BaseController
             );
         }
 
+        if ($user->GetUserRole() === null) {
+            return new JsonResponse(
+                data: [
+                    'validation_errors' => [
+                        [
+                            'name' => 'email',
+                            'description' => "User's email address",
+                            'message' => 'Unable to log in. Please contact the administrator.',
+                        ],
+                    ],
+                ],
+                status: StatusCode::BadRequest,
+                error_message: 'One or more arguments are invalid.'
+            );
+        }
+
         if (
             ($user->GetUserRole()->MaxLoginAttempts > 0 && $user->FailedLoginAttempts >= $user->GetUserRole()->MaxLoginAttempts) ||
             ($user->GetUserRole()->Max2FAAttempts > 0 && $user->Failed2FAAttempts >= $user->GetUserRole()->Max2FAAttempts)

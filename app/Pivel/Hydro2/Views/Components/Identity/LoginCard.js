@@ -125,6 +125,8 @@ class LoginCard extends MultiPageCard {
             this.login_email.SetValidation(false, "This account is locked.");
         } else if (response.Data["validation_errors"][0]["message"] == "Account creation is incomplete. A validation email has been re-sent to your email address.") {
             this.login_email.SetValidation(false, "Account creation is incomplete. A validation email has been re-sent to your email address.");
+        } else if (response.Data["validation_errors"][0]["message"] == "Unable to log in. Please contact the administrator.") {
+            this.login_email.SetValidation(false, "Unable to log in. Please contact the administrator.");
         } else {
             console.log(response);
             this.login_email.SetValidation(false, "There was an unknown error.");

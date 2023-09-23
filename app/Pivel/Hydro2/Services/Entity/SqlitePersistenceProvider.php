@@ -148,7 +148,6 @@ class SqlitePersistenceProvider implements IEntityPersistenceProvider
                 throw $e;
             }
         }
-        return [];
     }
 
     public function Count(EntityDefinition $collection, ?Query $query) : int
@@ -170,7 +169,6 @@ class SqlitePersistenceProvider implements IEntityPersistenceProvider
                 throw $e;
             }
         }
-        return 0;
     }
 
     public function Insert(EntityDefinition $collection, array $fieldValues) : ?int

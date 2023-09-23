@@ -21,9 +21,9 @@ class ResetPasswordCard extends MultiPageCard {
     SubmitResetForm() {
         // disable submit button and change contents to spinner
         this._e.Nodes(this.id+"_resetpasswordform_submit").Disable();
-        var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/changepassword");
+        var id = this._e.Nodes(this.id+"_resetpasswordform_userid").Value();
+        var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/"+id+"/changepassword");
         request.SetJsonData({
-            "id": this._e.Nodes(this.id+"_resetpasswordform_userid").Value(),
             "reset_token": this._e.Nodes(this.id+"_resetpasswordform_resettoken").Value(),
             "new_password": this._e.Nodes(this.id+"_resetpasswordform_new-password").Value()
         });

@@ -196,8 +196,8 @@
             }
 
             var user_roles_table = new RichTable("#user_roles_table", "/api/hydro2/identity/userroles", "user_roles", user_roles_table_renderer);
-            user_roles_table._showDetailHandler = showDetailCallback;
-            user_roles_table._showEditHandler = showEditCallback;
+            user_roles_table._showDetailHandler = userRolesShowDetailCallback;
+            user_roles_table._showEditHandler = userRolesShowEditCallback;
 
             var user_roles_create_name = new FormField("#user_role_create_form_name");
             var user_roles_create_description = new FormField("#user_role_create_form_description");
@@ -249,7 +249,7 @@
                 }
             }
 
-            function showDetailCallback(data) {
+            function userRolesShowDetailCallback(data) {
                 H.Nodes("#user_role_detail_name").Text(data["name"]);
                 H.Nodes("#user_role_detail_description").Text(data["description"]);
                 H.Nodes("#user_role_detail_max_login_attempts").Text(data["max_login_attempts"]);
@@ -271,7 +271,7 @@
                 H.Nodes("#user_role_detail_permissions").Nodes("tbody").HTML(permissions);
             }
 
-            function showEditCallback(data) {
+            function userRolesShowEditCallback(data) {
                 user_roles_edit_id.input.Value(data["id"]);
                 user_roles_edit_name.input.Value(data["name"]);
                 user_roles_edit_description.input.Value(data["description"]);
@@ -381,6 +381,7 @@
                 
                 //  restore submit button
                 H.Nodes("#user_role_create_form_submit").Enable();
+                H.Nodes("#user_role_edit_form_submit").Enable();
             }
         </script>
     {#}

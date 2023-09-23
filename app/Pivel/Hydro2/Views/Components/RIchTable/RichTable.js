@@ -108,9 +108,9 @@ class RichTable extends SortableTable {
     _dataDeletedCallback(response) {
         if (response.Status == H.StatusCode.OK) {
             // display toast (success)
-            user_roles_table.ShowToast("Item deleted.", false, "success");
+            this.ShowToast("Item deleted.", false, "success");
             // trigger table refresh. this will automatically hide the spinner.
-            user_roles_table.Load();
+            this.Load();
             // clear forms
             return;
         }
@@ -118,14 +118,14 @@ class RichTable extends SortableTable {
         this._hideSpinner();
 
         if (response.Status == H.StatusCode.InternalServerError) {
-            user_roles_table.ShowToast("There was a problem with the server.", false, "error");
+            this.ShowToast("There was a problem with the server.", false, "error");
         } else if (response.Status == H.StatusCode.NotFound) {
-            user_roles_table.ShowToast("You don't have permission to delete this item.", false, "error");
+            this.ShowToast("You don't have permission to delete this item.", false, "error");
         } else if (response.Data["validation_errors"][0]["name"] == "id") {
-            user_roles_table.ShowToast(response.Data["validation_errors"][0]["message"], false, "error");
+            this.ShowToast(response.Data["validation_errors"][0]["message"], false, "error");
         } else {
             console.error(response);
-            user_roles_table.ShowToast("There was an unknown error.", false, "error");
+            this.ShowToast("There was an unknown error.", false, "error");
         }
     }
 
