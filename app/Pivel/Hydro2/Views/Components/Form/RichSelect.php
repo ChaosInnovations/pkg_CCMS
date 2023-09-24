@@ -5,9 +5,9 @@ namespace Pivel\Hydro2\Views\Components\Form;
 use Pivel\Hydro2\Extensions\RequireScript;
 use Pivel\Hydro2\Extensions\RequireStyle;
 
-#[RequireStyle('RichMultiSelect.css')]
-#[RequireScript('RichMultiSelect.js')]
-class RichMultiSelect extends FormField
+#[RequireStyle('RichSelect.css')]
+#[RequireScript('RichSelect.js')]
+class RichSelect extends FormField
 {
 
     public function __construct(
@@ -16,6 +16,7 @@ class RichMultiSelect extends FormField
         protected ?string $IdPrefix=null,
         protected ?string $Title=null,
         protected ?string $Label=null,
+        protected bool $Multiple=false,
     ) {
         $this->IdPrefix ??= bin2hex(random_bytes(16));
     }

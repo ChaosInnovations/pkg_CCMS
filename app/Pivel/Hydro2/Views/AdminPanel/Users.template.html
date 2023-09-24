@@ -36,7 +36,10 @@
                     {#}
                     <p>Enabled?</p>
                     <p>Needs Review?</p>
-                    <p>Role</p>
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\RichSelect(
+                            Name:"role", IdPrefix:"user_create_form", Label:"Role")#}
+                    {#}
                     {#arg Fields[]}
                         {#view Pivel\Hydro2\Views\Components\Form\FormSubmitField(IdPrefix:"user_create_form", Content:"Create")#}
                     {#}
@@ -59,7 +62,10 @@
                             Name:"email", Type:"text", IdPrefix:"user_edit_form", Label:"Email")#}
                     {#}
                     <p>Enabled?</p>
-                    <p>Role</p>
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\RichSelect(
+                            Name:"role", IdPrefix:"user_edit_form", Label:"Role")#}
+                    {#}
                     {#arg Fields[]}
                         {#view Pivel\Hydro2\Views\Components\Form\FormSubmitField(IdPrefix:"user_edit_form", Content:"Save Changes")#}
                     {#}
@@ -138,10 +144,12 @@
 
             var users_create_name = new FormField("#user_create_form_name");
             var users_create_email = new FormField("#user_create_form_email");
+            var users_create_role = new RichSelect("#user_create_form_role");
 
             var users_edit_name = new FormField("#user_edit_form_name");
             var users_edit_random_id = new FormField("#user_edit_form_random_id");
             var users_edit_email = new FormField("#user_edit_form_email");
+            var users_edit_role = new RichSelect("#user_edit_form_role");
 
             fillUserRoles();
 
@@ -167,8 +175,8 @@
                         })
                     }
 
-                    //users_create_roles.SetOptions(options);
-                    //users_edit_roles.SetOptions(options);
+                    users_create_role.SetOptions(options);
+                    users_edit_role.SetOptions(options);
                 }
             }
 
@@ -206,6 +214,7 @@
                 users_edit_random_id.input.Value(data["random_id"]);
                 users_edit_name.input.Value(data["name"]);
                 users_edit_email.input.Value(data["email"]);
+                users_edit_role.Value(data["role"]["id"]);
             }
 
             function onUserCreateFormSubmit(event) {
@@ -227,6 +236,7 @@
                 request.SetJsonData({
                     "name": users_create_name.input.Value(),
                     "email": users_create_email.input.Value(),
+                    "role_id": users_create_role.Value(),
                 });
                 request.Send(function(r){this._submitUserCallback(r,"User created successfully!");});
             }
@@ -237,6 +247,7 @@
                 request.SetJsonData({
                     "name": users_edit_name.input.Value(),
                     "email": users_edit_email.input.Value(),
+                    "role_id": users_edit_role.Value(),
                 });
                 request.Send(function(r){this._submitUserCallback(r,"Changes saved!");});
             }
@@ -252,10 +263,12 @@
                     // clear forms
                     users_create_name.input.Value("New User");
                     users_create_email.input.Value("");
+                    users_create_role.Clear();
 
                     users_edit_random_id.input.Value("");
                     users_edit_name.input.Value("");
                     users_edit_email.input.Value("");
+                    users_edit_role.Clear();
                     H.Nodes("#user_create_form_submit").Enable();
                     H.Nodes("#user_edit_form_submit").Enable();
                     return;
@@ -267,9 +280,11 @@
                     users_table.ShowToast("You don't have permission to do this.", false, "error");
                 } else if (response.Data["validation_errors"][0]["name"] == "email") {
                     users_create_email.SetValidation(false, response.Data["validation_errors"][0]["message"]);
+                    users_edit_email.SetValidation(false, response.Data["validation_errors"][0]["message"]);
                     users_table.ShowToast(response.Data["validation_errors"][0]["message"], false, "error");
                 } else if (response.Data["validation_errors"][0]["name"] == "role_id") {
-                    //TODO users_create_role.SetValidation(false, response.Data["validation_errors"][0]["message"]);
+                    users_create_role.SetValidation(false, response.Data["validation_errors"][0]["message"]);
+                    users_edit_role.SetValidation(false, response.Data["validation_errors"][0]["message"]);
                     users_table.ShowToast(response.Data["validation_errors"][0]["message"], false, "error");
                 } else {
                     console.log(response);

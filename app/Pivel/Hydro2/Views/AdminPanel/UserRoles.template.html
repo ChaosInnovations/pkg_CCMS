@@ -66,8 +66,8 @@
                             Name:"max_2fa_attempts", Type:"text", IdPrefix:"user_role_create_form", Label:"Max 2FA Attempts", Value:"5")#}
                     {#}
                     {#arg Fields[]}
-                        {#view Pivel\Hydro2\Views\Components\Form\RichMultiSelect(
-                            Name:"permissions", IdPrefix:"user_role_create_form", Label:"Permissions")#}
+                        {#view Pivel\Hydro2\Views\Components\Form\RichSelect(
+                            Name:"permissions", IdPrefix:"user_role_create_form", Label:"Permissions", Multiple:true)#}
                     {#}
                     {#arg Fields[]}
                         {#view Pivel\Hydro2\Views\Components\Form\FormSubmitField(IdPrefix:"user_role_create_form", Content:"Create")#}
@@ -115,8 +115,8 @@
                             Name:"max_2fa_attempts", Type:"text", IdPrefix:"user_role_edit_form", Label:"Max 2FA Attempts")#}
                     {#}
                     {#arg Fields[]}
-                        {#view Pivel\Hydro2\Views\Components\Form\RichMultiSelect(
-                            Name:"permissions", IdPrefix:"user_role_edit_form", Label:"Permissions")#}
+                        {#view Pivel\Hydro2\Views\Components\Form\RichSelect(
+                            Name:"permissions", IdPrefix:"user_role_edit_form", Label:"Permissions", Multiple:true)#}
                     {#}
                     {#arg Fields[]}
                         {#view Pivel\Hydro2\Views\Components\Form\FormSubmitField(IdPrefix:"user_role_edit_form", Content:"Save Changes")#}
@@ -207,7 +207,7 @@
             var user_roles_create_days_until_2fa = new FormField("#user_role_create_form_days_until_2fa");
             var user_roles_create_challenge_interval = new FormField("#user_role_create_form_challenge_interval");
             var user_roles_create_max_2fa_attempts = new FormField("#user_role_create_form_max_2fa_attempts");
-            var user_roles_create_permissions = new RichMultiSelect("#user_role_create_form_permissions");
+            var user_roles_create_permissions = new RichSelect("#user_role_create_form_permissions");
 
             var user_roles_edit_name = new FormField("#user_role_edit_form_name");
             var user_roles_edit_id = new FormField("#user_role_edit_form_id");
@@ -218,7 +218,7 @@
             var user_roles_edit_days_until_2fa = new FormField("#user_role_edit_form_days_until_2fa");
             var user_roles_edit_challenge_interval = new FormField("#user_role_edit_form_challenge_interval");
             var user_roles_edit_max_2fa_attempts = new FormField("#user_role_edit_form_max_2fa_attempts");
-            var user_roles_edit_permissions = new RichMultiSelect("#user_role_edit_form_permissions");
+            var user_roles_edit_permissions = new RichSelect("#user_role_edit_form_permissions");
 
             fillUserRolePermissions();
 

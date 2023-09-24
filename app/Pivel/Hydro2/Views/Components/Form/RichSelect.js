@@ -1,11 +1,13 @@
 // TODO should this extend H.DOMNodes ?
-class RichMultiSelect {
+class RichSelect {
     select = null;
     feedback = null;
+    isMultiple = false;
     constructor(id) {
         this._e = H.Nodes(id).Parent();
 
         this.select = this._e.Nodes("select")._nodeList[0];
+        this.isMultiple = this.select.multiple;
         this.feedback = this._e.Nodes(".feedback");
     }
 
@@ -29,22 +31,33 @@ class RichMultiSelect {
             this.select.options.remove(0);
         }
 
+        var oneSelected = false;
         options.forEach(element => {
-            var o = new Option(element["text"], element["value"], element["selected"])
+            var o = new Option(element["text"], element["value"], (oneSelected&&!this.isMultiple)?false:element["selected"])
+            oneSelected = oneSelected || element["selected"];
             this.select.options.add(o);
         });
     }
 
     Value(newValue=null) {
+        if (newValue !== null && !Array.isArray(newValue)) {
+            newValue = [newValue];
+        }
         var v = [];
+        var oneSelected = false;
         for (const o of this.select.options) {
             if (o.selected) {
                 v.push(o.value);
             }
 
-            if (newValue != null) {
+            if (newValue != null && !this.isMultiple) {
                 o.selected = newValue.includes(o.value);
+                oneSelected = oneSelected || o.selected;
             }
+        }
+
+        if (!this.isMultiple) {
+            return v.length > 0 ? v[0] : null;
         }
 
         return v;
