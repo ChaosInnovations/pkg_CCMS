@@ -142,9 +142,17 @@ var H = {
         Value(newValue=null) {
             var values = [];
             this._nodeList.forEach(element => {
-                values.push(element.value);
+                if (element.type == "checkbox") {
+                    values.push(element.checked);
+                } else {
+                    values.push(element.value);
+                }
                 if (newValue != null) {
-                    element.value = newValue;
+                    if (element.type == "checkbox") {
+                        element.checked = newValue;
+                    } else {
+                        element.value = newValue;
+                    }
                 }
             });
 
