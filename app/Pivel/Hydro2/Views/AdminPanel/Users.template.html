@@ -151,6 +151,8 @@
             users_table._showDetailHandler = usersShowDetailCallback;
             users_table._showEditHandler = usersShowEditCallback;
             users_table.AddContextMenuOption("Reset password", onUserResetPassword);
+            users_table.AddContextMenuOption("Approve", onUserApprove);
+            users_table.AddContextMenuOption("Unlock", onUserUnlock);
 
             var users_create_name = new FormField("#user_create_form_name");
             var users_create_email = new FormField("#user_create_form_email");
@@ -174,6 +176,30 @@
                 users_table._showSpinner();
                 var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/" + data["random_id"] + "/sendpasswordreset");
                 request.Send(userResetPasswordCallback);
+            }
+
+            function onUserApprove(data) {
+                // first, check if already approved.
+                if (!data["needs_review"]) {
+                    users_table.ShowToast("User is already approved.", false, "success");
+                    return;
+                }
+                users_table._showSpinner();
+                var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/" + data["random_id"]);
+                request.SetJsonData({
+                    "needs_review": false,
+                });
+                request.Send(function(r){this._submitUserCallback(r,"User approved!");})
+            }
+
+            function onUserUnlock(data) {
+                users_table._showSpinner();
+                var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/" + data["random_id"]);
+                request.SetJsonData({
+                    "reset_failed_login_attempts": true,
+                    "reset_failed_2fa_attempts": true,
+                });
+                request.Send(function(r){this._submitUserCallback(r,"Account unlocked!");})
             }
 
             function userResetPasswordCallback(response) {
