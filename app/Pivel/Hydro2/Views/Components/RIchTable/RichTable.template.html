@@ -1,0 +1,93 @@
+<div id="{$Id$}" class="rich-table sortable-table">
+    {#if $HasControls}
+        <div class="rich-table-controls">
+            {#if $IsSearchEnabled}
+                {#view Pivel\Hydro2\Views\Components\Form\Form($SearchFormId)}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"q", Type:"text", IdPrefix:$SearchFormId, Label:"Search",)}
+                            {#arg Input}
+                                {#view Pivel\Hydro2\Views\Components\Form\FormInputGroup}
+                                    {#arg Inputs[]}
+                                        <input name="{$Name$}" type="text" id="{$SearchFormId$}_q" title="Search" placeholder="Search" />
+                                    {#}
+                                    {#arg Inputs[]}
+                                        <button type="button" id="{$SearchFormId$}_submit" title="Search">Search</button>
+                                    {#}
+                                {#}
+                            {#}
+                        {#}
+                    {#}
+                {#}
+            {#}
+            {#if $IsFilterEnabled}
+            {#}
+            {#if $IsCreateEnabled}
+                <button type="button" id="{$Id$}_create" title="New">New</button>
+            {#}
+        </div>
+    {#}
+    <table class="sortable">
+        <thead>
+            <tr>
+                {$Headers[]}
+                    <th>Empty Table</th>
+                {$}
+                {#if $HasContextMenu}
+                    <th class="context-header">...</th>
+                {#}
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td class="placeholder" colspan="20">No data</td></tr>
+        </tbody>
+    </table>
+    <div class="spinner-container">
+        {#view Pivel\Hydro2\Views\Components\Spinner#}
+    </div>
+    {#if $HasContextMenu}
+        <div id="{$Id$}_context" class="context-menu">
+            <ul>
+                {#if $IsDetailEnabled}
+                <li>
+                    <button class="context-menu-item" data-option="details">View details</button>
+                </li>
+                {#}
+                {#if $IsEditEnabled}
+                <li>
+                    <button class="context-menu-item" data-option="edit">Edit</button>
+                </li>
+                {#}
+                {#if $IsDeleteEnabled}
+                <li>
+                    <button class="context-menu-item" data-option="delete">Delete</button>
+                </li>
+                {#}
+            </ul>
+        </div>
+    {#}
+    {#if $IsDetailEnabled}
+        <div id="{$Id$}_detail_overlay" class="rich-table-overlay">
+            <div class="rich-table-overlay-inner">
+                {$DetailOverlay$}
+            </div>
+        </div>
+    {#}
+    {#if $IsEditEnabled}
+        <div id="{$Id$}_edit_overlay" class="rich-table-overlay">
+            <div class="rich-table-overlay-inner">
+                {$EditOverlay$}
+            </div>
+        </div>
+    {#}
+    {#if $IsCreateEnabled}
+        <div id="{$Id$}_create_overlay" class="rich-table-overlay">
+            <div class="rich-table-overlay-inner">
+                {$CreateOverlay$}
+            </div>
+        </div>
+    {#}
+    <div id="{$Id$}_toast" class="rich-table-toast">
+        <span></span>
+    </div>
+</div>

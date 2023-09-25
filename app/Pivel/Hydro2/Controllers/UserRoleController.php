@@ -11,6 +11,7 @@ use Pivel\Hydro2\Models\HTTP\Method;
 use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
 use Pivel\Hydro2\Models\HTTP\StatusCode;
+use Pivel\Hydro2\Models\Identity\UserPermission;
 use Pivel\Hydro2\Models\Identity\UserRole;
 use Pivel\Hydro2\Models\Permissions;
 use Pivel\Hydro2\Services\Identity\IIdentityService;
@@ -49,6 +50,10 @@ class UserRoleController extends BaseController
         if (isset($this->request->Args['sort_by'])) {
             $dir = Order::tryFrom(strtoupper($this->request->Args['sort_dir']??'asc'))??Order::Ascending;
             $query->OrderBy($this->request->Args['sort_by']??'id', $dir);
+        }
+
+        if (isset($this->request->Args['q']) && !empty($this->request->Args['q'])) {
+            $query->Like('name', '%' . str_replace('%', '\\%', str_replace('_', '\\_', $this->request->Args['q'])) . '%');
         }
 
         $userRoles = $this->_identityService->GetUserRolesMatchingQuery($query);
@@ -393,6 +398,7 @@ class UserRoleController extends BaseController
                 'vendor' => $permission->Vendor,
                 'package' => $permission->Package,
                 'key' => $permission->Key,
+                'fullkey' => $permission->FullKey,
                 'name' => $permission->Name,
                 'description' => $permission->Description,
                 'requires' => $permission->Requires,

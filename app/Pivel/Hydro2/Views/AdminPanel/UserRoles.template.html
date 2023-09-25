@@ -1,26 +1,162 @@
 {#parent}
     {#arg Content}
         <h2>User Roles</h2>
-        {#view Pivel\Hydro2\Views\Components\SortableTable(Id:"user_roles_table")}
+        {#view Pivel\Hydro2\Views\Components\RichTable\RichTable(Id:"user_roles_table",IsSearchEnabled:true,IsCreateEnabled:true,IsEditEnabled:true,IsDetailEnabled:true,IsDeleteEnabled:true)}
             {#arg Headers[]}<th class="sortable" data-property="id">Id</th>{#}
             {#arg Headers[]}<th class="sortable" data-property="name">Name</th>{#}
             {#arg Headers[]}<th class="sortable" data-property="description">Description</th>{#}
             {#arg Headers[]}<th data-property="permissions">Permissions</th>{#}
+            {#arg DetailOverlay}
+                <h3>User Role Details</h3>
+                <dl class="inline">
+                    <dt>Name</dt><dd id="user_role_detail_name"></dd>
+                    <dt>Description</dt><dd id="user_role_detail_description"></dd>
+                    <dt>Max Login Attempts</dt><dd id="user_role_detail_max_login_attempts"></dd>
+                    <dt>Max Session Length (minutes)</dt><dd id="user_role_detail_max_session_length"></dd>
+                    <dt>Max Password Age (days)</dt><dd id="user_role_detail_max_password_age"></dd>
+                    <dt>2FA Setup Grace Period (days)</dt><dd id="user_role_detail_days_until_2fa"></dd>
+                    <dt>2FA Challenge Interval (minutes)</dt><dd id="user_role_detail_challenge_interval"></dd>
+                    <dt>Max 2FA Attempts</dt><dd id="user_role_detail_max_2fa_attempts"></dd>
+                </dl>
+                <h4>Permissions</h4>
+                <table id="user_role_detail_permissions">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <button type="button" class="close-overlay" title="Close">Close</button>
+            {#}
+            {#arg CreateOverlay}
+                <h3>New User Role</h3>
+                {#view Pivel\Hydro2\Views\Components\Form\Form("user_role_create_form")}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"name", Type:"text", IdPrefix:"user_role_create_form", Label:"Role Name", Value:"New Role")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"description", Type:"text", IdPrefix:"user_role_create_form", Label:"Description")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"max_login_attempts", Type:"number", IdPrefix:"user_role_create_form", Label:"Max Login Attempts", Value:"5")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"max_session_length", Type:"number", IdPrefix:"user_role_create_form", Label:"Max Session Length (Minutes)", Value:"43200")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"max_password_age", Type:"text", IdPrefix:"user_role_create_form", Label:"Max Password Age (Days)")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"days_until_2fa", Type:"text", IdPrefix:"user_role_create_form", Label:"2FA Setup Grace Period (Days)", Value:"3")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"challenge_interval", Type:"text", IdPrefix:"user_role_create_form", Label:"2FA Challenge Interval (Minutes)", Value:"21600")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"max_2fa_attempts", Type:"text", IdPrefix:"user_role_create_form", Label:"Max 2FA Attempts", Value:"5")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\RichSelect(
+                            Name:"permissions", IdPrefix:"user_role_create_form", Label:"Permissions", Multiple:true)#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\FormSubmitField(IdPrefix:"user_role_create_form", Content:"Create")#}
+                    {#}
+                {#}
+                <button type="button" class="close-overlay" title="Cancel">Cancel</button>
+            {#}
+            {#arg EditOverlay}
+                <h3>Editing User Role</h3>
+                {#view Pivel\Hydro2\Views\Components\Form\Form("user_role_edit_form")}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\FormField(
+                            Name:"id", Type:"hidden", IdPrefix:"user_role_edit_form")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"name", Type:"text", IdPrefix:"user_role_edit_form", Label:"Role Name")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"description", Type:"text", IdPrefix:"user_role_edit_form", Label:"Description")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"max_login_attempts", Type:"number", IdPrefix:"user_role_edit_form", Label:"Max Login Attempts")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"max_session_length", Type:"number", IdPrefix:"user_role_edit_form", Label:"Max Session Length (Minutes)")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"max_password_age", Type:"text", IdPrefix:"user_role_edit_form", Label:"Max Password Age (Days)")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"days_until_2fa", Type:"text", IdPrefix:"user_role_edit_form", Label:"2FA Setup Grace Period (Days)")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"challenge_interval", Type:"text", IdPrefix:"user_role_edit_form", Label:"2FA Challenge Interval (Minutes)")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"max_2fa_attempts", Type:"text", IdPrefix:"user_role_edit_form", Label:"Max 2FA Attempts")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\RichSelect(
+                            Name:"permissions", IdPrefix:"user_role_edit_form", Label:"Permissions", Multiple:true)#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\FormSubmitField(IdPrefix:"user_role_edit_form", Content:"Save Changes")#}
+                    {#}
+                {#}
+                <button type="button" class="close-overlay" title="Cancel">Cancel</button>
+            {#}
         {#}
         <script>
             var user_roles_table_renderer = function(table) {
+                table._nextRowId = 0;
+                // if no data, display placeholder
+                if (table._data.length == 0) {
+                    if (table._hasContextMenu) {
+                        table._table.Nodes("tbody").HTML("<tr><td class=\"placeholder\" colspan=\"20\">No data</td><td></td></tr>");
+                    } else {
+                        table._table.Nodes("tbody").HTML("<tr><td class=\"placeholder\" colspan=\"20\">No data</td></tr>");   
+                    }
+                    return;
+                }
                 var tbodyHtml = "";
                 // for each row in this._data:
                 for (var row of table._data) {
                     // add <tr>
-                    tbodyHtml += "<tr>";
+                    if (table._hasContextMenu) {
+                        tbodyHtml += "<tr data-row=\"" + table._nextRowId + "\">";
+                    } else {
+                        tbodyHtml += "<tr>";
+                    }
                     // for each property in this._columns:
                     for (var property of table._columns) {
                         // add <td>row[property]</td> to tbodyHtml
                         if (property == 'permissions') {
                             var value = "";
-                            for (var permission of row['permissions']) {
-                                value += ""+permission["name"]+"<br />";
+                            for (let i=0; i < row['permissions'].length; i++) {
+                                if (i == 2 && row['permissions'].length > 3) {
+                                    value += "...and " + (row['permissions'].length-2) + " more";
+                                    break;
+                                }
+                                value += ""+row["permissions"][i]["name"]+"<br />";
                             }
                             if (value == "") {
                                 value = "None";
@@ -41,13 +177,212 @@
 
                         tbodyHtml += "<td>" + value + "</td>";
                     }
+                    if (table._hasContextMenu) {
+                        tbodyHtml += "<td><button class=\"rich-table-context-btn\" title=\"More...\" data-row=\"" + table._nextRowId + "\">...</button></td>";
+                        table._nextRowId++;
+                    }
                     // add </tr>
                     tbodyHtml += "</tr>";
                 }
                 table._e.Nodes("tbody").HTML(tbodyHtml);
+
+                if (table._hasContextMenu) {
+                    // attach event handlers to buttons
+                    table._contextButtons = table._table.Nodes(".rich-table-context-btn");
+                    table._contextButtons.AddEventHandler("click", table._contextMenuClick.bind(table));
+                    // attach event handlers to rows
+                    table._table.Nodes("tbody > tr").AddEventHandler("contextmenu", table._contextMenuClick.bind(table));
+                }
             }
 
-            var user_roles_table = new SortableTable("#user_roles_table", "/api/hydro2/identity/userroles", "user_roles", user_roles_table_renderer);
+            var user_roles_table = new RichTable("#user_roles_table", "/api/hydro2/identity/userroles", "user_roles", user_roles_table_renderer);
+            user_roles_table._showDetailHandler = userRolesShowDetailCallback;
+            user_roles_table._showEditHandler = userRolesShowEditCallback;
+
+            var user_roles_create_name = new FormField("#user_role_create_form_name");
+            var user_roles_create_description = new FormField("#user_role_create_form_description");
+            var user_roles_create_max_login_attempts = new FormField("#user_role_create_form_max_login_attempts");
+            var user_roles_create_max_session_length = new FormField("#user_role_create_form_max_session_length");
+            var user_roles_create_max_password_age = new FormField("#user_role_create_form_max_password_age");
+            var user_roles_create_days_until_2fa = new FormField("#user_role_create_form_days_until_2fa");
+            var user_roles_create_challenge_interval = new FormField("#user_role_create_form_challenge_interval");
+            var user_roles_create_max_2fa_attempts = new FormField("#user_role_create_form_max_2fa_attempts");
+            var user_roles_create_permissions = new RichSelect("#user_role_create_form_permissions");
+
+            var user_roles_edit_name = new FormField("#user_role_edit_form_name");
+            var user_roles_edit_id = new FormField("#user_role_edit_form_id");
+            var user_roles_edit_description = new FormField("#user_role_edit_form_description");
+            var user_roles_edit_max_login_attempts = new FormField("#user_role_edit_form_max_login_attempts");
+            var user_roles_edit_max_session_length = new FormField("#user_role_edit_form_max_session_length");
+            var user_roles_edit_max_password_age = new FormField("#user_role_edit_form_max_password_age");
+            var user_roles_edit_days_until_2fa = new FormField("#user_role_edit_form_days_until_2fa");
+            var user_roles_edit_challenge_interval = new FormField("#user_role_edit_form_challenge_interval");
+            var user_roles_edit_max_2fa_attempts = new FormField("#user_role_edit_form_max_2fa_attempts");
+            var user_roles_edit_permissions = new RichSelect("#user_role_edit_form_permissions");
+
+            fillUserRolePermissions();
+
+            H.Nodes("#user_role_create_form").AddEventHandler("submit", onUserRoleCreateFormSubmit);
+            H.Nodes("#user_role_edit_form").AddEventHandler("submit", onUserRoleEditFormSubmit);
+
+            function fillUserRolePermissions() {
+                var request = new H.AjaxRequest("GET", "/api/hydro2/identity/permissions");
+                request.Send(this._fillUserRolePermissionsCallback);
+            }
+
+            var user_role_avail_permissions = {};
+
+            function _fillUserRolePermissionsCallback(response) {
+                if (response.Status == H.StatusCode.OK) {
+                    var options = [];
+                    for (const p of response.Data["permissions"]) {
+                        user_role_avail_permissions[p["fullkey"]] = p;
+                        options.push({
+                            "value": p["fullkey"],
+                            "text": p["vendor"] + " / " + p["package"] + " / " + p["key"],
+                            "selected": false,
+                        })
+                    }
+
+                    user_roles_create_permissions.SetOptions(options);
+                    user_roles_edit_permissions.SetOptions(options);
+                }
+            }
+
+            function userRolesShowDetailCallback(data) {
+                H.Nodes("#user_role_detail_name").Text(data["name"]);
+                H.Nodes("#user_role_detail_description").Text(data["description"]);
+                H.Nodes("#user_role_detail_max_login_attempts").Text(data["max_login_attempts"]);
+                H.Nodes("#user_role_detail_max_session_length").Text(data["max_session_length"]);
+                H.Nodes("#user_role_detail_max_password_age").Text(data["max_password_age"]);
+                H.Nodes("#user_role_detail_days_until_2fa").Text(data["days_until_2fa_setup_required"]);
+                H.Nodes("#user_role_detail_challenge_interval").Text(data["challenge_interval"]);
+                H.Nodes("#user_role_detail_max_2fa_attempts").Text(data["max_2fa_attempts"]);
+                var permissions = "";
+                for (const p of data["permissions"]) {
+                    permissions += "<tr>";
+                    permissions += "<td>" + p["name"] + "<br />";
+                    permissions += "<small>" + user_role_avail_permissions[p["key"]]["vendor"] + " / ";
+                    permissions += user_role_avail_permissions[p["key"]]["package"] + " / ";
+                    permissions += user_role_avail_permissions[p["key"]]["key"] + "</small></td>";
+                    permissions += "<td>" + user_role_avail_permissions[p["key"]]["description"] + "</td>";
+                    permissions += "</tr>";
+                }
+                H.Nodes("#user_role_detail_permissions").Nodes("tbody").HTML(permissions);
+            }
+
+            function userRolesShowEditCallback(data) {
+                user_roles_edit_id.input.Value(data["id"]);
+                user_roles_edit_name.input.Value(data["name"]);
+                user_roles_edit_description.input.Value(data["description"]);
+                user_roles_edit_max_login_attempts.input.Value(data["max_login_attempts"]);
+                user_roles_edit_max_session_length.input.Value(data["max_session_length"]);
+                user_roles_edit_max_password_age.input.Value(data["max_password_age"]);
+                user_roles_edit_days_until_2fa.input.Value(data["days_until_2fa_setup_required"]);
+                user_roles_edit_challenge_interval.input.Value(data["challenge_interval"]);
+                user_roles_edit_max_2fa_attempts.input.Value(data["max_2fa_attempts"]);
+                user_roles_edit_permissions.Value(data["permissions"].map(function(v) {
+                    return v["key"];
+                }));
+            }
+
+            function onUserRoleCreateFormSubmit(event) {
+                event.preventDefault();
+                SubmitUserRoleCreateForm();
+                return false;
+            }
+
+            function onUserRoleEditFormSubmit(event) {
+                event.preventDefault();
+                SubmitUserRoleEditForm();
+                return false;
+            }
+
+            function SubmitUserRoleCreateForm() {
+                // disable submit button and change contents to spinner
+                H.Nodes("#user_role_create_form_submit").Disable();
+                var request = new H.AjaxRequest("POST", "/api/hydro2/identity/userroles");
+                request.SetJsonData({
+                    "name": user_roles_create_name.input.Value(),
+                    "description": user_roles_create_description.input.Value(),
+                    "max_login_attempts": user_roles_create_max_login_attempts.input.Value(),
+                    "max_session_length": user_roles_create_max_session_length.input.Value(),
+                    "max_password_age": user_roles_create_max_password_age.input.Value(),
+                    "days_until_2fa_setup_required": user_roles_create_days_until_2fa.input.Value(),
+                    "challenge_interval": user_roles_create_challenge_interval.input.Value(),
+                    "max_2fa_attempts": user_roles_create_max_2fa_attempts.input.Value(),
+                    "permissions": user_roles_create_permissions.Value(),
+                });
+                request.Send(function(r){this._submitUserRoleCallback(r,"User role created successfully!");});
+            }
+
+            function SubmitUserRoleEditForm() {
+                H.Nodes("#user_roles_edit_form_submit").Disable();
+                var request = new H.AjaxRequest("POST", "/api/hydro2/identity/userroles/" + user_roles_edit_id.input.Value());
+                request.SetJsonData({
+                    "name": user_roles_edit_name.input.Value(),
+                    "description": user_roles_edit_description.input.Value(),
+                    "max_login_attempts": user_roles_edit_max_login_attempts.input.Value(),
+                    "max_session_length": user_roles_edit_max_session_length.input.Value(),
+                    "max_password_age": user_roles_edit_max_password_age.input.Value(),
+                    "days_until_2fa_setup_required": user_roles_edit_days_until_2fa.input.Value(),
+                    "challenge_interval": user_roles_edit_challenge_interval.input.Value(),
+                    "max_2fa_attempts": user_roles_edit_max_2fa_attempts.input.Value(),
+                    "permissions": user_roles_edit_permissions.Value(),
+                });
+                request.Send(function(r){this._submitUserRoleCallback(r,"Changes saved!");});
+            }
+
+            function _submitUserRoleCallback(response, successMessage) {
+                if (response.Status == H.StatusCode.OK) {
+                    // display toast (success)
+                    user_roles_table.ShowToast(successMessage, false, "success");
+                    // trigger table refresh
+                    user_roles_table.Load();
+                    // hide overlay
+                    user_roles_table.HideOverlays();
+                    // clear forms
+                    user_roles_create_name.input.Value("New Role");
+                    user_roles_create_description.input.Value("");
+                    user_roles_create_max_login_attempts.input.Value(5);
+                    user_roles_create_max_session_length.input.Value(43200);
+                    user_roles_create_max_password_age.input.Value("");
+                    user_roles_create_days_until_2fa.input.Value(3);
+                    user_roles_create_challenge_interval.input.Value(21600);
+                    user_roles_create_max_2fa_attempts.input.Value(5);
+                    user_roles_create_permissions.Clear();
+
+                    user_roles_edit_id.input.Value("");
+                    user_roles_edit_name.input.Value("");
+                    user_roles_edit_description.input.Value("");
+                    user_roles_edit_max_login_attempts.input.Value("");
+                    user_roles_edit_max_session_length.input.Value("");
+                    user_roles_edit_max_password_age.input.Value("");
+                    user_roles_edit_days_until_2fa.input.Value("");
+                    user_roles_edit_challenge_interval.input.Value("");
+                    user_roles_edit_max_2fa_attempts.input.Value("");
+                    user_roles_edit_permissions.Clear();
+                    H.Nodes("#user_role_create_form_submit").Enable();
+                    H.Nodes("#user_role_edit_form_submit").Enable();
+                    return;
+                }
+
+                if (response.Status == H.StatusCode.InternalServerError) {
+                    user_roles_table.ShowToast("There was a problem with the server.", false, "error");
+                } else if (response.Status == H.StatusCode.NotFound) {
+                    user_roles_table.ShowToast("You don't have permission to do this.", false, "error");
+                } else if (response.Data["validation_errors"][0]["name"] == "permissions") {
+                    user_roles_create_permissions.SetValidation(false, response.Data["validation_errors"][0]["message"]);
+                    user_roles_table.ShowToast(response.Data["validation_errors"][0]["message"], false, "error");
+                } else {
+                    console.log(response);
+                    user_roles_table.ShowToast("There was an unknown error.", false, "error");
+                }
+                
+                //  restore submit button
+                H.Nodes("#user_role_create_form_submit").Enable();
+                H.Nodes("#user_role_edit_form_submit").Enable();
+            }
         </script>
     {#}
 {#}

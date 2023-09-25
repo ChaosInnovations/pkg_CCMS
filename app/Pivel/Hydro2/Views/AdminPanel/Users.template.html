@@ -1,7 +1,7 @@
 {#parent}
     {#arg Content}
         <h2>Users</h2>
-        {#view Pivel\Hydro2\Views\Components\SortableTable(Id:"users_table")}
+        {#view Pivel\Hydro2\Views\Components\RichTable\RichTable(Id:"users_table",IsSearchEnabled:true,IsCreateEnabled:true,IsEditEnabled:true,IsDetailEnabled:true,IsDeleteEnabled:true)}
             {#arg Headers[]}<th class="sortable" data-property="email">Email</th>{#}
             {#arg Headers[]}<th class="sortable" data-property="name">Name</th>{#}
             {#arg Headers[]}<th class="sortable" data-property="role">Role</th>{#}
@@ -9,14 +9,100 @@
             {#arg Headers[]}<th class="sortable" data-property="email_verified">Email Verified</th>{#}
             {#arg Headers[]}<th class="sortable" data-property="needs_review">Needs Review</th>{#}
             {#arg Headers[]}<th class="sortable" data-property="enabled">Enabled</th>{#}
+            {#arg DetailOverlay}
+                <h3>User Details</h3>
+                <dl class="inline">
+                    <dt>Name</dt><dd id="user_detail_name"></dd>
+                    <dt>Email</dt><dd id="user_detail_email"></dd>
+                    <dt>Date Created</dt><dd id="user_detail_date_created"></dd>
+                    <dt>Enabled?</dt><dd id="user_detail_enabled"></dd>
+                    <dt>Needs Review?</dt><dd id="user_detail_needs_review"></dd>
+                    <dt>Failed Login Attempts</dt><dd id="user_detail_failed_login_attempts"></dd>
+                    <dt>Failed 2FA Attempts</dt><dd id="user_detail_failed_2fa_attempts"></dd>
+                    <dt>Role</dt><dd id="user_detail_role"></dd>
+                </dl>
+                <button type="button" class="close-overlay" title="Close">Close</button>
+            {#}
+            {#arg CreateOverlay}
+                <h3>New User</h3>
+                {#view Pivel\Hydro2\Views\Components\Form\Form("user_create_form")}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"name", Type:"text", IdPrefix:"user_create_form", Label:"Name", Value:"New User")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"email", Type:"text", IdPrefix:"user_create_form", Label:"Email")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"enabled", Type:"checkbox", IdPrefix:"user_create_form", Label:"Enabled?")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"needs_review", Type:"checkbox", IdPrefix:"user_create_form", Label:"Needs Review?")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\RichSelect(
+                            Name:"role", IdPrefix:"user_create_form", Label:"Role")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\FormSubmitField(IdPrefix:"user_create_form", Content:"Create")#}
+                    {#}
+                {#}
+                <button type="button" class="close-overlay" title="Cancel">Cancel</button>
+            {#}
+            {#arg EditOverlay}
+                <h3>Editing User</h3>
+                {#view Pivel\Hydro2\Views\Components\Form\Form("user_edit_form")}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\FormField(
+                            Name:"random_id", Type:"hidden", IdPrefix:"user_edit_form")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"name", Type:"text", IdPrefix:"user_edit_form", Label:"Name")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"email", Type:"text", IdPrefix:"user_edit_form", Label:"Email")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\LabelledFormField(
+                            Name:"enabled", Type:"checkbox", IdPrefix:"user_edit_form", Label:"Enabled?")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\RichSelect(
+                            Name:"role", IdPrefix:"user_edit_form", Label:"Role")#}
+                    {#}
+                    {#arg Fields[]}
+                        {#view Pivel\Hydro2\Views\Components\Form\FormSubmitField(IdPrefix:"user_edit_form", Content:"Save Changes")#}
+                    {#}
+                {#}
+                <button type="button" class="close-overlay" title="Cancel">Cancel</button>
+            {#}
         {#}
         <script>
             var users_table_renderer = function(table) {
+                table._nextRowId = 0;
+                // if no data, display placeholder
+                if (table._data.length == 0) {
+                    if (table._hasContextMenu) {
+                        table._table.Nodes("tbody").HTML("<tr><td class=\"placeholder\" colspan=\"20\">No data</td><td></td></tr>");
+                    } else {
+                        table._table.Nodes("tbody").HTML("<tr><td class=\"placeholder\" colspan=\"20\">No data</td></tr>");   
+                    }
+                    return;
+                }
                 var tbodyHtml = "";
                 // for each row in this._data:
                 for (var row of table._data) {
                     // add <tr>
-                    tbodyHtml += "<tr>";
+                    if (table._hasContextMenu) {
+                        tbodyHtml += "<tr data-row=\"" + table._nextRowId + "\">";
+                    } else {
+                        tbodyHtml += "<tr>";
+                    }
                     // for each property in this._columns:
                     for (var property of table._columns) {
                         // add <td>row[property]</td> to tbodyHtml
@@ -43,13 +129,244 @@
                         }
                         tbodyHtml += "<td>" + H.HtmlEncode(value) + "</td>";
                     }
+                    if (table._hasContextMenu) {
+                        tbodyHtml += "<td><button class=\"rich-table-context-btn\" title=\"More...\" data-row=\"" + table._nextRowId + "\">...</button></td>";
+                        table._nextRowId++;
+                    }
                     // add </tr>
                     tbodyHtml += "</tr>";
                 }
                 table._e.Nodes("tbody").HTML(tbodyHtml);
+                
+                if (table._hasContextMenu) {
+                    // attach event handlers to buttons
+                    table._contextButtons = table._table.Nodes(".rich-table-context-btn");
+                    table._contextButtons.AddEventHandler("click", table._contextMenuClick.bind(table));
+                    // attach event handlers to rows
+                    table._table.Nodes("tbody > tr").AddEventHandler("contextmenu", table._contextMenuClick.bind(table));
+                }
             }
 
-            var users_table = new SortableTable("#users_table", "/api/hydro2/identity/users", "users", users_table_renderer);
+            var users_table = new RichTable("#users_table", "/api/hydro2/identity/users", "users", users_table_renderer, id_key="random_id");
+            users_table._showDetailHandler = usersShowDetailCallback;
+            users_table._showEditHandler = usersShowEditCallback;
+            users_table.AddContextMenuOption("Reset password", onUserResetPassword);
+            users_table.AddContextMenuOption("Approve", onUserApprove);
+            users_table.AddContextMenuOption("Unlock", onUserUnlock);
+
+            var users_create_name = new FormField("#user_create_form_name");
+            var users_create_email = new FormField("#user_create_form_email");
+            var users_create_enabled = new FormField("#user_create_form_enabled");
+            var users_create_needs_review = new FormField("#user_create_form_needs_review");
+            var users_create_role = new RichSelect("#user_create_form_role");
+
+            var users_edit_name = new FormField("#user_edit_form_name");
+            var users_edit_random_id = new FormField("#user_edit_form_random_id");
+            var users_edit_email = new FormField("#user_edit_form_email");
+            var users_edit_enabled = new FormField("#user_edit_form_enabled");
+            var users_edit_role = new RichSelect("#user_edit_form_role");
+
+            fillUserRoles();
+
+            H.Nodes("#user_create_form").AddEventHandler("submit", onUserCreateFormSubmit);
+            H.Nodes("#user_edit_form").AddEventHandler("submit", onUserEditFormSubmit);
+
+            function onUserResetPassword(data) {
+                // show spinner
+                users_table._showSpinner();
+                var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/" + data["random_id"] + "/sendpasswordreset");
+                request.Send(userResetPasswordCallback);
+            }
+
+            function onUserApprove(data) {
+                // first, check if already approved.
+                if (!data["needs_review"]) {
+                    users_table.ShowToast("User is already approved.", false, "success");
+                    return;
+                }
+                users_table._showSpinner();
+                var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/" + data["random_id"]);
+                request.SetJsonData({
+                    "needs_review": false,
+                });
+                request.Send(function(r){this._submitUserCallback(r,"User approved!");})
+            }
+
+            function onUserUnlock(data) {
+                users_table._showSpinner();
+                var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/" + data["random_id"]);
+                request.SetJsonData({
+                    "reset_failed_login_attempts": true,
+                    "reset_failed_2fa_attempts": true,
+                });
+                request.Send(function(r){this._submitUserCallback(r,"Account unlocked!");})
+            }
+
+            function userResetPasswordCallback(response) {
+                if (response.Status == H.StatusCode.OK) {
+                    users_table.ShowToast("Password reset email sent!", false, "success");
+                    users_table._hideSpinner();
+                    return;
+                }
+
+                if (response.Status == H.StatusCode.InternalServerError) {
+                    users_table.ShowToast("There was a problem with the server.", false, "error");
+                } else if (response.Status == H.StatusCode.BadRequest) {
+                    users_table.ShowToast("User not found.", false, "error");
+                } else {
+                    users_table.ShowToast("There was an unknown error.", false, "error");
+                }
+                console.warn(response);
+                
+                users_table._hideSpinner();
+            }
+
+            function fillUserRoles() {
+                var request = new H.AjaxRequest("GET", "/api/hydro2/identity/userroles");
+                request.Send(this._fillUserRolesCallback);
+            }
+
+            var user_avail_roles = {};
+
+            function _fillUserRolesCallback(response) {
+                if (response.Status == H.StatusCode.OK) {
+                    var options = [];
+                    for (const r of response.Data["user_roles"]) {
+                        user_avail_roles[r["id"]] = r;
+                        options.push({
+                            "value": r["id"],
+                            "text": r["name"],
+                            "selected": false,
+                        })
+                    }
+
+                    users_create_role.SetOptions(options);
+                    users_edit_role.SetOptions(options);
+                }
+            }
+
+            function usersShowDetailCallback(data) {
+                H.Nodes("#user_detail_name").Text(data["name"]);
+                H.Nodes("#user_detail_email").Text(data["email"]);
+                var date = new Date(""+data['created']['date']+data['created']['timezone']).toLocaleString([],{"dateStyle":"long","timeStyle":"short","hour12":false});
+                H.Nodes("#user_detail_date_created").Text(date);
+                H.Nodes("#user_detail_enabled").Text(data["enabled"]?"Yes":"No");
+                H.Nodes("#user_detail_needs_review").Text(data["needs_review"]?"Yes":"No");
+                var role = {
+                    "name": "Unassigned",
+                    "max_login_attempts": 0,
+                    "max_2fa_attempts": 0,
+                };
+                if (data["role"] != null) {
+                    role = user_avail_roles[data["role"]["id"]];
+                }
+                var has_max_login_attempts = role["max_login_attempts"] > 0;
+                var login_locked = has_max_login_attempts && data["failed_login_attempts"] >= role["max_login_attempts"];
+                H.Nodes("#user_detail_failed_login_attempts").Text(
+                    ""+data["failed_login_attempts"]
+                    +(has_max_login_attempts?"/"+role["max_login_attempts"]+(login_locked?" (locked)":""):"")
+                );
+                var has_max_2fa_attempts = role["max_2fa_attempts"] > 0;
+                var mfa_locked = has_max_2fa_attempts && data["failed_2fa_attempts"] >= role["max_2fa_attempts"];
+                H.Nodes("#user_detail_failed_2fa_attempts").Text(
+                    ""+data["failed_2fa_attempts"]
+                    +(has_max_2fa_attempts?"/"+role["max_2fa_attempts"]+(mfa_locked?" (locked)":""):"")
+                );
+                H.Nodes("#user_detail_role").Text(role["name"]);
+            }
+
+            function usersShowEditCallback(data) {
+                users_edit_random_id.input.Value(data["random_id"]);
+                users_edit_name.input.Value(data["name"]);
+                users_edit_email.input.Value(data["email"]);
+                users_edit_enabled.input.Value(data["enabled"]);
+                users_edit_role.Value(""+data["role"]["id"]);
+            }
+
+            function onUserCreateFormSubmit(event) {
+                event.preventDefault();
+                SubmitUserCreateForm();
+                return false;
+            }
+
+            function onUserEditFormSubmit(event) {
+                event.preventDefault();
+                SubmitUserEditForm();
+                return false;
+            }
+
+            function SubmitUserCreateForm() {
+                // disable submit button and change contents to spinner
+                H.Nodes("#user_create_form_submit").Disable();
+                var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users");
+                request.SetJsonData({
+                    "name": users_create_name.input.Value(),
+                    "email": users_create_email.input.Value(),
+                    "enabled": users_create_enabled.input.Value(),
+                    "needs_review": users_create_needs_review.input.Value(),
+                    "role_id": users_create_role.Value(),
+                });
+                request.Send(function(r){this._submitUserCallback(r,"User created successfully!");});
+            }
+
+            function SubmitUserEditForm() {
+                H.Nodes("#user_edit_form_submit").Disable();
+                var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/" + users_edit_random_id.input.Value());
+                request.SetJsonData({
+                    "name": users_edit_name.input.Value(),
+                    "email": users_edit_email.input.Value(),
+                    "enabled": users_edit_enabled.input.Value(),
+                    "role_id": users_edit_role.Value(),
+                });
+                request.Send(function(r){this._submitUserCallback(r,"Changes saved!");});
+            }
+
+            function _submitUserCallback(response, successMessage) {
+                if (response.Status == H.StatusCode.OK) {
+                    // display toast (success)
+                    users_table.ShowToast(successMessage, false, "success");
+                    // trigger table refresh
+                    users_table.Load();
+                    // hide overlay
+                    users_table.HideOverlays();
+                    // clear forms
+                    users_create_name.input.Value("New User");
+                    users_create_email.input.Value("");
+                    users_create_enabled.input.Value(false);
+                    users_create_needs_review.input.Value(false);
+                    users_create_role.Clear();
+
+                    users_edit_random_id.input.Value("");
+                    users_edit_name.input.Value("");
+                    users_edit_email.input.Value("");
+                    users_edit_enabled.input.Value(false);
+                    users_edit_role.Clear();
+                    H.Nodes("#user_create_form_submit").Enable();
+                    H.Nodes("#user_edit_form_submit").Enable();
+                    return;
+                }
+
+                if (response.Status == H.StatusCode.InternalServerError) {
+                    users_table.ShowToast("There was a problem with the server.", false, "error");
+                } else if (response.Status == H.StatusCode.NotFound) {
+                    users_table.ShowToast("You don't have permission to do this.", false, "error");
+                } else if (response.Data["validation_errors"][0]["name"] == "email") {
+                    users_create_email.SetValidation(false, response.Data["validation_errors"][0]["message"]);
+                    users_edit_email.SetValidation(false, response.Data["validation_errors"][0]["message"]);
+                    users_table.ShowToast(response.Data["validation_errors"][0]["message"], false, "error");
+                } else if (response.Data["validation_errors"][0]["name"] == "role_id") {
+                    users_create_role.SetValidation(false, response.Data["validation_errors"][0]["message"]);
+                    users_edit_role.SetValidation(false, response.Data["validation_errors"][0]["message"]);
+                    users_table.ShowToast(response.Data["validation_errors"][0]["message"], false, "error");
+                } else {
+                    console.log(response);
+                    users_table.ShowToast("There was an unknown error.", false, "error");
+                }
+                
+                //  restore submit button
+                H.Nodes("#user_create_form_submit").Enable();
+                H.Nodes("#user_edit_form_submit").Enable();
+            }
         </script>
     {#}
 {#}

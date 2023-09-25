@@ -82,7 +82,7 @@ class IdentityService implements IIdentityService
             return null;
         }
 
-        $this->_logger->Info('Pivel/Hydro2', "Created new user with email address {$email}.");
+        $this->_logger->Info('Pivel/Hydro2', "Created new user with email address {$email} and id {$user->RandomId}.");
 
         return $user;
     }

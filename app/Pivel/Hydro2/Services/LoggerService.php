@@ -40,7 +40,7 @@ class LoggerService implements ILoggerService
     {
         $now = new DateTime(timezone: new DateTimeZone('UTC'));
         $this->AppendLine([
-            $now->format('Y:m:d'),
+            $now->format('Y-m-d'),
             $now->format('H:i:s.v'),
             $type,
             $package,
