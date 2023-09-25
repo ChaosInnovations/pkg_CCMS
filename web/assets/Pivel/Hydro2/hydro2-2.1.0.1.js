@@ -142,9 +142,17 @@ var H = {
         Value(newValue=null) {
             var values = [];
             this._nodeList.forEach(element => {
-                values.push(element.value);
+                if (element.type == "checkbox") {
+                    values.push(element.checked);
+                } else {
+                    values.push(element.value);
+                }
                 if (newValue != null) {
-                    element.value = newValue;
+                    if (element.type == "checkbox") {
+                        element.checked = newValue;
+                    } else {
+                        element.value = newValue;
+                    }
                 }
             });
 
@@ -208,7 +216,7 @@ var H = {
             var values = [];
             this._nodeList.forEach(element => {
                 values.push(element.innerText);
-                if (newHTML != null) {
+                if (newText != null) {
                     element.innerText = element.textContent = newText;
                 }
             });
@@ -266,6 +274,10 @@ var H = {
             // returns next parent of this node
             // TODO how to handle when we have multiple nodes?
             return H.Nodes(this._nodeList[0].parentElement);
+        }
+
+        Count() {
+            return this._nodeList.length;
         }
     }
 }

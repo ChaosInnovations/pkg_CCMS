@@ -1,13 +1,9 @@
-table.sortable th.sortable {
-                
-}
-
-table.sortable th.sortable:hover {
+.sortable-table > table th.sortable:hover {
     background-color: #eeeeee;
     cursor: pointer;
 }
 
-table.sortable th.sortable.sorted::after {
+.sortable-table > table th.sortable.sorted::after {
     content: "";
     height: 4px;
     display: inline-block;
@@ -15,7 +11,7 @@ table.sortable th.sortable.sorted::after {
     position: relative;
 }
 
-table.sortable th.sortable.sorted.asc::after {
+.sortable-table > table th.sortable.sorted.asc::after {
     /*^*/
     border-bottom: 4px solid #000000;
     border-left: 4px solid transparent;
@@ -23,10 +19,34 @@ table.sortable th.sortable.sorted.asc::after {
     top: -4px;
 }
 
-table.sortable th.sortable.sorted.desc::after {
+.sortable-table > table th.sortable.sorted.desc::after {
     /*v*/
     border-top: 4px solid #000000;
     border-left: 4px solid transparent;
     border-right: 4px solid transparent;
     top: 4px
+}
+
+.sortable-table > table td.placeholder {
+    text-align: center;
+}
+
+.sortable-table {
+    position: relative;
+}
+
+.sortable-table > .spinner-container {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.sortable-table.loading > .spinner-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffffbb;
 }

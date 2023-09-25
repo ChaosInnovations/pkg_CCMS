@@ -1,5 +1,6 @@
 class SortableTable {
     _e;
+    _table;
     _apiEndpoint;
     _apiResponseKey;
     _loader;
@@ -10,14 +11,15 @@ class SortableTable {
     _data = [];
     _customRenderer = null;
     constructor(selector, apiEndpoint, apiResponseKey, renderer=null) {
-        this._e = H.Nodes(selector+".sortable");
+        this._e = H.Nodes(selector+".sortable-table");
+        this._table = this._e.Nodes("table");
         this._apiEndpoint = apiEndpoint;
         this._apiResponseKey = apiResponseKey;
         this._customRenderer = renderer;
 
         // find columns
-        this._headers = this._e.Nodes("th.sortable[data-property]");
-        this._columns = this._e.Nodes("th[data-property]").Data("property");
+        this._headers = this._table.Nodes("th.sortable[data-property]");
+        this._columns = this._table.Nodes("th[data-property]").Data("property");
 
         this._sortedBy = this._columns[0];
         this._sortDir = 0;
@@ -48,7 +50,7 @@ class SortableTable {
         this._headers.RemoveClass("desc");
 
         // add .sorted and .asc|.desc class to correct header
-        var header = this._e.Nodes("th.sortable[data-property=\""+this._sortedBy+"\"]");
+        var header = this._table.Nodes("th.sortable[data-property=\""+this._sortedBy+"\"]");
         header.AddClass("sorted");
         header.AddClass(this._sortDir === 0 ? "asc" : "desc");
 
@@ -58,8 +60,7 @@ class SortableTable {
     }
 
     Load() {
-        // TODO display spinner/loading indicator
-        this._e.Nodes("tbody").HTML("");
+        this._showSpinner();
         var request = new H.AjaxRequest("GET", this._apiEndpoint);
         request.SetQueryData({
             "sort_by": this._sortedBy,
@@ -72,7 +73,7 @@ class SortableTable {
         if (response.Status == H.StatusCode.OK) {
             this._data = response.Data[this._apiResponseKey];
             console.log(response);
-            // TODO hide spinner/loading indicator
+            this._hideSpinner();
             if (this._customRenderer !== null) {
                 this._customRenderer(this);
             } else {
@@ -92,6 +93,11 @@ class SortableTable {
     }
 
     RenderData() {
+        // if no data, display placeholder
+        if (this._data.length == 0) {
+            this._table.Nodes("tbody").HTML("<tr><td class=\"placeholder\" colspan=\"20\">No data</td></tr>");
+            return;
+        }
         var tbodyHtml = "";
         // for each row in this._data:
         for (var row of this._data) {
@@ -115,6 +121,14 @@ class SortableTable {
             // add </tr>
             tbodyHtml += "</tr>";
         }
-        this._e.Nodes("tbody").HTML(tbodyHtml);
+        this._table.Nodes("tbody").HTML(tbodyHtml);
+    }
+
+    _showSpinner() {
+        this._e.AddClass("loading");
+    }
+
+    _hideSpinner() {
+        this._e.RemoveClass("loading");
     }
 }

@@ -49,7 +49,7 @@ class EntityRepository implements IEntityRepository
             $created = $this->_provider->CreateCollectionIfNotExists($this->definition);
             if (!$created) {
                 $this->_logger->Error('Pivel/Hydro2', "Failed to create definition '{$this->definition->GetName()}'.");
-                return null;
+                return [];
             }
             $this->_logger->Info('Pivel/Hydro2', "Successfully created '{$this->definition->GetName()}'.");
             $results = $this->_provider->Select($this->definition, $query);
@@ -133,6 +133,7 @@ class EntityRepository implements IEntityRepository
     public function Update(object &$entity) : bool
     {
         if (!($entity instanceof ($this->entityClass))) {
+            $this->_logger->Warn("Pivel/Hydro2", "Expected object of type {$this->entityClass}.");
             throw new TypeError("Expected object of type {$this->entityClass}.");
         }
 
@@ -256,7 +257,7 @@ class EntityRepository implements IEntityRepository
             }
 
             $fkPkField = (new EntityDefinition($field->ForeignKeyClassName))->GetPrimaryKeyField();
-            $values[$field->FieldName] = $fkPkField->Property->getValue($value);
+            $values[$field->FieldName] = $value===null?null:$fkPkField->Property->getValue($value);
         }
 
         return $values;

@@ -104,7 +104,7 @@ class User
         return count($this->userPasswords);
     }
 
-    public function GetUserRole(): UserRole
+    public function GetUserRole(): ?UserRole
     {
         return $this->role;
     }
