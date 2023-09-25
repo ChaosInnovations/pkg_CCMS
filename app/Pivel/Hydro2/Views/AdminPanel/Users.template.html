@@ -150,6 +150,7 @@
             var users_table = new RichTable("#users_table", "/api/hydro2/identity/users", "users", users_table_renderer, id_key="random_id");
             users_table._showDetailHandler = usersShowDetailCallback;
             users_table._showEditHandler = usersShowEditCallback;
+            users_table.AddContextMenuOption("Reset password", onUserResetPassword);
 
             var users_create_name = new FormField("#user_create_form_name");
             var users_create_email = new FormField("#user_create_form_email");
@@ -167,6 +168,32 @@
 
             H.Nodes("#user_create_form").AddEventHandler("submit", onUserCreateFormSubmit);
             H.Nodes("#user_edit_form").AddEventHandler("submit", onUserEditFormSubmit);
+
+            function onUserResetPassword(data) {
+                // show spinner
+                users_table._showSpinner();
+                var request = new H.AjaxRequest("POST", "/api/hydro2/identity/users/" + data["random_id"] + "/sendpasswordreset");
+                request.Send(userResetPasswordCallback);
+            }
+
+            function userResetPasswordCallback(response) {
+                if (response.Status == H.StatusCode.OK) {
+                    users_table.ShowToast("Password reset email sent!", false, "success");
+                    users_table._hideSpinner();
+                    return;
+                }
+
+                if (response.Status == H.StatusCode.InternalServerError) {
+                    users_table.ShowToast("There was a problem with the server.", false, "error");
+                } else if (response.Status == H.StatusCode.BadRequest) {
+                    users_table.ShowToast("User not found.", false, "error");
+                } else {
+                    users_table.ShowToast("There was an unknown error.", false, "error");
+                }
+                console.warn(response);
+                
+                users_table._hideSpinner();
+            }
 
             function fillUserRoles() {
                 var request = new H.AjaxRequest("GET", "/api/hydro2/identity/userroles");
