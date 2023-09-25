@@ -48,6 +48,19 @@ class RichTable extends SortableTable {
         }
     }
 
+    AddContextMenuOption(content, callback) {
+        var key = "custom" + this._contextOptionHandlers.length;
+        var li = document.createElement("li");
+        var btn = document.createElement("button");
+        btn.className = "context-menu-item";
+        btn.dataset["option"] = key;
+        btn.innerText = content;
+        H.Nodes(btn).AddEventHandler("click", this._contextMenuOptionClick.bind(this));
+        li.append(btn);
+        this._contextMenu.Nodes("ul")._nodeList[0].append(li);
+        this._registerContextOptionHandler(key, callback);
+    }
+
     _searchClick(event) {
         event.preventDefault(); // we are in a form, don't let the form be submitted.
         this._query = this._searchField.Value();
@@ -71,12 +84,11 @@ class RichTable extends SortableTable {
     _contextMenuOptionClick(event) {
         event.preventDefault();
         var optionKey = H.Nodes(event.currentTarget).Data("option");
-        var a = {"a":1,"b":2};
         if (!Object.keys(this._contextOptionHandlers).includes(optionKey)) {
             console.error("No context option handler is registered for option \"" + optionKey + "\"");
             return false;
         }
-        this._contextOptionHandlers[optionKey].call();
+        this._contextOptionHandlers[optionKey](this._data[this._contextSelectedRowId]);
         return false;
     }
 
