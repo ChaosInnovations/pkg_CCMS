@@ -47,7 +47,7 @@ class RouterService
 
             $class = new ReflectionClass($c);
 
-            $route_prefixes_segments = [];
+            $route_prefixes_segments = [[]];
             $class_attributes = $class->getAttributes(RoutePrefix::class);
             foreach ($class_attributes as $class_attribute) {
                 $route_prefix = $class_attribute->newInstance();
@@ -65,13 +65,12 @@ class RouterService
                     if (!$use_prefix) {
                         $route->path = substr($route->path, 1);
                     }
-                    // TODO optimization needed
+                    $path = trim($route->path, '/');
+                    $route_segments = [];
+                    if ($path != '' || !$use_prefix || count($route_prefixes_segments) == 0) {
+                        $route_segments = explode('/', $path);
+                    }
                     foreach ($route_prefixes_segments as $route_prefix_segments) {
-                        $path = trim($route->path, '/');
-                        $route_segments = [];
-                        if ($path != '' || !$use_prefix || count($route_prefix_segments) == 0) {
-                            $route_segments = explode('/', $path);
-                        }
                         $this->routes[] = [
                             'method' => $route->method,
                             'path' => ($use_prefix ? array_merge($route_prefix_segments, $route_segments) : $route_segments),
@@ -216,9 +215,11 @@ class RouterService
             }
 
             // Otherwise,
-            //echo 'Matched!<br />';
+            //$this->_loggerService->Debug('Pivel/Hydro2', ($route['method']).' '.implode('/', $route['path']));
             return true;
         }));
+
+        //$this->_loggerService->Debug('Pivel/Hydro2', "Found ".count($matching_routes)." matching routes.");
 
         return $matching_routes;
     }
