@@ -325,17 +325,18 @@ class MySqlPersistenceProvider implements IEntityPersistenceProvider
 
     private static function getConstraintSQL(EntityFieldDefinition $field) : null|string {
         // column_name [def] [PRIMARY KEY|FOREIGN KEY]
+        $constraints = [];
         if ($field->IsPrimaryKey) {
-            return 'PRIMARY KEY ('.$field->FieldName.')';
+            $constraints[] = 'PRIMARY KEY ('.$field->FieldName.')';
         }
 
         if ($field->IsForeignKey) {
             $s = 'FOREIGN KEY ('.$field->FieldName.') REFERENCES '.$field->ForeignKeyCollectionName.'.'.$field->foreignKeyCollectionFieldName;
             $s .= ' ON UPDATE '.$field->ForeignKeyOnUpdate->value.' ON DELETE '.$field->ForeignKeyOnDelete->value;
-            return $s;
+            $constraints[] = $s;
         }
 
-        return null;
+        return implode(',', $constraints);
     }
 
     //self::GetWhereStringFromQuery($query); // ($query->GetFilterTree()==null?'':' '.$where->GetParameterizedQueryString());

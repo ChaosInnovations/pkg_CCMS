@@ -257,23 +257,24 @@ class SqlitePersistenceProvider implements IEntityPersistenceProvider
     // Helpers
     private static function getColumnSQL(EntityFieldDefinition $field) : string {
         // column_name [def] [PRIMARY KEY|FOREIGN KEY]
-        $s = $field->FieldName.' '.self::getEquivalentType($field->FieldType).(($field->AutoIncrement&&$field->IsPrimaryKey)?' PRIMARY KEY AUTOINCREMENT':'');
+        $s = $field->FieldName.' '.self::getEquivalentType($field->FieldType).(($field->AutoIncrement||$field->IsPrimaryKey)?' PRIMARY KEY':'').(($field->AutoIncrement)?' AUTOINCREMENT':'');
         return $s;
     }
 
     private static function getConstraintSQL(EntityFieldDefinition $field) : null|string {
         // column_name [def] [PRIMARY KEY|FOREIGN KEY]
+        $constraints = [];
         if ($field->IsPrimaryKey) {
-            return null; //sqlite primary keys are declared inline.
+            //do nothing. sqlite primary keys are declared inline.
         }
 
         if ($field->IsForeignKey) {
             $s = 'FOREIGN KEY ('.$field->FieldName.') REFERENCES '.$field->ForeignKeyCollectionName.'('.$field->foreignKeyCollectionFieldName.')';
             $s .= ' ON UPDATE '.$field->ForeignKeyOnUpdate->value.' ON DELETE '.$field->ForeignKeyOnDelete->value;
-            return $s;
+            $constraints[] = $s;
         }
 
-        return null;
+        return implode(',', $constraints);
     }
 
     private static function getEquivalentType(Type $type) : string {
