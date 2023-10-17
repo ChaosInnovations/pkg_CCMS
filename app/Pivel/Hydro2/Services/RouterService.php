@@ -47,13 +47,13 @@ class RouterService
 
             $class = new ReflectionClass($c);
 
-            $route_prefix_segments = [];
+            $route_prefixes_segments = [];
             $class_attributes = $class->getAttributes(RoutePrefix::class);
             foreach ($class_attributes as $class_attribute) {
                 $route_prefix = $class_attribute->newInstance();
                 $prefix = $route_prefix->pathPrefix;
                 $prefix = trim($prefix, "/");
-                $route_prefix_segments = explode("/", $prefix);
+                $route_prefixes_segments[] = explode("/", $prefix);
             }
 
             foreach ($class->getMethods() as $method) {
@@ -65,18 +65,21 @@ class RouterService
                     if (!$use_prefix) {
                         $route->path = substr($route->path, 1);
                     }
-                    $path = trim($route->path, '/');
-                    $route_segments = [];
-                    if ($path != '' || !$use_prefix || count($route_prefix_segments) == 0) {
-                        $route_segments = explode('/', $path);
+                    // TODO optimization needed
+                    foreach ($route_prefixes_segments as $route_prefix_segments) {
+                        $path = trim($route->path, '/');
+                        $route_segments = [];
+                        if ($path != '' || !$use_prefix || count($route_prefix_segments) == 0) {
+                            $route_segments = explode('/', $path);
+                        }
+                        $this->routes[] = [
+                            'method' => $route->method,
+                            'path' => ($use_prefix ? array_merge($route_prefix_segments, $route_segments) : $route_segments),
+                            'controller_class' => $c,
+                            'controller_method' => $method->getName(),
+                            'order' => $route->order,
+                        ];
                     }
-                    $this->routes[] = [
-                        'method' => $route->method,
-                        'path' => ($use_prefix ? array_merge($route_prefix_segments, $route_segments) : $route_segments),
-                        'controller_class' => $c,
-                        'controller_method' => $method->getName(),
-                        'order' => $route->order,
-                    ];
                 }
             }
         }
