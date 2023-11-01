@@ -47,13 +47,17 @@ class RouterService
 
             $class = new ReflectionClass($c);
 
-            $route_prefixes_segments = [[]];
+            $route_prefixes_segments = [];
             $class_attributes = $class->getAttributes(RoutePrefix::class);
             foreach ($class_attributes as $class_attribute) {
                 $route_prefix = $class_attribute->newInstance();
                 $prefix = $route_prefix->pathPrefix;
                 $prefix = trim($prefix, "/");
                 $route_prefixes_segments[] = explode("/", $prefix);
+            }
+
+            if (count($route_prefixes_segments) == 0) {
+                $route_prefixes_segments = [[]];
             }
 
             foreach ($class->getMethods() as $method) {
@@ -66,10 +70,7 @@ class RouterService
                         $route->path = substr($route->path, 1);
                     }
                     $path = trim($route->path, '/');
-                    $route_segments = [];
-                    if ($path != '' || !$use_prefix || count($route_prefixes_segments) == 0) {
-                        $route_segments = explode('/', $path);
-                    }
+                    $route_segments = explode('/', $path);
                     foreach ($route_prefixes_segments as $route_prefix_segments) {
                         $this->routes[] = [
                             'method' => $route->method,
@@ -122,6 +123,7 @@ class RouterService
             }
             if ($method != $route_method) {
                 //echo "Method " . $method->value . " didn't match " . $route['method'] . "<br />";
+                //$this->_loggerService->Debug('Pivel/Hydro2', 'Rejected ' . ($route_method->value).' '.implode('/', $route['path']).' (method mismatch)');
                 return false;
             }
 
@@ -130,6 +132,7 @@ class RouterService
             for ($i = 0; $i < count($path_segments); $i++) {
                 if (!isset($route['path'][$template_segment_idx])) {
                     //echo 'Not enough template segments<br />';
+                    //$this->_loggerService->Debug('Pivel/Hydro2', 'Rejected ' . ($route_method->value).' '.implode('/', $route['path']).' (length mismatch)');
                     return false;
                 }
 
@@ -215,11 +218,11 @@ class RouterService
             }
 
             // Otherwise,
-            //$this->_loggerService->Debug('Pivel/Hydro2', ($route['method']).' '.implode('/', $route['path']));
+            //$this->_loggerService->Debug('Pivel/Hydro2', ($route_method->value).' '.implode('/', $route['path']));
             return true;
         }));
 
-        //$this->_loggerService->Debug('Pivel/Hydro2', "Found ".count($matching_routes)." matching routes.");
+        $this->_loggerService->Debug('Pivel/Hydro2', "Found ".count($matching_routes)." matching routes.");
 
         return $matching_routes;
     }

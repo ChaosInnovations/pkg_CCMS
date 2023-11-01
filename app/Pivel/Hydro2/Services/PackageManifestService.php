@@ -30,7 +30,7 @@ class PackageManifestService
                         continue;
                     }
 
-                    $this->pkg_manifest[$vendorDir->getFilename()] = [];
+                    $this->pkg_manifest[$vendorDir->getFilename()] ??= [];
                     $vdir = new DirectoryIterator($vendorDir->getPath().'/'.$vendorDir->getFilename());
                     foreach ($vdir as $fileinfo) {
                         if ($fileinfo->isDot()) {
@@ -56,8 +56,6 @@ class PackageManifestService
                 }
             }
 
-            //var_dump(self::$pkg_manifest);
-
             // Prevent CCMSIndex from being uninstalled
             //self::$pkg_manifest["CCMSIndex"]["dependencies"]["has_dependent"] = true;
             // Check dependencies
@@ -75,7 +73,6 @@ class PackageManifestService
 
                         foreach ($dependencies as $index => $dependency) {
                             if (!isset($this->pkg_manifest[$dependency["vendor"]][$dependency["name"]])) {
-                                echo "Module \"{$pkg_name}\" missing dependency \"{$dependency["vendor"]}/{$dependency["name"]}\"<br />\n";
                                 $missing_dependencies = true;
                                 break;
                             }
@@ -94,8 +91,6 @@ class PackageManifestService
                             $depVerStr = implode(".", $depVer);
 
                             if ($cmp < 0) {
-                                echo "Package \"{$vendor_name}/{$pkg_name}\" requires dependency \"{$dependency["name"]}\" to be at least version {$minVerStr}, ";
-                                echo "and \"{$dependency["name"]}\" is only version {$depVerStr}<br />\n";
                                 $missing_dependencies = true;
                                 break;
                             }
