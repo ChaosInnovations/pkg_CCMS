@@ -551,6 +551,7 @@ class UserController extends BaseController
     {
         $user = $this->_identityService->GetUserFromRandomId($this->request->Args['id']??'');
         if ($user === null) {
+            $this->_logger->Debug("Pivel/Hydro2", "Finding user from email \"{$this->request->Args['email']}\"");
             $user = $this->_identityService->GetUserFromEmail($this->request->Args['email']??'');
         }
 

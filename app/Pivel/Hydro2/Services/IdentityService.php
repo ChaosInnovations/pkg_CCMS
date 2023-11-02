@@ -153,6 +153,7 @@ class IdentityService implements IIdentityService
         $users = $this->GetUsersMatchingQuery((new Query())->Equal('email', $email));
 
         if (count($users) != 1) {
+            $this->_logger->Debug("Pivel/Hydro2", "Unable to find a user matching \"{$email}\"");
             return null;
         }
 

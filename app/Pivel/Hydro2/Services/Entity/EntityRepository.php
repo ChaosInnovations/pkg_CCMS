@@ -44,7 +44,7 @@ class EntityRepository implements IEntityRepository
         try {
             $results = $this->_provider->Select($this->definition, $query);
         } catch (TableNotFoundException) {
-            $this->_logger->Warn('Pivel/Hydro2', "definition '{$this->definition->GetName()}' not found.");
+            $this->_logger->Warn('Pivel/Hydro2', "Definition '{$this->definition->GetName()}' not found.");
             $this->_logger->Info('Pivel/Hydro2', "Creating definition '{$this->definition->GetName()}'...");
             $created = $this->_provider->CreateCollectionIfNotExists($this->definition);
             if (!$created) {
@@ -64,6 +64,7 @@ class EntityRepository implements IEntityRepository
             $count++;
         }
 
+        $this->_logger->Debug('Pivel/Hydro2', "Found {$count} entries from collection '{$this->definition->GetName()}' that match the query.");
         return $entities;
     }
 
