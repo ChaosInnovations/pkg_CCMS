@@ -274,6 +274,9 @@ class SqlitePersistenceProvider implements IEntityPersistenceProvider
             $constraints[] = $s;
         }
 
+        if (count($constraints) == 0) {
+        	return null;
+        }
         return implode(',', $constraints);
     }
 
