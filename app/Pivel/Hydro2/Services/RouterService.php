@@ -70,7 +70,7 @@ class RouterService
                         $route->path = substr($route->path, 1);
                     }
                     $path = trim($route->path, '/');
-                    $route_segments = explode('/', $path);
+                    $route_segments = $path==''?[]:explode('/', $path);
                     foreach ($route_prefixes_segments as $route_prefix_segments) {
                         $this->routes[] = [
                             'method' => $route->method,
@@ -114,7 +114,7 @@ class RouterService
     }
 
     public function GetMatchingRoutes(Method $method, string $path) : array {
-        $path_segments = explode('/', trim($path, '/'));
+        $path_segments = $path==''?[]:explode('/', trim($path, '/'));
         $matching_routes = array_values(array_filter($this->routes, function($route) use ($method, $path_segments) {
             //echo "Comparing " . join('/', $path_segments) . ' to template ' . join('/', $route['path']) . ':';
             $route_method = $route['method'];
@@ -286,7 +286,7 @@ class RouterService
     public static function ParsePathParameters(array $template, string $path) : array {
         $parameters = [];
 
-        $path_segments = explode('/', $path);
+        $path_segments = $path==''?[]:explode('/', trim($path, '/'));
 
         $template_segment_idx = 0;
         $wildcard_matched = false;
