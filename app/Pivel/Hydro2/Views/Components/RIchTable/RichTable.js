@@ -49,7 +49,7 @@ class RichTable extends SortableTable {
     }
 
     AddContextMenuOption(content, callback) {
-        var key = "custom" + this._contextOptionHandlers.length;
+        var key = "custom" + Object.keys(this._contextOptionHandlers).length;
         var li = document.createElement("li");
         var btn = document.createElement("button");
         btn.className = "context-menu-item";
