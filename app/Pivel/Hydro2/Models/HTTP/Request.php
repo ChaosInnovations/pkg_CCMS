@@ -19,6 +19,7 @@ class Request
      * the request body (if content-type=="application/json" and there is a valid json object in the request body)
      */
     public array $Args = [];
+    public array $Headers = [];
     public string $requestBody = '';
 
     public string $UserAgent = '';
@@ -43,6 +44,7 @@ class Request
             $this->isHttps = isset($server['HTTPS']) && $server['HTTPS'] != 'off';
             $this->hostname = $server["SERVER_NAME"];
             $this->clientAddress = $server['REMOTE_ADDR'];
+            $this->Headers = array_change_key_case(getallheaders(), CASE_LOWER);
         }
 
         $this->baseUrl = "http" . ($this->isHttps ? "s" : "") . "://" . $this->hostname;
