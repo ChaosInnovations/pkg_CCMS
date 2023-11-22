@@ -75,7 +75,7 @@ class EntityService implements IEntityService
             $this->entityPersistenceProviders[$profileKey] = $profile->GetPersistenceProvider();
         }
 
-        $this->_logger->Debug('Pivel/Hydro2', "Getting persistence provider '{$this->entityPersistenceProviders[$profileKey]::GetFriendlyName()}' using profile '{$profileKey}' for entity class '{$entityClass}'");
+        //$this->_logger->Debug('Pivel/Hydro2', "Getting persistence provider '{$this->entityPersistenceProviders[$profileKey]::GetFriendlyName()}' using profile '{$profileKey}' for entity class '{$entityClass}'");
         
         return $this->entityPersistenceProviders[$profileKey];
     }
