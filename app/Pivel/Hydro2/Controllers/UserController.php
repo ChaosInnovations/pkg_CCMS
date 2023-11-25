@@ -6,6 +6,7 @@ use Pivel\Hydro2\Extensions\Query;
 use Pivel\Hydro2\Extensions\Route;
 use Pivel\Hydro2\Extensions\RoutePrefix;
 use Pivel\Hydro2\Models\Database\Order;
+use Pivel\Hydro2\Models\ErrorMessage;
 use Pivel\Hydro2\Models\HTTP\JsonResponse;
 use Pivel\Hydro2\Models\HTTP\Method;
 use Pivel\Hydro2\Models\HTTP\Request;
@@ -14,7 +15,6 @@ use Pivel\Hydro2\Models\HTTP\StatusCode;
 use Pivel\Hydro2\Models\Identity\User;
 use Pivel\Hydro2\Models\Permissions;
 use Pivel\Hydro2\Services\Identity\IIdentityService;
-use Pivel\Hydro2\Services\IdentityService;
 use Pivel\Hydro2\Services\ILoggerService;
 use Pivel\Hydro2\Services\UserNotificationService;
 use Pivel\Hydro2\Views\EmailViews\Identity\NewEmailNotificationEmailView;
@@ -80,32 +80,8 @@ class UserController extends BaseController
         }
 
         $users = $this->_identityService->GetUsersMatchingQuery($query);
-        
-        $userResults = [];
-        foreach ($users as $user) {
-            $userResults[] = [
-                'random_id' => $user->RandomId,
-                'created' => $user->InsertedTime,
-                'email' => $user->Email,
-                'email_verified' => $user->EmailVerified,
-                'name' => $user->Name,
-                'needs_review' => $user->NeedsReview,
-                'enabled' => $user->Enabled,
-                'failed_login_attempts' => $user->FailedLoginAttempts,
-                'failed_2fa_attempts' => $user->Failed2FAAttempts,
-                'role' => ($user->GetUserRole() == null ? null : [
-                    'id' => $user->GetUserRole()->Id,
-                    'name' => $user->GetUserRole()->Name,
-                    'description' => $user->GetUserRole()->Description,
-                ]),
-            ];
-        }
 
-        return new JsonResponse(
-            data:[
-                'users' => $userResults,
-            ],
-        );
+        return new JsonResponse($users);
     }
 
     #[Route(Method::POST, '')]
@@ -120,32 +96,14 @@ class UserController extends BaseController
         // need to provide email, name, and role (optional)
         if (empty($this->request->Args['email'])) {
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'email',
-                            'description' => "New User's email address.",
-                            'message' => 'Argument is missing.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('users-0001', 'Missing parameter "email"', 'Argument is missing.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are missing.'
             );
         }
         if (!isset($this->request->Args['name'])) {
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'name',
-                            'description' => "New User's name.",
-                            'message' => 'Argument is missing.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('users-0002', 'Missing parameter "name"', 'Argument is missing.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are missing.'
             );
         }
 
@@ -156,17 +114,8 @@ class UserController extends BaseController
             $role = $this->_identityService->GetUserRoleFromId($roleId);
             if ($role === null) {
                 return new JsonResponse(
-                    data: [
-                        'validation_errors' => [
-                            [
-                                'name' => 'role_id',
-                                'description' => "New User's Role.",
-                                'message' => "This user role doesn't exist.",
-                            ],
-                        ],
-                    ],
-                    status: StatusCode::BadRequest,
-                    error_message: 'One or more arguments are invalid.'
+                    new ErrorMessage('users-0003', 'Invalid parameter "role_id"', 'This user role doesn\'t exist.'),
+                    status: StatusCode::UnprocessableEntity,
                 );
             }
         } else {
@@ -176,17 +125,8 @@ class UserController extends BaseController
         // check that there isn't already a User with this email
         if ($this->_identityService->IsEmailInUseByUser($this->request->Args['email'])) {
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'email',
-                            'description' => "New User's email.",
-                            'message' => 'A user already exists with this email.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('users-0004', 'Invalid parameter "email"', 'A user already exists with this email.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
             );
         }
 
@@ -197,30 +137,26 @@ class UserController extends BaseController
             role: $role,
         );
 
-        $newUser->NeedsReview = $this->request->Args['needs_review']??false;
-
         if ($newUser === null) {
             return new JsonResponse(
+                new ErrorMessage('users-0005', 'Error creating user', 'Error creating user.'),
                 status: StatusCode::InternalServerError,
-                error_message: "There was a problem with the database."
             );
         }
+
+        $newUser->NeedsReview = $this->request->Args['needs_review']??false;
 
         $view = new NewUserVerificationEmailView($this->_identityService->GetEmailVerificationUrl($this->request, $newUser, true), $newUser->Name);
         if (!$this->_userNotificationService->SendEmailToUser($newUser, $view)) {
-            return new JsonResponse(
-                status: StatusCode::InternalServerError,
-                error_message: "Unable to send validation email."
-            );
+            $this->_logger->Error("Pivel/Hydro2", "Unable to send validation email for user {$newUser->RandomId}.");
         }
 
         return new JsonResponse(
-            data: [
-                'new_user' => [
-                    'id' => $newUser->RandomId,
-                ],
+            $newUser,
+            status: StatusCode::Created,
+            headers: [
+                'Location' => $this->request->fullUrl . "/{$newUser->RandomId}",
             ],
-            status:StatusCode::OK
         );
     }
 
@@ -240,43 +176,10 @@ class UserController extends BaseController
         $user = $this->_identityService->GetUserFromRandomId($this->request->Args['id']);
 
         if ($user === null) {
-            return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'id',
-                            'description' => 'User ID.',
-                            'message' => "This user doesn't exist.",
-                        ],
-                    ],
-                ],
-                status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
-            );
+            return new Response(status: StatusCode::NotFound);
         }
 
-        $userResults = [[
-            'random_id' => $user->RandomId,
-            'created' => $user->InsertedTime,
-            'email' => $user->Email,
-            'email_verified' => $user->EmailVerified,
-            'name' => $user->Name,
-            'needs_review' => $user->NeedsReview,
-            'enabled' => $user->Enabled,
-            'failed_login_attempts' => $user->FailedLoginAttempts,
-            'failed_2fa_attempts' => $user->Failed2FAAttempts,
-            'role' => ($user->GetUserRole() == null ? null : [
-                'id' => $user->GetUserRole()->Id,
-                'name' => $user->GetUserRole()->Name,
-                'description' => $user->GetUserRole()->Description,
-            ]),
-        ]];
-
-        return new JsonResponse(
-            data:[
-                'users' => $userResults,
-            ],
-        );
+        return new JsonResponse($user);
     }
 
     #[Route(Method::POST, '{id}')]
@@ -295,19 +198,7 @@ class UserController extends BaseController
         $user = $this->_identityService->GetUserFromRandomId($this->request->Args['id']);
 
         if ($user === null) {
-            return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'id',
-                            'description' => 'User ID.',
-                            'message' => "This user doesn't exist.",
-                        ],
-                    ],
-                ],
-                status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
-            );
+            return new Response(status: StatusCode::NotFound);
         }
 
         $email = empty($this->request->Args['email'])?$user->Email:$this->request->Args['email'];
@@ -315,17 +206,8 @@ class UserController extends BaseController
         // check that there isn't already a User with this email
         if ($emailChanged && $this->_identityService->IsEmailInUseByUser($email)) {
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'email',
-                            'description' => "User's email address.",
-                            'message' => 'A user already exists with this email.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('users-0004', 'Invalid parameter "email"', 'A user already exists with this email.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
             );
         }
         $oldEmail = $user->Email;
@@ -344,17 +226,8 @@ class UserController extends BaseController
                 $user->SetUserRole($this->_identityService->GetUserRoleFromId($roleId));
                 if ($user->GetUserRole() === null) {
                     return new JsonResponse(
-                        data: [
-                            'validation_errors' => [
-                                [
-                                    'name' => 'role_id',
-                                    'description' => "User's Role.",
-                                    'message' => "This user role doesn't exist.",
-                                ],
-                            ],
-                        ],
+                        new ErrorMessage('users-0007', 'Invalid parameter "role_id"', 'This user role doesn\'t exist.'),
                         status: StatusCode::BadRequest,
-                        error_message: 'One or more arguments are invalid.'
                     );
                 }
             }
@@ -373,8 +246,8 @@ class UserController extends BaseController
 
         if (!$this->_identityService->UpdateUser($user)) {
             return new JsonResponse(
+                new ErrorMessage('users-0008', 'Failed to update user', 'Failed to update user.'),
                 status: StatusCode::InternalServerError,
-                error_message: "There was a problem with the database."
             );
         }
 
@@ -385,16 +258,11 @@ class UserController extends BaseController
                 $this->_userNotificationService->SendEmailToUser($user, $newEmailView) &&
                 $this->_userNotificationService->SendEmailToUser(new User($oldEmail, $user->Name), $oldEmailView)
             )) {
-                return new JsonResponse(
-                    status: StatusCode::InternalServerError,
-                    error_message: "Unable to send validation email."
-                );
+                $this->_logger->Error("Pivel/Hydro2", "Unable to send validation email for user {$user->RandomId}.");
             }
         }
 
-        return new JsonResponse(
-            status:StatusCode::OK
-        );
+        return new JsonResponse(status: StatusCode::NoContent);
     }
 
     #[Route(Method::DELETE, '{id}')]
@@ -408,16 +276,20 @@ class UserController extends BaseController
 
         $user = $this->_identityService->GetUserFromRandomId($this->request->Args['id']);
 
-        if ($user != null && !$this->_identityService->DeleteUser($user)) {
+        if ($user === null) {
+            return new Response(status: StatusCode::NotFound);
+        }
+
+        if (!$this->_identityService->DeleteUser($user)) {
             return new JsonResponse(
+                new ErrorMessage('users-0009', 'Failed to delete user', 'Failed to delete user.'),
                 status: StatusCode::InternalServerError,
-                error_message: "There was a problem with the database."
             );
         }
 
         // TODO send notification email to user when account is deleted.
 
-        return new JsonResponse(status:StatusCode::OK);
+        return new Response(status: StatusCode::NoContent);
     }
 
     // TODO add 2FA for changing passwords if set up
@@ -434,25 +306,7 @@ class UserController extends BaseController
         }
 
         if ($user === null || $user->Id == $this->_identityService->GetVisitorUser()->Id) {
-            return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'id',
-                            'description' => 'User ID.',
-                            'message' => "This user doesn't exist.",
-                        ],
-                        
-                        [
-                            'name' => 'email',
-                            'description' => "User's email address.",
-                            'message' => "This user doesn't exist.",
-                        ],
-                    ],
-                ],
-                status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
-            );
+            return new Response(status: StatusCode::NotFound);
         }
 
         // check that either the existing password or a valid passwordreset token was provided
@@ -460,69 +314,30 @@ class UserController extends BaseController
         $reset_token = $this->request->Args['reset_token']??null;
         if (!($password === null || $reset_token === null)) {
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'password',
-                            'description' => "User's current password",
-                            'message' => "Either the user's current password or a valid reset token are required.",
-                        ],
-                        [
-                            'name' => 'reset_token',
-                            'description' => 'Password reset token.',
-                            'message' => "Either the user's current password or a valid reset token are required.",
-                        ],
-                    ],
+                [
+                    new ErrorMessage('users-0010', 'Missing argument "password"', 'Either the user\'s current password or a valid reset token are required.'),
+                    new ErrorMessage('users-0011', 'Missing argument "reset_token"', 'Either the user\'s current password or a valid reset token are required.'),
                 ],
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are missing.'
             );
         }
         if ($password !== null && !$user->CheckPassword($password)) {
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'password',
-                            'description' => "User's current password",
-                            'message' => 'The provided password is incorrect.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('users-0012', 'Invalid argument "password"', 'The provided password is incorrect.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
             );
         }
         if ($reset_token !== null && !$user->CheckPasswordResetToken($reset_token)) {
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'reset_token',
-                            'description' => 'Password reset token.',
-                            'message' => 'The provided password reset token is incorrect, expired, or already used.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('users-0013', 'Invalid argument "reset_token"', 'The provided password reset token is incorrect, expired, or already used.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
             );
         }
 
         // check that the new password was provided.
         if (!isset($this->request->Args['new_password'])) {
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'new_password',
-                            'description' => "User's new password",
-                            'message' => "The user's new password.",
-                        ],
-                    ],
-                ],
-                status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are missing.'
+                new ErrorMessage('users-0014', 'Missing argument "new_password"', 'The user\'s new password is missing.'),
             );
         }
 
@@ -530,19 +345,19 @@ class UserController extends BaseController
         $emailView = new PasswordChangedNotificationEmailView($user->Name);
         if (!$this->_userNotificationService->SendEmailToUser($user, $emailView)) {
             return new JsonResponse(
+                new ErrorMessage('users-0015', 'Failed to send email', 'Failed to send notification email.'),
                 status: StatusCode::InternalServerError,
-                error_message: "Unable to send notification email."
             );
         }
 
         if (!$user->SetNewPassword($this->request->Args['new_password'])) {
             return new JsonResponse(
+                new ErrorMessage('users-0016', 'Failed to change password', 'Failed to change password.'),
                 status: StatusCode::InternalServerError,
-                error_message: "There was a problem with the database."
             );
         }
 
-        return new JsonResponse(status: StatusCode::OK);
+        return new Response(status: StatusCode::NoContent);
     }
 
     #[Route(Method::POST, '{id}/sendpasswordreset')]
@@ -556,32 +371,14 @@ class UserController extends BaseController
         }
 
         if ($user === null) {
-            return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'id',
-                            'description' => 'User ID.',
-                            'message' => "This user doesn't exist.",
-                        ],
-                        
-                        [
-                            'name' => 'email',
-                            'description' => "User's email address.",
-                            'message' => "This user doesn't exist.",
-                        ],
-                    ],
-                ],
-                status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
-            );
+            return new Response(status: StatusCode::NotFound);
         }
 
         $token = $user->CreateNewPasswordResetToken();
         if ($token === null) {
             return new JsonResponse(
+                new ErrorMessage('users-0017', 'Failed to send password reset', 'Failed to send password reset.'),
                 status: StatusCode::InternalServerError,
-                error_message: "There was a problem with the database."
             );
         }
 
@@ -589,12 +386,12 @@ class UserController extends BaseController
         $emailView = new PasswordResetEmailView($this->_identityService->GetPasswordResetUrl($this->request, $user, $token), $user->Name, 10);
         if (!$this->_userNotificationService->SendEmailToUser($user, $emailView)) {
             return new JsonResponse(
+                new ErrorMessage('users-0018', 'Failed to send password reset', 'Failed to send password reset.'),
                 status: StatusCode::InternalServerError,
-                error_message: "Unable to send password reset email."
             );
         }
 
-        return new JsonResponse(status:StatusCode::OK);
+        return new Response(status: StatusCode::NoContent);
     }
 
     #[Route(Method::GET, '~verifyuseremail/{id}')]

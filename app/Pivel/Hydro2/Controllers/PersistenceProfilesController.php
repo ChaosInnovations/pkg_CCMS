@@ -9,6 +9,7 @@ use Pivel\Hydro2\Extensions\Route;
 use Pivel\Hydro2\Extensions\RoutePrefix;
 use Pivel\Hydro2\Models\Database\Order;
 use Pivel\Hydro2\Models\EntityPersistenceProfile;
+use Pivel\Hydro2\Models\ErrorMessage;
 use Pivel\Hydro2\Models\HTTP\JsonResponse;
 use Pivel\Hydro2\Models\HTTP\Request;
 use Pivel\Hydro2\Models\HTTP\Response;
@@ -41,9 +42,7 @@ class PersistenceProfilesController extends BaseController
     {
         $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
         if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
-            return new Response(
-                status: StatusCode::NotFound,
-            );
+            return new Response(status: StatusCode::NotFound);
         }
 
         $query = new Query();
@@ -60,24 +59,7 @@ class PersistenceProfilesController extends BaseController
         /** @var EntityPersistenceProfile[] */
         $profiles = $r->Read($query);
 
-        $serializedProfiles = [];
-        foreach ($profiles as $profile) {
-            $serializedProfiles[] = [
-                'key' => $profile->GetKey(),
-                'persistenceProviderClass' => $profile->GetPersistenceProviderFriendlyName(),
-                'hostOrPath' => $profile->GetHostOrPath(),
-                'username' => $profile->GetUsername(),
-                // Don't return the password.
-                'databaseSchema' => $profile->GetDatabaseSchema(),
-            ];
-        }
-
-        return new JsonResponse(
-            data: [
-                'persistenceprofiles' => $serializedProfiles,
-            ],
-            status: StatusCode::OK,
-        );
+        return new JsonResponse($profiles);
     }
 
     #[Route(Method::GET, 'providers')]
@@ -85,17 +67,10 @@ class PersistenceProfilesController extends BaseController
     {
         $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
         if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
-            return new Response(
-                status: StatusCode::NotFound,
-            );
+            return new Response(status: StatusCode::NotFound);
         }
 
-        return new JsonResponse(
-            data: [
-                'persistenceproviders' => $this->_entityService->GetAvailableProviders(),
-            ],
-            status: StatusCode::OK,
-        );
+        return new JsonResponse($this->_entityService->GetAvailableProviders());
     }
 
     #[Route(Method::POST, 'validatehost')]
@@ -103,63 +78,28 @@ class PersistenceProfilesController extends BaseController
     {
         $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
         if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
-            return new Response(
-                status: StatusCode::NotFound,
-            );
+            return new Response(status: StatusCode::NotFound);
         }
 
         // validate args
         if (!isset($this->request->Args['provider'])) {
-            // missing argument
-            // return response with code 400 (Bad Request)
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'provider',
-                            'description' => 'Database provider name',
-                            'message' => 'Argument is missing.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('persistprofiles-0001', 'Missing parameter \"provider\"', 'Argument is missing.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are missing.'
             );
         }
 
         if (!isset($this->request->Args['host'])) {
-            // missing argument
-            // return response with code 400 (Bad Request)
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'host',
-                            'description' => 'Database host',
-                            'message' => 'Argument is missing.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('persistprofiles-0002', 'Missing parameter \"host\"', 'Argument is missing.'),
                 status: StatusCode::BadRequest,
-                error_message: "One or more arguments are missing."
             );
         }
 
         if (!$this->_entityService->IsProviderValid($this->request->Args['provider'])) {
-            // invalid provider argument
-            // return response with code 400 (Bad Request)
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'provider',
-                            'description' => 'Database provider name',
-                            'message' => 'Selected provider is not supported.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('persistprofiles-0003', 'Invalid parameter \"provider\"', 'Selected provider is not supported.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
             );
         }
 
@@ -169,12 +109,14 @@ class PersistenceProfilesController extends BaseController
             hostOrPath: $this->request->Args['host'],
         );
 
-        return new JsonResponse(
-            data: [
-                'persistencehostcheck' => $this->_entityService->IsHostValid($profile),
-            ],
-            status: StatusCode::OK,
-        );
+        if (!$this->_entityService->IsHostValid($profile)) {
+            return new JsonResponse(
+                new ErrorMessage('persistprofiles-0004', 'Invalid parameter \"host\"', 'Host is not valid.'),
+                status: StatusCode::BadRequest,
+            );
+        }
+
+        return new Response(status: StatusCode::NoContent);
     }
 
     #[Route(Method::POST, 'validateuser')]
@@ -190,56 +132,23 @@ class PersistenceProfilesController extends BaseController
 
         // validate args
         if (!isset($this->request->Args['provider'])) {
-            // missing argument
-            // return response with code 400 (Bad Request)
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'provider',
-                            'description' => 'Database provider name',
-                            'message' => 'Argument is missing.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('persistprofiles-0001', 'Missing parameter \"provider\"', 'Argument is missing.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are missing.'
             );
         }
 
         if (!isset($this->request->Args['host'])) {
-            // missing argument
-            // return response with code 400 (Bad Request)
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'host',
-                            'description' => 'Database host',
-                            'message' => 'Argument is missing.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('persistprofiles-0002', 'Missing parameter \"host\"', 'Argument is missing.'),
                 status: StatusCode::BadRequest,
-                error_message: "One or more arguments are missing."
             );
         }
 
         if (!$this->_entityService->IsProviderValid($this->request->Args['provider'])) {
-            // invalid provider argument
-            // return response with code 400 (Bad Request)
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'provider',
-                            'description' => 'Database provider name',
-                            'message' => 'Selected provider is not supported.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('persistprofiles-0003', 'Invalid parameter \"provider\"', 'Selected provider is not supported.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
             );
         }
 
@@ -247,151 +156,30 @@ class PersistenceProfilesController extends BaseController
         $profile->SetProfile(
             persistenceProviderClass: $this->request->Args['provider'],
             hostOrPath: $this->request->Args['host'],
-            username: $username = $this->request->Args['username'] ?? null,
+            username: $this->request->Args['username'] ?? null,
             password: $this->request->Args['password'] ?? null,
         );
 
         if (!$this->_entityService->IsHostValid($profile)) {
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'host',
-                            'description' => 'Database host',
-                            'message' => 'Host not accessible.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('persistprofiles-0004', 'Invalid parameter \"host\"', 'Host is not valid.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
-            );
-        }
-
-        return new JsonResponse(
-            data: [
-                'persistenceusercheck' => [
-                    'valid' => $this->_entityService->IsUserValid($profile),
-                    'cancreatedb' => $profile->GetPersistenceProvider()->CanCreateDatabaseSchemas(),
-                ],
-            ],
-            status: StatusCode::OK,
-        );
-    }
-
-    #[Route(Method::POST, 'getdatabases')]
-    public function GetDatabases(): Response
-    {
-        $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
-        // check whether the session/user is allowed to view the admin panel at all.
-        if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
-            return new Response(
-                status: StatusCode::NotFound,
-            );
-        }
-
-        // validate args
-        if (!isset($this->request->Args['provider'])) {
-            // missing argument
-            // return response with code 400 (Bad Request)
-            return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'provider',
-                            'description' => 'Database provider name',
-                            'message' => 'Argument is missing.',
-                        ],
-                    ],
-                ],
-                status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are missing.'
-            );
-        }
-
-        if (!isset($this->request->Args['host'])) {
-            // missing argument
-            // return response with code 400 (Bad Request)
-            return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'host',
-                            'description' => 'Database host',
-                            'message' => 'Argument is missing.',
-                        ],
-                    ],
-                ],
-                status: StatusCode::BadRequest,
-                error_message: "One or more arguments are missing."
-            );
-        }
-
-        if (!$this->_entityService->IsProviderValid($this->request->Args['provider'])) {
-            // invalid provider argument
-            // return response with code 400 (Bad Request)
-            return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'provider',
-                            'description' => 'Database provider name',
-                            'message' => 'Selected provider is not supported.',
-                        ],
-                    ],
-                ],
-                status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
-            );
-        }
-
-        $profile = new EntityPersistenceProfile();
-        $profile->SetProfile(
-            persistenceProviderClass: $this->request->Args['provider'],
-            hostOrPath: $this->request->Args['host'],
-            username: $username = $this->request->Args['username'] ?? null,
-            password: $this->request->Args['password'] ?? null,
-        );
-
-        if (!$this->_entityService->IsHostValid($profile)) {
-            return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'host',
-                            'description' => 'Database host',
-                            'message' => 'Host not accessible.',
-                        ],
-                    ],
-                ],
-                status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
             );
         }
 
         if (!$this->_entityService->IsUserValid($profile)) {
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'username',
-                            'description' => 'Database username.',
-                            'message' => 'The username or password is incorrect.',
-                        ],
-                        [
-                            'name' => 'password',
-                            'description' => 'Database user password.',
-                            'message' => 'The username or password is incorrect.',
-                        ],
-                    ],
+                [
+                    new ErrorMessage('persistprofiles-0005', 'Invalid parameter \"username\"', 'User credentials not valid.'),
+                    new ErrorMessage('persistprofiles-0006', 'Invalid parameter \"password\"', 'User credentials not valid.'),
                 ],
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
             );
         }
 
-        // return list of databases
         return new JsonResponse(
-            data: [
+            [
+                'cancreatedb' => $profile->GetPersistenceProvider()->CanCreateDatabaseSchemas(),
                 'availabledatabaseschemas' => $profile->GetPersistenceProvider()->GetDatabaseSchemas(),
             ],
             status: StatusCode::OK,
@@ -405,63 +193,28 @@ class PersistenceProfilesController extends BaseController
         $requestUser = $this->_identityService->GetUserFromRequestOrVisitor($this->request);
         // check whether the session/user is allowed to view the admin panel at all.
         if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManagePersistenceProfiles->value)) {
-            return new Response(
-                status: StatusCode::NotFound,
-            );
+            return new Response(status: StatusCode::NotFound);
         }
 
         // validate args
         if (!isset($this->request->Args['provider'])) {
-            // missing argument
-            // return response with code 400 (Bad Request)
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'provider',
-                            'description' => 'Database provider name',
-                            'message' => 'Argument is missing.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('persistprofiles-0001', 'Missing parameter \"provider\"', 'Argument is missing.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are missing.'
             );
         }
 
         if (!isset($this->request->Args['host'])) {
-            // missing argument
-            // return response with code 400 (Bad Request)
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'host',
-                            'description' => 'Database host',
-                            'message' => 'Argument is missing.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('persistprofiles-0002', 'Missing parameter \"host\"', 'Argument is missing.'),
                 status: StatusCode::BadRequest,
-                error_message: "One or more arguments are missing."
             );
         }
 
         if (!$this->_entityService->IsProviderValid($this->request->Args['provider'])) {
-            // invalid provider argument
-            // return response with code 400 (Bad Request)
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'provider',
-                            'description' => 'Database provider name',
-                            'message' => 'Selected provider is not supported.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('persistprofiles-0003', 'Invalid parameter \"provider\"', 'Selected provider is not supported.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
             );
         }
 
@@ -469,45 +222,25 @@ class PersistenceProfilesController extends BaseController
         $profile->SetProfile(
             persistenceProviderClass: $this->request->Args['provider'],
             hostOrPath: $this->request->Args['host'],
-            username: $username = $this->request->Args['username'] ?? null,
+            username: $this->request->Args['username'] ?? null,
             password: $this->request->Args['password'] ?? null,
             databaseSchema: $this->request->Args['database'] ?? null,
         );
 
         if (!$this->_entityService->IsHostValid($profile)) {
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'host',
-                            'description' => 'Database host',
-                            'message' => 'Host not accessible.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('persistprofiles-0004', 'Invalid parameter \"host\"', 'Host is not valid.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
             );
         }
 
         if (!$this->_entityService->IsUserValid($profile)) {
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'username',
-                            'description' => 'Database username.',
-                            'message' => 'The username or password is incorrect.',
-                        ],
-                        [
-                            'name' => 'password',
-                            'description' => 'Database user password.',
-                            'message' => 'The username or password is incorrect.',
-                        ],
-                    ],
+                [
+                    new ErrorMessage('persistprofiles-0005', 'Invalid parameter \"username\"', 'User credentials not valid.'),
+                    new ErrorMessage('persistprofiles-0006', 'Invalid parameter \"password\"', 'User credentials not valid.'),
                 ],
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
             );
         }
 
@@ -517,47 +250,29 @@ class PersistenceProfilesController extends BaseController
         // check that selected database is valid, or create a new one if selected, unless there are none because then this is probably Sqlite
         if (count($databaseSchemas) != 0 && !$canCreateDatabaseSchemas && !in_array($profile->GetDatabaseSchema(), $databaseSchemas)) {
             return new JsonResponse(
-                data: [
-                    'validation_errors' => [
-                        [
-                            'name' => 'database',
-                            'description' => 'Database to select or create.',
-                            'message' => 'The database doesn\'t exist, or the user doesn\'t have privileges on it.',
-                        ],
-                    ],
-                ],
+                new ErrorMessage('persistprofiles-0007', 'Invalid parameter \"database\"', 'The database doesn\'t exist, or the user doesn\'t have privileges on it, and the user doesn\'t have privileges to create it.'),
                 status: StatusCode::BadRequest,
-                error_message: 'One or more arguments are invalid.'
             );
         }
 
         if ($canCreateDatabaseSchemas && !in_array($profile->GetDatabaseSchema(), $databaseSchemas)) {
             if (!$profile->GetPersistenceProvider()->CreateDatabaseSchema($profile->GetDatabaseSchema())) {
                 return new JsonResponse(
-                    data: [
-                        'validation_errors' => [
-                            [
-                                'name' => 'database',
-                                'description' => 'Database to select or create.',
-                                'message' => 'The database doesn\'t exist, but failed to create new database.',
-                            ],
-                        ],
-                    ],
-                    status: StatusCode::BadRequest,
-                    error_message: 'One or more arguments are invalid.'
+                    new ErrorMessage('persistprofiles-0008', 'Error creating database schema', 'The database doesn\'t exist and the user has privileges to create it, but the server failed to create the new database.'),
+                    status: StatusCode::InternalServerError,
                 ); 
             }
 
             $this->_logger->Debug('Pivel/Hydro2', "Database schema {$profile->GetDatabaseSchema()} created.");
         }
 
+        if (!$this->_entityService->SavePersistenceProfile($profile)) {
+            return new JsonResponse(
+                new ErrorMessage('persistprofiles-0009', 'Error saving profile', 'Failed to save the persistence profile.'),
+                status: StatusCode::InternalServerError,
+            ); 
+        }
         
-        
-        return new JsonResponse(
-            data: [
-                'result' => $this->_entityService->SavePersistenceProfile($profile),
-            ],
-            status: StatusCode::OK,
-        );
+        return new Response(status: StatusCode::NoContent);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Pivel\Hydro2\Models;
 
+use JsonSerializable;
 use Pivel\Hydro2\Attributes\Entity\Entity;
 use Pivel\Hydro2\Attributes\Entity\EntityField;
 use Pivel\Hydro2\Attributes\Entity\EntityPrimaryKey;
@@ -11,7 +12,7 @@ use Pivel\Hydro2\Services\Entity\SqlitePersistenceProvider;
 use TypeError;
 
 #[Entity(CollectionName: 'profiles', PersistenceProfile: 'persistence_profile_store')]
-class EntityPersistenceProfile
+class EntityPersistenceProfile implements JsonSerializable
 {
     #[EntityField()]
     #[EntityPrimaryKey]
@@ -36,6 +37,18 @@ class EntityPersistenceProfile
         $this->username = null;
         $this->password = null;
         $this->databaseSchema = null;
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return [
+            'key' => $this->GetKey(),
+            'persistenceProviderClass' => (new $this->persistenceProviderClass($this))->GetFriendlyName(),
+            'hostOrPath' => $this->hostOrPath,
+            'username' => $this->username,
+            // Don't return the password.
+            'databaseSchema' => $this->databaseSchema,
+        ];
     }
 
     public function GetKey() : string { return $this->key; }

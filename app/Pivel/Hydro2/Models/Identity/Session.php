@@ -5,6 +5,7 @@ namespace Pivel\Hydro2\Models\Identity;
 use DateTime;
 use DateTimeZone;
 use JetBrains\PhpStorm\Deprecated;
+use JsonSerializable;
 use Pivel\Hydro2\Attributes\Entity\Entity;
 use Pivel\Hydro2\Attributes\Entity\EntityField;
 use Pivel\Hydro2\Attributes\Entity\EntityPrimaryKey;
@@ -12,7 +13,7 @@ use Pivel\Hydro2\Attributes\Entity\ForeignEntityManyToOne;
 use Pivel\Hydro2\Models\Database\ReferenceBehaviour;
 
 #[Entity(CollectionName: 'hydro2_user_sessions')]
-class Session
+class Session implements JsonSerializable
 {
     #[EntityField(FieldName: 'id', AutoIncrement: true)]
     #[EntityPrimaryKey]
@@ -70,6 +71,19 @@ class Session
         $this->LastAccessTime = $lastAccessTime;
         $this->StartIP = $startIP;
         $this->LastIP = $lastIP;
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return [
+            'random_id' => $this->RandomId,
+            'browser' => $this->Browser,
+            'start' => $this->StartTime,
+            'expire' => $this->ExpireTime,
+            'last_access' => $this->LastAccessTime,
+            'start_ip' => $this->StartIP,
+            'last_ip' => $this->LastIP,
+        ];
     }
 
     public function GetUser(): User

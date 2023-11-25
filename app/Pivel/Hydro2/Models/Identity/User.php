@@ -4,6 +4,7 @@ namespace Pivel\Hydro2\Models\Identity;
 
 use DateTime;
 use DateTimeZone;
+use JsonSerializable;
 use Pivel\Hydro2\Attributes\Entity\Entity;
 use Pivel\Hydro2\Attributes\Entity\EntityField;
 use Pivel\Hydro2\Attributes\Entity\EntityPrimaryKey;
@@ -14,7 +15,7 @@ use Pivel\Hydro2\Models\Database\Order;
 use Pivel\Hydro2\Services\Entity\EntityCollection;
 
 #[Entity(CollectionName: 'hydro2_users')]
-class User
+class User implements JsonSerializable
 {
     #[EntityField(FieldName: 'id', AutoIncrement: true)]
     #[EntityPrimaryKey]
@@ -76,6 +77,22 @@ class User
         $this->FailedLoginAttempts = $failedLoginAttempts;
         $this->Failed2FAAttempts = $failed2FAAttempts;
         $this->role = $role;
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return [
+            'random_id' => $this->RandomId,
+            'created' => $this->InsertedTime->format("c"),
+            'email' => $this->Email,
+            'email_verified' => $this->EmailVerified,
+            'name' => $this->Name,
+            'needs_review' => $this->NeedsReview,
+            'enabled' => $this->Enabled,
+            'failed_login_attempts' => $this->FailedLoginAttempts,
+            'failed_2fa_attempts' => $this->Failed2FAAttempts,
+            'role' => $this->role,
+        ];
     }
 
     public function GetSessionCount(): int
