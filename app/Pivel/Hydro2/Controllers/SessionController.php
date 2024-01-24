@@ -63,14 +63,14 @@ class SessionController extends BaseController
 
         if (!isset($this->request->Args['email'])) {
             return new JsonResponse(
-                new ErrorMessage('session-0001', 'Missing parameter \"email\"', 'The user\'s email address is required.'),
+                new ErrorMessage('session-0001', "Missing parameter \"email\"", "The user's email address is required."),
                 status: StatusCode::BadRequest,
             );
         }
 
         if (!isset($this->request->Args['password'])) {
             return new JsonResponse(
-                new ErrorMessage('session-0002', 'Missing parameter \"password\"', 'The user\'s current password is required.'),
+                new ErrorMessage('session-0002', "Missing parameter \"password\"", "The user's current password is required."),
                 status: StatusCode::BadRequest,
             );
         }
@@ -78,14 +78,14 @@ class SessionController extends BaseController
         $user = $this->_identityService->GetUserFromEmail($this->request->Args['email']);
         if ($user == null) {
             return new JsonResponse(
-                new ErrorMessage('session-0003', 'Invalid parameter \"email\"', 'The provided email address does not match an account.'),
+                new ErrorMessage('session-0003', "Invalid parameter \"email\"", "The provided email address does not match an account."),
                 status: StatusCode::BadRequest,
             );
         }
 
         if ($user->GetUserRole() === null) {
             return new JsonResponse(
-                new ErrorMessage('session-0004', 'Invalid parameter \"email\"', 'Unable to log in. Please contact the administrator.'),
+                new ErrorMessage('session-0004', "Invalid parameter \"email\"", "Unable to log in. Please contact the administrator."),
                 status: StatusCode::BadRequest,
             );
         }
@@ -95,7 +95,7 @@ class SessionController extends BaseController
             ($user->GetUserRole()->Max2FAAttempts > 0 && $user->Failed2FAAttempts >= $user->GetUserRole()->Max2FAAttempts)
         ) {
             return new JsonResponse(
-                new ErrorMessage('session-0005', 'Invalid parameter \"email\"', 'This account is locked due to too many failed login attempts.'),
+                new ErrorMessage('session-0005', "Invalid parameter \"email\"", 'This account is locked due to too many failed login attempts.'),
                 status: StatusCode::BadRequest,
             );
         }
@@ -106,7 +106,7 @@ class SessionController extends BaseController
             $view = new NewUserVerificationEmailView($this->_identityService->GetEmailVerificationUrl($this->request, $user, true), $user->Name);
             $this->_userNotificationService->SendEmailToUser($user, $view);
             return new JsonResponse(
-                new ErrorMessage('session-0006', 'Invalid parameter \"password\"', 'Account creation is incomplete. A validation email has been re-sent to your email address.'),
+                new ErrorMessage('session-0006', "Invalid parameter \"password\"", 'Account creation is incomplete. A validation email has been re-sent to your email address.'),
                 status: StatusCode::BadRequest,
             );
         }
@@ -115,14 +115,14 @@ class SessionController extends BaseController
             $user->FailedLoginAttempts++;
             $this->_identityService->UpdateUser($user);
             return new JsonResponse(
-                new ErrorMessage('session-0007', 'Invalid parameter \"password\"', 'The provided password is incorrect.'),
+                new ErrorMessage('session-0007', "Invalid parameter \"password\"", 'The provided password is incorrect.'),
                 status: StatusCode::BadRequest,
             );
         }
 
         if (!$user->Enabled || $user->NeedsReview) {
             return new JsonResponse(
-                new ErrorMessage('session-0008', 'Invalid parameter \"email\"', 'Unable to log in. Please contact the administrator.'),
+                new ErrorMessage('session-0008', "Invalid parameter \"email\"", 'Unable to log in. Please contact the administrator.'),
                 status: StatusCode::BadRequest,
             );
         }
@@ -135,7 +135,7 @@ class SessionController extends BaseController
 
         if ($session === null) {
             return new JsonResponse(
-                new ErrorMessage('session-0009', 'Failed to login', 'Unable to log in. Please contact the administrator.'),
+                new ErrorMessage('session-0009', "Failed to login", 'Unable to log in. Please contact the administrator.'),
                 status: StatusCode::InternalServerError,
             );
         }
@@ -189,14 +189,14 @@ class SessionController extends BaseController
 
         if ($session === null) {
             return new JsonResponse(
-                new ErrorMessage('session-0010', 'Invalid parameter "sessionid"', 'Session not found or already deleted.'),
+                new ErrorMessage('session-0010', "Invalid parameter \"sessionid\"", 'Session not found or already deleted.'),
                 status: StatusCode::NotFound,
             );
         }
 
         if (!$this->_identityService->ExpireSession($session)) {
             return new JsonResponse(
-                new ErrorMessage('session-0011', 'Failed to terminate session', 'An internal error prevented termination of the session.'),
+                new ErrorMessage('session-0011', "Failed to terminate session", 'An internal error prevented termination of the session.'),
                 status: StatusCode::InternalServerError,
             );
         }

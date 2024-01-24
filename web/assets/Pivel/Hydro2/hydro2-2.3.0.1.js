@@ -3,28 +3,39 @@ var H = {
         Status;
         ResponseText;
         ResponseObject;
-        ErrorMessage=null;
-        ErrorCode=null;
-        Data=null;
+        IsErrorResponse = false;
 
         constructor(statusCode, responseText) {
             this.Status = statusCode;
             this.ResponseText = responseText;
             try {
                 this.ResponseObject = JSON.parse(responseText);
-                if ("message" in this.ResponseObject) {
-                    this.ErrorMessage = this.ResponseObject["message"];
-                }
                 if ("code" in this.ResponseObject) {
-                    this.ErrorCode = this.ResponseObject["code"];
-                }
-                if ("data" in this.ResponseObject) {
-                    this.Data = this.ResponseObject["data"];
+                    this.IsErrorResponse = true;
+                    var er = new H.ErrorResponse();
+                    er.Code = this.ResponseObject["code"];
+                    if ("message" in this.ResponseObject) {
+                        er.Message = this.ResponseObject["message"];
+                    }
+                    if ("detail" in this.ResponseObject) {
+                        er.Detail = this.ResponseObject["detail"];
+                    }
+                    if ("help" in this.ResponseObject) {
+                        er.Help = this.ResponseObject["help"];
+                    }
+                    this.ResponseObject = er;
                 }
             } catch {
                 this.ResponseObject = null;
             }
         }
+    },
+
+    ErrorResponse: class {
+        Code = null;
+        Message = null;
+        Detail = null;
+        Help = null;
     },
 
     AjaxRequest: class {
