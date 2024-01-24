@@ -12,8 +12,8 @@ class RichTable extends SortableTable {
     _showEditHandler = null;
 
     _query;
-    constructor(selector, apiEndpoint, apiResponseKey, renderer=null, idKey="id") {
-        super(selector + ".rich-table", apiEndpoint, apiResponseKey, renderer);
+    constructor(selector, apiEndpoint, renderer=null, idKey="id") {
+        super(selector + ".rich-table", apiEndpoint, renderer);
 
         this._idKey = idKey;
         this._searchField = this._e.Nodes(selector + "_search_form_q");
@@ -118,7 +118,7 @@ class RichTable extends SortableTable {
     }
 
     _dataDeletedCallback(response) {
-        if (response.Status == H.StatusCode.OK) {
+        if (response.Status == H.StatusCode.NoContent) {
             // display toast (success)
             this.ShowToast("Item deleted.", false, "success");
             // trigger table refresh. this will automatically hide the spinner.
@@ -133,8 +133,6 @@ class RichTable extends SortableTable {
             this.ShowToast("There was a problem with the server.", false, "error");
         } else if (response.Status == H.StatusCode.NotFound) {
             this.ShowToast("You don't have permission to delete this item.", false, "error");
-        } else if (response.Data["validation_errors"][0]["name"] == "id") {
-            this.ShowToast(response.Data["validation_errors"][0]["message"], false, "error");
         } else {
             console.error(response);
             this.ShowToast("There was an unknown error.", false, "error");

@@ -195,7 +195,7 @@
                 }
             }
 
-            var user_roles_table = new RichTable("#user_roles_table", "/api/hydro2/identity/userroles", "user_roles", user_roles_table_renderer);
+            var user_roles_table = new RichTable("#user_roles_table", "/api/hydro2/identity/userroles", user_roles_table_renderer);
             user_roles_table._showDetailHandler = userRolesShowDetailCallback;
             user_roles_table._showEditHandler = userRolesShowEditCallback;
 
@@ -235,7 +235,7 @@
             function _fillUserRolePermissionsCallback(response) {
                 if (response.Status == H.StatusCode.OK) {
                     var options = [];
-                    for (const p of response.Data["permissions"]) {
+                    for (const p of response.ResponseObject) {
                         user_role_avail_permissions[p["fullkey"]] = p;
                         options.push({
                             "value": p["fullkey"],
@@ -334,7 +334,7 @@
             }
 
             function _submitUserRoleCallback(response, successMessage) {
-                if (response.Status == H.StatusCode.OK) {
+                if (response.Status == H.StatusCode.Created || response.Status == H.StatusCode.NoContent) {
                     // display toast (success)
                     user_roles_table.ShowToast(successMessage, false, "success");
                     // trigger table refresh
@@ -371,9 +371,6 @@
                     user_roles_table.ShowToast("There was a problem with the server.", false, "error");
                 } else if (response.Status == H.StatusCode.NotFound) {
                     user_roles_table.ShowToast("You don't have permission to do this.", false, "error");
-                } else if (response.Data["validation_errors"][0]["name"] == "permissions") {
-                    user_roles_create_permissions.SetValidation(false, response.Data["validation_errors"][0]["message"]);
-                    user_roles_table.ShowToast(response.Data["validation_errors"][0]["message"], false, "error");
                 } else {
                     console.log(response);
                     user_roles_table.ShowToast("There was an unknown error.", false, "error");

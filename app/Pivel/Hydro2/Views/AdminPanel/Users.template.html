@@ -147,7 +147,7 @@
                 }
             }
 
-            var users_table = new RichTable("#users_table", "/api/hydro2/identity/users", "users", users_table_renderer, id_key="random_id");
+            var users_table = new RichTable("#users_table", "/api/hydro2/identity/users", users_table_renderer, id_key="random_id");
             users_table._showDetailHandler = usersShowDetailCallback;
             users_table._showEditHandler = usersShowEditCallback;
             users_table.AddContextMenuOption("Reset password", onUserResetPassword);
@@ -203,7 +203,7 @@
             }
 
             function userResetPasswordCallback(response) {
-                if (response.Status == H.StatusCode.OK) {
+                if (response.Status == H.StatusCode.NoContent) {
                     users_table.ShowToast("Password reset email sent!", false, "success");
                     users_table._hideSpinner();
                     return;
@@ -231,7 +231,7 @@
             function _fillUserRolesCallback(response) {
                 if (response.Status == H.StatusCode.OK) {
                     var options = [];
-                    for (const r of response.Data["user_roles"]) {
+                    for (const r of response.ResponseObject) {
                         user_avail_roles[r["id"]] = r;
                         options.push({
                             "value": r["id"],
@@ -322,7 +322,7 @@
             }
 
             function _submitUserCallback(response, successMessage) {
-                if (response.Status == H.StatusCode.OK) {
+                if (response.Status == H.StatusCode.Created || response.Status == H.StatusCode.NoContent) {
                     // display toast (success)
                     users_table.ShowToast(successMessage, false, "success");
                     // trigger table refresh
@@ -350,14 +350,14 @@
                     users_table.ShowToast("There was a problem with the server.", false, "error");
                 } else if (response.Status == H.StatusCode.NotFound) {
                     users_table.ShowToast("You don't have permission to do this.", false, "error");
-                } else if (response.Data["validation_errors"][0]["name"] == "email") {
+                /*} else if (response.Data["validation_errors"][0]["name"] == "email") {
                     users_create_email.SetValidation(false, response.Data["validation_errors"][0]["message"]);
                     users_edit_email.SetValidation(false, response.Data["validation_errors"][0]["message"]);
                     users_table.ShowToast(response.Data["validation_errors"][0]["message"], false, "error");
                 } else if (response.Data["validation_errors"][0]["name"] == "role_id") {
                     users_create_role.SetValidation(false, response.Data["validation_errors"][0]["message"]);
                     users_edit_role.SetValidation(false, response.Data["validation_errors"][0]["message"]);
-                    users_table.ShowToast(response.Data["validation_errors"][0]["message"], false, "error");
+                    users_table.ShowToast(response.Data["validation_errors"][0]["message"], false, "error");*/
                 } else {
                     console.log(response);
                     users_table.ShowToast("There was an unknown error.", false, "error");
