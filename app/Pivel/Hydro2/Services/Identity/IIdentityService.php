@@ -27,7 +27,7 @@ interface IIdentityService
     public function GetUserFromEmail(string $email): ?User;
     
     // ==== Session-related methods ====
-    public function GetSessionFromRequest(Request $request): ?Session;
+    public function GetSessionFromRequest(Request $request, $random_id=null, $key=null): ?Session;
     public function GetSessionFromRandomId(string $randomId): ?Session;
     public function StartSession(User $user, Request $request): Session;
     public function ExpireSession(Session &$session): bool;

@@ -85,7 +85,7 @@ class MockIdentityService implements IIdentityService
     }
     
     // ==== Session-related methods ====
-    public function GetSessionFromRequest(Request $request): ?Session
+    public function GetSessionFromRequest(Request $request, $random_id=null, $key=null): ?Session
     {
         return null;
     }

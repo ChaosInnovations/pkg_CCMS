@@ -162,17 +162,17 @@ class IdentityService implements IIdentityService
 
     // ==== Session-related methods ====
 
-    public function GetSessionFromRequest(Request $request): ?Session
+    public function GetSessionFromRequest(Request $request, $random_id=null, $key=null): ?Session
     {
-        $random_id_and_key = explode(';', $request->getCookie('sridkey', ''), 2);
+        $random_id_and_key = explode(';', $request->getCookie('sridkey', ""), 2);
 
         if (count($random_id_and_key) != 2) {
             setcookie('sridkey', '', time()-3600, '/');
             return null;
         }
 
-        $random_id = $random_id_and_key[0];
-        $key = $random_id_and_key[1];
+        $random_id ??= $random_id_and_key[0];
+        $key ??= $random_id_and_key[1];
 
         /** @var Session[] */
         $sessions = $this->sessionRepository->Read((new Query())->Equal('random_id', $random_id));

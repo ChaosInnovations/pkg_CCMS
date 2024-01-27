@@ -209,7 +209,7 @@ class UserRoleController extends BaseController
             }
             if (!$userRole->DenyPermission($permission->PermissionKey)) {
                 return new JsonResponse(
-                    new ErrorMessage('userroles-0005', 'Failed to deny permission', "Failed to deny permission '{$permission}'."),
+                    new ErrorMessage('userroles-0005', 'Failed to deny permission', "Failed to deny permission '{$permission->PermissionKey}'."),
                     status: StatusCode::InternalServerError,
                 );
             }
