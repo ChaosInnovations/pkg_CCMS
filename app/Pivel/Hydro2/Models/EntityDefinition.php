@@ -5,6 +5,7 @@ namespace Pivel\Hydro2\Models;
 use Countable;
 use DateTime;
 use Iterator;
+use PHPUnit\PhpParser\Node\Stmt\For_;
 use Pivel\Hydro2\Attributes\Entity\Entity;
 use Pivel\Hydro2\Attributes\Entity\EntityField;
 use Pivel\Hydro2\Attributes\Entity\EntityPrimaryKey;
@@ -26,6 +27,9 @@ class EntityDefinition implements Iterator, Countable
     /** @var class-string<TEntity> */
     private string $entityClass;
     private string $collectionName;
+    private bool $isExtendable;
+    private bool $hasParent = false;
+    private ?EntityDefinition $parentEntity = null;
     /** @var EntityFieldDefinition[] */
     private array $fields;
     private int $position;
@@ -45,12 +49,69 @@ class EntityDefinition implements Iterator, Countable
         if (count($cAttributes) != 1) {
             throw new TypeError("The provided class name {$entityClass} doesn't have an Entity tag.");
         }
-        $this->collectionName = $cAttributes[0]->newInstance()->CollectionName;
+        $entityAttribute = $cAttributes[0]->newInstance();
+        $this->collectionName = $entityAttribute->CollectionName;
+        $this->isExtendable = $entityAttribute->Extendable;
+
+        // check if there is a parent class that is an entity.
+        $parent = get_parent_class($entityClass);
+        if ($parent !== false) {
+            // shouldn't need to worry about circular references, because
+            // to have one would require circular inheritance which probably
+            // causes an error anyways.
+            // TODO: test that circular inheritance causes an error.
+            try {
+                $this->parentEntity = new self($parent);
+                $this->hasParent = true;
+            } catch (TypeError) {
+                // TODO how to handle the case where the parent isn't an entity?
+            }
+        }
 
         $this->primaryKey = null;
         $this->fields = [];
+
+        // if there is a parent, the primary key is a field with the name "parent_[parent's pk field name]"
+        if ($this->hasParent) {
+            // TODO should the parent be forced to be extendable?
+            $parentPk = $this->parentEntity->GetPrimaryKeyField();
+            if ($parentPk !== null) {
+                $this->primaryKey = new EntityFieldDefinition(
+                    $parentPk->FieldName,
+                    $parentPk->FieldType,
+                    null,
+                    IsPrimaryKey: true,
+                    IsForeignKey: true,
+                    ForeignKeyClassName: $parent,
+                    ForeignKeyCollectionName: $this->parentEntity->GetName(),
+                    foreignKeyCollectionFieldName: $parentPk->FieldName,
+                    ForeignKeyOnUpdate: ReferenceBehaviour::CASCADE,
+                    ForeignKeyOnDelete: ReferenceBehaviour::RESTRICT,
+                );
+                $this->fields[] = $this->primaryKey;
+            }
+        }
+        
+        // if extendable then this entity needs a discriminator field.
+        // even if parent has a discriminator field, it is much faster to load entities
+        // when each extendable sub-entity also has the same field.
+        if ($this->isExtendable) {
+            $this->fields[] = new EntityFieldDefinition(
+                "discriminator",
+                Type::TEXT, //TODO should use VARCHAR(128(?)) here, but specifying size isn't implemented yet.
+                null,
+            );
+        }
+
+        // TODO prevent field name collisions.
         $properties = $this->reflectionClass->getProperties();
         foreach ($properties as $property) {
+            // if there is a parent, don't add the fields that are part of the parent
+            // i.e. only include properties that were declared in this class.
+            if ($property->getDeclaringClass()->getName() !== $entityClass) {
+                continue;
+            }
+
             $pFieldAttributes = $property->getAttributes(EntityField::class);
             if (count($pFieldAttributes) != 1) {
                 continue; // not an entity field
@@ -111,6 +172,7 @@ class EntityDefinition implements Iterator, Countable
             }
 
             $pk = false;
+            // TODO support multi-column primary keys
             if ($this->primaryKey == null) {
                 $pPrimaryKeyAttributes = $property->getAttributes(EntityPrimaryKey::class);
                 if (count($pPrimaryKeyAttributes) == 1) {
@@ -170,6 +232,11 @@ class EntityDefinition implements Iterator, Countable
         $this->position = 0;
     }
 
+    public function GetEntityClass() : string
+    {
+        return $this->entityClass;
+    }
+
     public function GetName() : string
     {
         return $this->collectionName;
@@ -186,6 +253,34 @@ class EntityDefinition implements Iterator, Countable
     public function GetPrimaryKeyField() : ?EntityFieldDefinition
     {
         return $this->primaryKey;
+    }
+
+    public function IsExtendable() : bool
+    {
+        return $this->isExtendable;
+    }
+
+    public function HasParent() : bool
+    {
+        return $this->hasParent;
+    }
+
+    public function GetParent() : ?EntityDefinition
+    {
+        if (!$this->hasParent) {
+            return null;
+        }
+
+        return $this->parentEntity;
+    }
+
+    public function GetTopLevelParent() : EntityDefinition
+    {
+        if (!$this->hasParent) {
+            return $this;
+        }
+
+        return $this->parentEntity->GetTopLevelParent();
     }
 
     // Countable interface methods

@@ -82,6 +82,38 @@ class EntityRepository implements IEntityRepository
         return $results[0];
     }
 
+    public function ReadByIdIntoSubEntity(object &$entity, $id) : bool
+    {
+        $pkField = $this->definition->GetPrimaryKeyField();
+        if ($pkField === null) {
+            return false;
+        }
+
+        $query = (new Query)->Equal($pkField->FieldName, $id);
+
+        try {
+            $results = $this->_provider->Select($this->definition, $query);
+        } catch (TableNotFoundException) {
+            $this->_logger->Warn('Pivel/Hydro2', "Definition '{$this->definition->GetName()}' not found.");
+            $this->_logger->Info('Pivel/Hydro2', "Creating definition '{$this->definition->GetName()}'...");
+            $created = $this->_provider->CreateCollectionIfNotExists($this->definition);
+            if (!$created) {
+                $this->_logger->Error('Pivel/Hydro2', "Failed to create definition '{$this->definition->GetName()}'.");
+                return [];
+            }
+            $this->_logger->Info('Pivel/Hydro2', "Successfully created '{$this->definition->GetName()}'.");
+            $results = $this->_provider->Select($this->definition, $query);
+        }
+
+        if (count($results) != 1) {
+            return false;
+        }
+
+        $this->EntityFromArray($results[0], $entity);
+        
+        return true;
+    }
+
     public function Count(?Query $query = null) : int
     {
         try {
@@ -197,17 +229,48 @@ class EntityRepository implements IEntityRepository
      * @param mixed[] $values The data to cast to an entity.
      * @return TEntity The entity.
      */
-    private function EntityFromArray(array $values) : object {
+    private function EntityFromArray(array $values, ?object &$entity=null) : object {
+        // if this entity's definition says that it is extendable:
+        if ($this->definition->IsExtendable() && $entity === null) {
+            // check discriminator
+            $d = class_exists($values["discriminator"]) ? $values["discriminator"] : $this->entityClass;
+            // if discriminator is this entity, continue loading it
+            if ($d !== $this->entityClass) {
+                // else, load that entity and return it. If it doesn't exist, keep loading this entity instead.
+                $r = $this->_entityService->GetRepository($d);
+                $e = $r->ReadById($values[$this->definition->GetPrimaryKeyField()->FieldName]);
+                if ($e !== null) {
+                    return $e;
+                }
+            }
+        }
+
         /** @var TEntity */
-        $entity = new $this->entityClass();
+        $entity ??= new $this->entityClass();
+
+        // if this entity has a parent, load those properties
+        if ($this->definition->HasParent()) {
+            $r = $this->_entityService->GetRepository($this->definition->GetParent()->GetEntityClass());
+            if (!$r->ReadByIdIntoSubEntity($entity, $values[$this->definition->GetPrimaryKeyField()->FieldName])) {
+                // unable to successfully load parent properties
+                // TODO how to handle this?
+            }
+        }
+
         foreach ($this->definition as $field) {
             if (!isset($values[$field->FieldName])) {
+                continue;
+            }
+
+            // don't try to read discriminator field or a sub-entity's primary key field
+            if ($field->Property === null) {
                 continue;
             }
 
             $value = $values[$field->FieldName];
 
             // TODO type conversion
+            // TODO custom class conversions (i.e. Polygon)
             if ($field->FieldType == Type::DATETIME) {
                 if ($field->IsNullable && $value == null) {
                     $value = null;
@@ -232,6 +295,8 @@ class EntityRepository implements IEntityRepository
 
         return $entity;
     }
+
+    // TODO saving extendable entities
 
     /**
      * @param TEntity $entity The entity to be converted to an array.

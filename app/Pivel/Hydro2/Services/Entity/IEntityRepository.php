@@ -29,6 +29,12 @@ interface IEntityRepository
     public function ReadById(mixed $id) : ?object;
 
     /**
+     * @param object &$entity The entity to apply field values to
+     * @return bool Whether reading and applying values was successful
+     */
+    public function ReadByIdIntoSubEntity(object &$entity, $id) : bool;
+
+    /**
      * @param ?Query $query If not provided, will count the total number of entities
      * @return int The number of entities that match the given query
      */
