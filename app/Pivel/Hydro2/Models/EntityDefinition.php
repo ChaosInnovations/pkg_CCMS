@@ -79,7 +79,7 @@ class EntityDefinition implements Iterator, Countable
                 $this->primaryKey = new EntityFieldDefinition(
                     $parentPk->FieldName,
                     $parentPk->FieldType,
-                    null,
+                    $parentPk->Property,
                     IsPrimaryKey: true,
                     IsForeignKey: true,
                     ForeignKeyClassName: $parent,

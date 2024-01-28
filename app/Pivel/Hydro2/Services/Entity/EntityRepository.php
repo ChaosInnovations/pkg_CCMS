@@ -160,6 +160,19 @@ class EntityRepository implements IEntityRepository
             $this->SetEntityCollections($entity);
         }
 
+        // if this entity has a parent, update it (update, not create, because parent record could already exist).
+        // TODO Passing a sub-class shouldn't cause any issues. test this.
+        if ($this->definition->HasParent()) {
+            $r = $this->_entityService->GetRepository($this->definition->GetParent()->GetEntityClass());
+            if ($r->Update($entity)) {
+                return true;
+            }
+            // unable to update the parent. delete ourselves and return false;
+            $this->_logger->Error('Pivel/Hydro2', "Failed to save parent entity '{$this->definition->GetParent()->GetEntityClass()}'. Deleting.");
+            $this->Delete($entity);
+            return false;
+        }
+
         return true;
     }
 
@@ -191,6 +204,18 @@ class EntityRepository implements IEntityRepository
             $this->SetEntityCollections($entity);
         }
 
+        // if this entity has a parent, update it.
+        if ($this->definition->HasParent()) {
+            $r = $this->_entityService->GetRepository($this->definition->GetParent()->GetEntityClass());
+            if ($r->Update($entity)) {
+                return true;
+            }
+            // unable to update the parent. return false;
+            $this->_logger->Error('Pivel/Hydro2', "Failed to update parent entity '{$this->definition->GetParent()->GetEntityClass()}'.");
+            $this->_logger->Warn('Pivel/Hydro2', "This instance of '{$this->entityClass}' may have an invalid state.");
+            return false;
+        }
+
         return true;
     }
 
@@ -206,6 +231,7 @@ class EntityRepository implements IEntityRepository
             return false;
         }
 
+        // TODO handle unable to delete due to foreign reference
         try {
             $affectedRows = $this->_provider->Delete($this->definition, (new Query())->Equal($pkField->FieldName, $this->GetEntityPrimaryKey($entity)));
         } catch (TableNotFoundException) {
@@ -219,6 +245,8 @@ class EntityRepository implements IEntityRepository
             $this->_logger->Info('Pivel/Hydro2', "Successfully created '{$this->definition->GetName()}'.");
             $affectedRows = $this->_provider->Delete($this->definition, (new Query())->Equal($pkField->FieldName, $this->GetEntityPrimaryKey($entity)));
         }
+
+        // intentionally doesn't delete parent entities; business logic of implementations may require different behaviours here.
 
         return $affectedRows == 1;
     }
@@ -266,6 +294,9 @@ class EntityRepository implements IEntityRepository
             if ($field->Property === null) {
                 continue;
             }
+            if ($this->definition->HasParent() && $field->FieldName == $this->definition->GetPrimaryKeyField()->FieldName) {
+                continue;
+            }
 
             $value = $values[$field->FieldName];
 
@@ -304,6 +335,13 @@ class EntityRepository implements IEntityRepository
      */
     private function ArrayFromEntity(object $entity) : array {
         $values = [];
+
+        // if this entity's definition says that it is extendable:
+            if ($this->definition->IsExtendable()) {
+                // set discriminator
+                $values["discriminator"] = $entity::class;
+            }
+
         foreach ($this->definition as $field) {
             $value = $field->Property->getValue($entity);
 
