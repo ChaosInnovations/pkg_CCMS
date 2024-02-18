@@ -51,10 +51,6 @@ class UserController extends BaseController
         if (!$requestUser->GetUserRole()->HasPermission(Permissions::ViewUsers->value)) {
             return new Response(status: StatusCode::NotFound);
         }
-
-        $query = new Query();
-        $query->Limit($this->request->Args['limit'] ?? -1);
-        $query->Offset($this->request->Args['offset'] ?? 0);
         
         if (isset($this->request->Args['sort_by'])) {
             if ($this->request->Args['sort_by'] == 'role') {
@@ -63,16 +59,9 @@ class UserController extends BaseController
             if ($this->request->Args['sort_by'] == 'created') {
                 $this->request->Args['sort_by'] = 'inserted';
             }
-            $dir = Order::tryFrom(strtoupper($this->request->Args['sort_dir']??'asc'))??Order::Ascending;
-            $query->OrderBy($this->request->Args['sort_by']??'email', $dir);
         }
 
-        if (isset($this->request->Args['q']) && !empty($this->request->Args['q'])) {
-            $query->Like('email', '%' . str_replace('%', '\\%', str_replace('_', '\\_', $this->request->Args['q'])) . '%');
-            $query = (new Query())
-                ->Like('name', '%' . str_replace('%', '\\%', str_replace('_', '\\_', $this->request->Args['q'])) . '%')
-                ->Or($query);
-        }
+        $query = Query::SortSearchPageQueryFromRequest($this->request, searchField:"name");
 
         // TODO implement filtering for more fields?
         if (isset($this->request->Args['role_id'])) {

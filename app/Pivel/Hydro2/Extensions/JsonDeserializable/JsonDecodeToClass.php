@@ -7,6 +7,12 @@ use Exception;
 
 class JsonDecodeToClass
 {
+    /**
+     * @template T
+     * @param string $json
+     * @param class-string<T> $class
+     * @return ?T If unable to decode, returns null
+     */
     public static function json_decode_to_class(string $json, string $class) : mixed
     {
         $object = json_decode($json, true);

@@ -3,6 +3,7 @@
 namespace Pivel\Hydro2\Extensions;
 
 use Pivel\Hydro2\Models\Database\Order;
+use Pivel\Hydro2\Models\HTTP\Request;
 
 class Query
 {
@@ -200,5 +201,31 @@ class Query
         ];
 
         return $this;
+    }
+
+    public static function SortSearchPageQueryFromRequest(
+        Request $request,
+        string $searchField="name",
+        string $limitArg="limit",
+        string $offsetArg="offset",
+        string $sortByArg="sort_by",
+        string $sortDirArg="sort_dir",
+        string $searchArg="q",
+    ) : Query
+    {
+        $query = new Query();
+        $query->Limit($request->Args[$limitArg] ?? -1);
+        $query->Offset($request->Args[$offsetArg] ?? 0);
+        
+        if (isset($request->Args[$sortByArg])) {
+            $dir = Order::tryFrom(strtoupper($request->Args[$sortDirArg]??'asc'))??Order::Ascending;
+            $query->OrderBy($request->Args[$sortByArg], $dir);
+        }
+
+        if (isset($request->Args[$searchArg]) && !empty($request->Args[$searchArg])) {
+            $query->Like($searchField, '%' . str_replace('%', '\\%', str_replace('_', '\\_', $request->Args[$searchArg])) . '%');
+        }
+
+        return $query;
     }
 }

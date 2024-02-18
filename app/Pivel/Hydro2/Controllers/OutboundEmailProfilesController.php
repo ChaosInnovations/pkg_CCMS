@@ -53,18 +53,12 @@ class OutboundEmailProfilesController extends BaseController
         if (!$requestUser->GetUserRole()->HasPermission(Permissions::ManageOutboundEmailProfiles->value)) {
             return new Response(status: StatusCode::NotFound);
         }
-
-        $query = new Query();
-        $query->Limit($this->request->Args['limit'] ?? -1);
-        $query->Offset($this->request->Args['offset'] ?? 0);
         
-        if (isset($this->request->Args['sort_by'])) {
-            if ($this->request->Args['sort_by'] == 'sender') {
-                $this->request->Args['sort_by'] = 'sender_address';
-            }
-            $dir = Order::tryFrom(strtoupper($this->request->Args['sort_dir']??'asc'))??Order::Ascending;
-            $query->OrderBy($this->request->Args['sort_by']??'key', $dir);
+        if (isset($this->request->Args['sort_by']) && $this->request->Args['sort_by'] == 'sender') {
+            $this->request->Args['sort_by'] = 'sender_address';
         }
+
+        $query = Query::SortSearchPageQueryFromRequest($this->request, searchField:"label");
 
         $r = $this->_entityService->GetRepository(OutboundEmailProfile::class);
 

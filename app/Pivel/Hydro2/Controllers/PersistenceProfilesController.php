@@ -45,14 +45,7 @@ class PersistenceProfilesController extends BaseController
             return new Response(status: StatusCode::NotFound);
         }
 
-        $query = new Query();
-        $query->Limit($this->request->Args['limit'] ?? -1);
-        $query->Offset($this->request->Args['offset'] ?? 0);
-
-        if (isset($this->request->Args['sort_by'])) {
-            $dir = Order::tryFrom(strtoupper($this->request->Args['sort_dir']??'asc'))??Order::Ascending;
-            $query->OrderBy($this->request->Args['sort_by']??'key', $dir);
-        }
+        $query = Query::SortSearchPageQueryFromRequest($this->request, searchField:"key");
 
         $r = $this->_entityService->GetRepository(EntityPersistenceProfile::class);
 

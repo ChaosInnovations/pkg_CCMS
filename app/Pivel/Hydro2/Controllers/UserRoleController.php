@@ -45,18 +45,7 @@ class UserRoleController extends BaseController
             return new Response(status: StatusCode::NotFound);
         }
 
-        $query = new Query();
-        $query->Limit($this->request->Args['limit'] ?? -1);
-        $query->Offset($this->request->Args['offset'] ?? 0);
-        
-        if (isset($this->request->Args['sort_by'])) {
-            $dir = Order::tryFrom(strtoupper($this->request->Args['sort_dir']??'asc'))??Order::Ascending;
-            $query->OrderBy($this->request->Args['sort_by']??'id', $dir);
-        }
-
-        if (isset($this->request->Args['q']) && !empty($this->request->Args['q'])) {
-            $query->Like('name', '%' . str_replace('%', '\\%', str_replace('_', '\\_', $this->request->Args['q'])) . '%');
-        }
+        $query = Query::SortSearchPageQueryFromRequest($this->request, searchField:"name");
 
         $userRoles = $this->_identityService->GetUserRolesMatchingQuery($query);
 
