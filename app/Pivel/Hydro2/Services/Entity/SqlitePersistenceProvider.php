@@ -177,11 +177,27 @@ class SqlitePersistenceProvider implements IEntityPersistenceProvider
             return null;
         }
 
-        $columnsString = implode(',',array_map(fn(EntityFieldDefinition $field):string=>$field->FieldName,$collection->GetFields()));
-        $valuePlaceholdersString = implode(',', array_map(fn($v):string=>':'.$v,array_keys($fieldValues)));
+        // Need to filter out any auto-increment columns
+        $fieldNamesExceptAutoIncrement = array_map(
+            fn(EntityFieldDefinition $field):string=>$field->FieldName,
+            array_filter(
+                $collection->GetFields(),
+                fn(EntityFieldDefinition $field):bool=>!$field->AutoIncrement,
+            ),
+        );
+        $fieldValuesExceptAutoIncrement = array_filter(
+            $fieldValues,
+            fn($k):bool=>in_array($k, $fieldNamesExceptAutoIncrement),
+            ARRAY_FILTER_USE_KEY,
+        );
+        $columnsString = implode(',', array_keys($fieldValuesExceptAutoIncrement));
+        $valuePlaceholdersString = implode(',', array_map(
+            fn($v):string=>':'.$v,
+            array_keys($fieldValuesExceptAutoIncrement),
+        ));
         try {
             $stmt = $this->pdo->prepare("INSERT INTO ".$collection->GetName()." (".$columnsString.") VALUES (".$valuePlaceholdersString.")");
-            $stmt->execute($fieldValues);
+            $stmt->execute($fieldValuesExceptAutoIncrement);
         } catch (PDOException $e) {
             if ($e->errorInfo[0] == 'HY000' && $e->errorInfo[1] == 1 && str_contains($e->errorInfo[2], 'no such table')) {
                 throw new TableNotFoundException($e->getMessage(), 0);
@@ -203,16 +219,15 @@ class SqlitePersistenceProvider implements IEntityPersistenceProvider
             return null;
         }
 
-        $columnsString = implode(',',array_map(fn(EntityFieldDefinition $field):string=>$field->FieldName,$collection->GetFields()));
+        $columnsString = implode(',', array_keys($fieldValues));
         $valuePlaceholdersString = implode(',', array_map(fn($k):string=>':'.$k,array_keys($fieldValues)));
         $pkField = $collection->GetPrimaryKeyField();
-        $pkFieldName = $pkField == null ? null : $pkField->FieldName;
-        $updateValuesPlaceholderString = implode(',', array_map(fn($k):string=>'`'.$k.'`=:'.$k,array_filter(array_keys($fieldValues),fn($k)=>$k!=$pkFieldName)));
         try {
             $stmt = $this->pdo->prepare("INSERT OR IGNORE INTO ".$collection->GetName()." (".$columnsString.") VALUES (".$valuePlaceholdersString.")");
             $stmt->execute($fieldValues);
-            if ($pkFieldName !== null) {
-                $stmt = $this->pdo->prepare("UPDATE ".$collection->GetName()." SET ".$updateValuesPlaceholderString." WHERE `".$pkFieldName."`=:".$pkFieldName);
+            if ($pkField !== null) {
+                $updateValuesPlaceholderString = implode(',', array_map(fn($k):string=>'`'.$k.'`=:'.$k,array_filter(array_keys($fieldValues),fn($k)=>$k!=$pkField->FieldName)));
+                $stmt = $this->pdo->prepare("UPDATE ".$collection->GetName()." SET ".$updateValuesPlaceholderString." WHERE `".$pkField->FieldName."`=:".$pkField->FieldName);
                 $stmt->execute($fieldValues);
             }
         } catch (PDOException $e) {
@@ -228,10 +243,7 @@ class SqlitePersistenceProvider implements IEntityPersistenceProvider
         }
 
         $lastInsertId = $this->pdo->lastInsertId();
-        if ($lastInsertId == 0) {
-            return null;
-        }
-        return $lastInsertId ? null : intval($lastInsertId);
+        return $lastInsertId ? intval($lastInsertId) : null;
     }
 
     public function Delete(EntityDefinition $collection, Query $query) : int

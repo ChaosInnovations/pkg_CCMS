@@ -139,10 +139,22 @@ class EntityRepository implements IEntityRepository
             throw new TypeError("Expected object of type {$this->entityClass}.");
         }
 
+        // if this entity has a parent, update it first (update, not create, because parent record could already exist).
+        // TODO Passing a sub-class shouldn't cause any issues. test this.
+        if ($this->definition->HasParent()) {
+            $r = $this->_entityService->GetRepository($this->definition->GetParent()->GetEntityClass());
+            if (!$r->Update($entity)) {
+                // unable to update the parent. return false;
+                $this->_logger->Error('Pivel/Hydro2', "Failed to save parent entity '{$this->definition->GetParent()->GetEntityClass()}'. Deleting.");
+                return false;
+            }
+        }
+
         $values = $this->ArrayFromEntity($entity);
 
         try {
             $pk = $this->_provider->Insert($this->definition, $values);
+            $this->_logger->Info('Pivel/Hydro2', "Successfully inserted in '{$this->definition->GetName()}' with primary key {$pk}");
         } catch (TableNotFoundException) {
             $this->_logger->Warn('Pivel/Hydro2', "definition '{$this->definition->GetName()}' not found.");
             $this->_logger->Info('Pivel/Hydro2', "Creating definition '{$this->definition->GetName()}'...");
@@ -158,19 +170,6 @@ class EntityRepository implements IEntityRepository
         if ($pk !== null) {
             $this->SetEntityPrimaryKey($entity, $pk);
             $this->SetEntityCollections($entity);
-        }
-
-        // if this entity has a parent, update it (update, not create, because parent record could already exist).
-        // TODO Passing a sub-class shouldn't cause any issues. test this.
-        if ($this->definition->HasParent()) {
-            $r = $this->_entityService->GetRepository($this->definition->GetParent()->GetEntityClass());
-            if ($r->Update($entity)) {
-                return true;
-            }
-            // unable to update the parent. delete ourselves and return false;
-            $this->_logger->Error('Pivel/Hydro2', "Failed to save parent entity '{$this->definition->GetParent()->GetEntityClass()}'. Deleting.");
-            $this->Delete($entity);
-            return false;
         }
 
         return true;
@@ -183,10 +182,22 @@ class EntityRepository implements IEntityRepository
             throw new TypeError("Expected object of type {$this->entityClass}.");
         }
 
+        // if this entity has a parent, update it first.
+        if ($this->definition->HasParent()) {
+            $r = $this->_entityService->GetRepository($this->definition->GetParent()->GetEntityClass());
+            if (!$r->Update($entity)) {
+                // unable to update the parent. return false;
+                $this->_logger->Error('Pivel/Hydro2', "Failed to update parent entity '{$this->definition->GetParent()->GetEntityClass()}'.");
+                $this->_logger->Warn('Pivel/Hydro2', "This instance of '{$this->entityClass}' may have an invalid state.");
+                return false;
+            }
+        }
+
         $values = $this->ArrayFromEntity($entity);
 
         try {
             $pk = $this->_provider->InsertOrUpdate($this->definition, $values);
+            $this->_logger->Info('Pivel/Hydro2', "Successfully inserted or updated record in '{$this->definition->GetName()}' with primary key {$pk}");
         } catch (TableNotFoundException) {
             $this->_logger->Warn('Pivel/Hydro2', "definition '{$this->definition->GetName()}' not found.");
             $this->_logger->Info('Pivel/Hydro2', "Creating definition '{$this->definition->GetName()}'...");
@@ -202,18 +213,6 @@ class EntityRepository implements IEntityRepository
         if ($pk !== null) {
             $this->SetEntityPrimaryKey($entity, $pk);
             $this->SetEntityCollections($entity);
-        }
-
-        // if this entity has a parent, update it.
-        if ($this->definition->HasParent()) {
-            $r = $this->_entityService->GetRepository($this->definition->GetParent()->GetEntityClass());
-            if ($r->Update($entity)) {
-                return true;
-            }
-            // unable to update the parent. return false;
-            $this->_logger->Error('Pivel/Hydro2', "Failed to update parent entity '{$this->definition->GetParent()->GetEntityClass()}'.");
-            $this->_logger->Warn('Pivel/Hydro2', "This instance of '{$this->entityClass}' may have an invalid state.");
-            return false;
         }
 
         return true;
@@ -337,10 +336,10 @@ class EntityRepository implements IEntityRepository
         $values = [];
 
         // if this entity's definition says that it is extendable:
-            if ($this->definition->IsExtendable()) {
-                // set discriminator
-                $values["discriminator"] = $entity::class;
-            }
+        if ($this->definition->IsExtendable()) {
+            // set discriminator
+            $values["discriminator"] = $entity::class;
+        }
 
         foreach ($this->definition as $field) {
             $value = $field->Property->getValue($entity);
@@ -355,7 +354,7 @@ class EntityRepository implements IEntityRepository
                 }
             }
 
-            if (!$field->IsForeignKey) {
+            if (!$field->IsForeignKey || !is_object($value)) {
                 $values[$field->FieldName] = $value;
                 continue;
             }

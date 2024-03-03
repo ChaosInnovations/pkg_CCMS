@@ -71,7 +71,7 @@ class EntityDefinition implements Iterator, Countable
         $this->primaryKey = null;
         $this->fields = [];
 
-        // if there is a parent, the primary key is a field with the name "parent_[parent's pk field name]"
+        // if there is a parent, the primary key is a field with the name "[parent's pk field name]"
         if ($this->hasParent) {
             // TODO should the parent be forced to be extendable?
             $parentPk = $this->parentEntity->GetPrimaryKeyField();
@@ -86,37 +86,29 @@ class EntityDefinition implements Iterator, Countable
                     ForeignKeyCollectionName: $this->parentEntity->GetName(),
                     foreignKeyCollectionFieldName: $parentPk->FieldName,
                     ForeignKeyOnUpdate: ReferenceBehaviour::CASCADE,
-                    ForeignKeyOnDelete: ReferenceBehaviour::RESTRICT,
+                    ForeignKeyOnDelete: ReferenceBehaviour::CASCADE, // deleting the parent will also result in deleting children
                 );
                 $this->fields[] = $this->primaryKey;
             }
         }
-        
-        // if extendable then this entity needs a discriminator field.
-        // even if parent has a discriminator field, it is much faster to load entities
-        // when each extendable sub-entity also has the same field.
-        if ($this->isExtendable) {
-            $this->fields[] = new EntityFieldDefinition(
-                "discriminator",
-                Type::TEXT, //TODO should use VARCHAR(128(?)) here, but specifying size isn't implemented yet.
-                null,
-            );
-        }
+
+        $foundDiscriminator = false;
 
         // TODO prevent field name collisions.
         $properties = $this->reflectionClass->getProperties();
         foreach ($properties as $property) {
-            // if there is a parent, don't add the fields that are part of the parent
-            // i.e. only include properties that were declared in this class.
-            if ($property->getDeclaringClass()->getName() !== $entityClass) {
-                continue;
-            }
-
             $pFieldAttributes = $property->getAttributes(EntityField::class);
             if (count($pFieldAttributes) != 1) {
                 continue; // not an entity field
             }
             $pFieldAttribute = $pFieldAttributes[0]->newInstance();
+
+            // if there is a parent, don't add the fields that are part of the parent
+            // i.e. only include properties that were declared in this class.
+            // except, we do still want to keep the discriminator field.
+            if ($property->getDeclaringClass()->getName() !== $entityClass && $pFieldAttribute->FieldName != "discriminator") {
+                continue;
+            }
 
             $isForeignKey = false;
             $fkClass = null;
@@ -206,6 +198,9 @@ class EntityDefinition implements Iterator, Countable
             }
 
             $pFieldAttribute->FieldName ??= $property->getName() . ($isForeignKey ? $fkCollectionFieldName : '');
+            if ($pFieldAttribute->FieldName == "discriminator") {
+                $foundDiscriminator = true;
+            }
 
             $field = new EntityFieldDefinition(
                 $pFieldAttribute->FieldName,
@@ -226,6 +221,13 @@ class EntityDefinition implements Iterator, Countable
             if ($pk) {
                 $this->primaryKey = $field;
             }
+        }
+
+        // if extendable then this entity needs a discriminator field.
+        // even if parent has a discriminator field, it is much faster to load entities
+        // when each extendable sub-entity also has the same field.
+        if ($this->isExtendable && !$foundDiscriminator) {
+            throw new TypeError("The provided class {$entityClass} is extendable but doesn't have an discriminator field.");
         }
 
         // set up Iterator interface

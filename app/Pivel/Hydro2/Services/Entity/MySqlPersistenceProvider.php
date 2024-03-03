@@ -243,11 +243,27 @@ class MySqlPersistenceProvider implements IEntityPersistenceProvider
             return null;
         }
 
-        $columnsString = implode(',',array_map(fn(EntityFieldDefinition $field):string=>$field->FieldName,$collection->GetFields()));
-        $valuePlaceholdersString = implode(',', array_map(fn($v):string=>':'.$v,array_keys($fieldValues)));
+        // Need to filter out any auto-increment columns
+        $fieldNamesExceptAutoIncrement = array_map(
+            fn(EntityFieldDefinition $field):string=>$field->FieldName,
+            array_filter(
+                $collection->GetFields(),
+                fn(EntityFieldDefinition $field):bool=>!$field->AutoIncrement,
+            ),
+        );
+        $fieldValuesExceptAutoIncrement = array_filter(
+            $fieldValues,
+            fn($k):bool=>in_array($k, $fieldNamesExceptAutoIncrement),
+            ARRAY_FILTER_USE_KEY,
+        );
+        $columnsString = implode(',', array_keys($fieldValuesExceptAutoIncrement));
+        $valuePlaceholdersString = implode(',', array_map(
+            fn($v):string=>':'.$v,
+            array_keys($fieldValuesExceptAutoIncrement),
+        ));
         try {
             $stmt = $this->pdo->prepare("INSERT INTO ".$collection->GetName()." (".$columnsString.") VALUES (".$valuePlaceholdersString.")");
-            $stmt->execute($fieldValues);
+            $stmt->execute($fieldValuesExceptAutoIncrement);
         } catch (PDOException $e) {
             if ($e->errorInfo[0] == '42S02') {
                 throw new TableNotFoundException($e->getMessage(), 0);
