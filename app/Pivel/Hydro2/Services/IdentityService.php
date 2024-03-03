@@ -166,7 +166,7 @@ class IdentityService implements IIdentityService
     {
         $random_id_and_key = explode(';', $request->getCookie('sridkey', ""), 2);
 
-        if (count($random_id_and_key) != 2) {
+        if (count($random_id_and_key) != 2 && $random_id === null && $key === null) {
             setcookie('sridkey', '', time()-3600, '/');
             return null;
         }
